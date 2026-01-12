@@ -5,52 +5,52 @@
 
 // 📦 导入 Radix Dialog 的所有组件
 // Radix 使用"命名空间导入"模式，所有相关组件都在 Dialog 命名空间下
-import * as Dialog from '@radix-ui/react-dialog';
-import { ReactNode } from 'react';
+import * as Dialog from "@radix-ui/react-dialog";
+import type { ReactNode } from "react";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📝 TypeScript 接口定义
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export interface DialogProps {
-  /** 是否打开对话框（受控模式） */
-  open?: boolean;
+	/** 是否打开对话框（受控模式） */
+	open?: boolean;
 
-  /** 对话框打开/关闭状态变化的回调 */
-  onOpenChange?: (open: boolean) => void;
+	/** 对话框打开/关闭状态变化的回调 */
+	onOpenChange?: (open: boolean) => void;
 
-  /** 触发按钮的内容 */
-  trigger?: ReactNode;
+	/** 触发按钮的内容 */
+	trigger?: ReactNode;
 
-  /** 对话框标题 */
-  title: string;
+	/** 对话框标题 */
+	title: string;
 
-  /** 对话框描述（可选） */
-  description?: string;
+	/** 对话框描述（可选） */
+	description?: string;
 
-  /** 对话框主体内容 */
-  children: ReactNode;
+	/** 对话框主体内容 */
+	children: ReactNode;
 
-  /** 是否显示关闭按钮（默认 true） */
-  showCloseButton?: boolean;
+	/** 是否显示关闭按钮（默认 true） */
+	showCloseButton?: boolean;
 
-  /** 是否显示页脚（默认 true） */
-  showFooter?: boolean;
+	/** 是否显示页脚（默认 true） */
+	showFooter?: boolean;
 
-  /** 主要操作按钮文本 */
-  primaryActionLabel?: string;
+	/** 主要操作按钮文本 */
+	primaryActionLabel?: string;
 
-  /** 次要操作按钮文本 */
-  secondaryActionLabel?: string;
+	/** 次要操作按钮文本 */
+	secondaryActionLabel?: string;
 
-  /** 主要操作点击事件 */
-  onPrimaryAction?: () => void;
+	/** 主要操作点击事件 */
+	onPrimaryAction?: () => void;
 
-  /** 次要操作点击事件 */
-  onSecondaryAction?: () => void;
+	/** 次要操作点击事件 */
+	onSecondaryAction?: () => void;
 
-  /** 对话框尺寸 */
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+	/** 对话框尺寸 */
+	size?: "sm" | "md" | "lg" | "xl";
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -68,36 +68,35 @@ export interface DialogProps {
  * - 🎨 Tailwind CSS 样式
  */
 export const DialogComponent = ({
-  open,
-  onOpenChange,
-  trigger,
-  title,
-  description,
-  children,
-  showCloseButton = true,
-  showFooter = true,
-  primaryActionLabel = '确认',
-  secondaryActionLabel = '取消',
-  onPrimaryAction,
-  onSecondaryAction,
-  size = 'md',
+	open,
+	onOpenChange,
+	trigger,
+	title,
+	description,
+	children,
+	showCloseButton = true,
+	showFooter = true,
+	primaryActionLabel = "确认",
+	secondaryActionLabel = "取消",
+	onPrimaryAction,
+	onSecondaryAction,
+	size = "md",
 }: DialogProps) => {
-  // 🎨 根据 size 决定对话框宽度
-  const sizeStyles = {
-    sm: 'max-w-sm',   // 24rem (384px)
-    md: 'max-w-md',   // 28rem (448px)
-    lg: 'max-w-lg',   // 32rem (512px)
-    xl: 'max-w-xl',   // 36rem (576px)
-  };
+	// 🎨 根据 size 决定对话框宽度
+	const sizeStyles = {
+		sm: "max-w-sm", // 24rem (384px)
+		md: "max-w-md", // 28rem (448px)
+		lg: "max-w-lg", // 32rem (512px)
+		xl: "max-w-xl", // 36rem (576px)
+	};
 
-  return (
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 🎯 Dialog.Root - 对话框根组件
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // 这是整个对话框的容器，管理打开/关闭状态
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
-
-      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+	return (
+		// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+		// 🎯 Dialog.Root - 对话框根组件
+		// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+		// 这是整个对话框的容器，管理打开/关闭状态
+		<Dialog.Root open={open} onOpenChange={onOpenChange}>
+			{/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           🔘 Dialog.Trigger - 触发按钮
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           点击这个按钮会打开对话框
@@ -106,13 +105,9 @@ export const DialogComponent = ({
           - aria-expanded="true/false"
           - aria-controls="对话框ID"
       */}
-      {trigger && (
-        <Dialog.Trigger asChild>
-          {trigger}
-        </Dialog.Trigger>
-      )}
+			{trigger && <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>}
 
-      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+			{/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           🌐 Dialog.Portal - React Portal
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           将对话框渲染到 document.body 的末尾
@@ -121,15 +116,14 @@ export const DialogComponent = ({
           2. 避免 overflow: hidden 影响
           3. 更容易管理遮罩层
       */}
-      <Dialog.Portal>
-
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+			<Dialog.Portal>
+				{/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             🎭 Dialog.Overlay - 遮罩层
             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             半透明背景，点击可关闭对话框
         */}
-        <Dialog.Overlay
-          className="
+				<Dialog.Overlay
+					className="
             fixed inset-0
             bg-black/50
             backdrop-blur-sm
@@ -139,9 +133,9 @@ export const DialogComponent = ({
             data-[state=open]:fade-in-0
             z-50
           "
-        />
+				/>
 
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+				{/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             📦 Dialog.Content - 对话框主体
             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             对话框的主要内容容器
@@ -153,8 +147,8 @@ export const DialogComponent = ({
             - 焦点锁定（Tab 键只在对话框内循环）
             - Escape 键关闭
         */}
-        <Dialog.Content
-          className={`
+				<Dialog.Content
+					className={`
             fixed
             left-1/2
             top-1/2
@@ -179,44 +173,44 @@ export const DialogComponent = ({
             data-[state=open]:slide-in-from-top-[48%]
             duration-200
           `}
-        >
-          {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+				>
+					{/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
               📌 对话框头部
               ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+					<div className="flex items-start justify-between mb-4">
+						<div className="flex-1">
+							{/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                   📝 Dialog.Title - 标题
                   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                   自动生成唯一 ID，并通过 aria-labelledby 关联到 Content
                   屏幕阅读器会读出："标题文字，对话框"
               */}
-              <Dialog.Title className="text-xl font-semibold text-gray-900">
-                {title}
-              </Dialog.Title>
+							<Dialog.Title className="text-xl font-semibold text-gray-900">
+								{title}
+							</Dialog.Title>
 
-              {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+							{/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                   📄 Dialog.Description - 描述
                   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                   自动生成唯一 ID，并通过 aria-describedby 关联到 Content
                   提供额外的上下文信息
               */}
-              {description && (
-                <Dialog.Description className="mt-2 text-sm text-gray-600">
-                  {description}
-                </Dialog.Description>
-              )}
-            </div>
+							{description && (
+								<Dialog.Description className="mt-2 text-sm text-gray-600">
+									{description}
+								</Dialog.Description>
+							)}
+						</div>
 
-            {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+						{/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                 ❌ Dialog.Close - 关闭按钮
                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
                 点击会关闭对话框（触发 onOpenChange(false)）
             */}
-            {showCloseButton && (
-              <Dialog.Close
-                className="
+						{showCloseButton && (
+							<Dialog.Close
+								className="
                   rounded-sm
                   opacity-70
                   transition-opacity
@@ -226,46 +220,45 @@ export const DialogComponent = ({
                   focus:ring-blue-500
                   focus:ring-offset-2
                 "
-                aria-label="关闭对话框"
-              >
-                {/* ✕ 关闭图标 */}
-                <svg
-                  className="h-5 w-5 text-gray-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </Dialog.Close>
-            )}
-          </div>
+								aria-label="关闭对话框"
+							>
+								{/* ✕ 关闭图标 */}
+								<svg
+									className="h-5 w-5 text-gray-500"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									aria-hidden="true"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M6 18L18 6M6 6l12 12"
+									/>
+								</svg>
+							</Dialog.Close>
+						)}
+					</div>
 
-          {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+					{/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
               📦 对话框主体内容
               ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           */}
-          <div className="py-4">
-            {children}
-          </div>
+					<div className="py-4">{children}</div>
 
-          {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+					{/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
               🔘 对话框页脚（操作按钮）
               ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           */}
-          {showFooter && (
-            <div className="flex justify-end gap-3 mt-6">
-              {/* 次要操作按钮（取消） */}
-              <Dialog.Close asChild>
-                <button
-                  onClick={onSecondaryAction}
-                  className="
+					{showFooter && (
+						<div className="flex justify-end gap-3 mt-6">
+							{/* 次要操作按钮（取消） */}
+							<Dialog.Close asChild>
+								<button
+									type="button"
+									onClick={onSecondaryAction}
+									className="
                     px-4
                     py-2
                     text-sm
@@ -280,15 +273,16 @@ export const DialogComponent = ({
                     focus:ring-offset-2
                     transition-colors
                   "
-                >
-                  {secondaryActionLabel}
-                </button>
-              </Dialog.Close>
+								>
+									{secondaryActionLabel}
+								</button>
+							</Dialog.Close>
 
-              {/* 主要操作按钮（确认） */}
-              <button
-                onClick={onPrimaryAction}
-                className="
+							{/* 主要操作按钮（确认） */}
+							<button
+								type="button"
+								onClick={onPrimaryAction}
+								className="
                   px-4
                   py-2
                   text-sm
@@ -303,15 +297,15 @@ export const DialogComponent = ({
                   focus:ring-offset-2
                   transition-colors
                 "
-              >
-                {primaryActionLabel}
-              </button>
-            </div>
-          )}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
+							>
+								{primaryActionLabel}
+							</button>
+						</div>
+					)}
+				</Dialog.Content>
+			</Dialog.Portal>
+		</Dialog.Root>
+	);
 };
 
 // 💡 为了方便使用，导出一个简化的名称

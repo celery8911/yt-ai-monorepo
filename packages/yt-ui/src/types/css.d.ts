@@ -9,11 +9,11 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 当你写：import './button.css'
 // TypeScript 会在这里找到类型定义，不再报错
-declare module '*.css' {
-  // CSS 文件导出一个对象，key 是类名，value 是实际的类名字符串
-  // 例如：{ 'button': 'button_abc123' }（CSS Modules 模式）
-  const content: { [className: string]: string };
-  export default content;
+declare module "*.css" {
+	// CSS 文件导出一个对象，key 是类名，value 是实际的类名字符串
+	// 例如：{ 'button': 'button_abc123' }（CSS Modules 模式）
+	const content: { [className: string]: string };
+	export default content;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -21,21 +21,21 @@ declare module '*.css' {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // 🎨 SCSS 文件
-declare module '*.scss' {
-  const content: { [className: string]: string };
-  export default content;
+declare module "*.scss" {
+	const content: { [className: string]: string };
+	export default content;
 }
 
 // 🎨 SASS 文件
-declare module '*.sass' {
-  const content: { [className: string]: string };
-  export default content;
+declare module "*.sass" {
+	const content: { [className: string]: string };
+	export default content;
 }
 
 // 🎨 LESS 文件
-declare module '*.less' {
-  const content: { [className: string]: string };
-  export default content;
+declare module "*.less" {
+	const content: { [className: string]: string };
+	export default content;
 }
 
 // 💡 为什么需要这个文件？

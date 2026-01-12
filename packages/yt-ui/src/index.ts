@@ -9,13 +9,13 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // 🔘 Button 组件
-export { Button } from './components/Button';
+export { Button } from "./components/Button";
 
 // 🎴 Card 组件
-export { Card } from './components/Card';
+export { Card } from "./components/Card";
 
 // 💬 Dialog 组件
-export { Dialog } from './components/Dialog';
+export { Dialog } from "./components/Dialog";
 
 // 🎴 未来的组件可以在这里添加
 // export { Button } from './components/Button';
@@ -26,9 +26,9 @@ export { Dialog } from './components/Dialog';
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // 导出组件的 Props 类型，供 TypeScript 用户使用
-export type { ButtonProps } from './components/Button';
-export type { CardProps } from './components/Card';
-export type { DialogProps } from './components/Dialog';
+export type { ButtonProps } from "./components/Button";
+export type { CardProps } from "./components/Card";
+export type { DialogProps } from "./components/Dialog";
 
 // 💡 使用示例：
 //

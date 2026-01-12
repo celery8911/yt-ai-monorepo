@@ -1,0 +1,57 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+	"formatter": {
+		"enabled": true
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true
+		}
+	},
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	},
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
+		}
+	},
+	"files": {
+		"includes": [
+			"**",
+			"!**/node_modules",
+			"!**/dist",
+			"!**/build",
+			"!**/storybook-static"
+		]
+	},
+	"overrides": [
+		{
+			"includes": ["**/*.stories.*"],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"noSvgWithoutTitle": "off",
+						"useButtonType": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["**/*.example.*"],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"useButtonType": "off"
+					}
+				}
+			}
+		}
+	]
+}

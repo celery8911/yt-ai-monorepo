@@ -1,51 +1,51 @@
 {
-  "name": "@yt/ui",
-  "version": "1.0.0",
-  "description": "UI component library with TypeScript and Tailwind CSS",
-  "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
-  "exports": {
-    ".": "./src/index.ts"
-  },
-  "publishConfig": {
-    "main": "./dist/index.es.js",
-    "types": "./dist/index.d.ts",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.es.js"
-      }
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "vite build && tsc --declaration --emitDeclarationOnly --outDir dist",
-    "dev": "vite",
-    "prepublishOnly": "pnpm run build"
-  },
-  "keywords": [
-    "ui",
-    "components",
-    "react",
-    "tailwind"
-  ],
-  "author": "",
-  "license": "ISC",
-  "peerDependencies": {
-    "react": "^18.3.1 || ^19.0.0",
-    "react-dom": "^18.3.1 || ^19.0.0",
-    "tailwindcss": "^4.0.0"
-  },
-  "devDependencies": {
-    "@types/react": "^19.0.6",
-    "@types/react-dom": "^19.0.2",
-    "typescript": "~5.7.2",
-    "vite": "^6.0.7"
-  },
-  "dependencies": {
-    "@radix-ui/react-dialog": "^1.1.4"
-  }
+	"name": "@yt/ui",
+	"version": "1.0.0",
+	"description": "UI component library with TypeScript and Tailwind CSS",
+	"type": "module",
+	"main": "./src/index.ts",
+	"types": "./src/index.ts",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"publishConfig": {
+		"main": "./dist/index.es.js",
+		"types": "./dist/index.d.ts",
+		"exports": {
+			".": {
+				"types": "./dist/index.d.ts",
+				"import": "./dist/index.es.js"
+			}
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "vite build && tsc --declaration --emitDeclarationOnly --outDir dist",
+		"dev": "vite",
+		"prepublishOnly": "pnpm run build"
+	},
+	"keywords": [
+		"ui",
+		"components",
+		"react",
+		"tailwind"
+	],
+	"author": "",
+	"license": "ISC",
+	"peerDependencies": {
+		"react": "^18.3.1 || ^19.0.0",
+		"react-dom": "^18.3.1 || ^19.0.0",
+		"tailwindcss": "^4.0.0"
+	},
+	"devDependencies": {
+		"@types/react": "^19.0.6",
+		"@types/react-dom": "^19.0.2",
+		"typescript": "~5.7.2",
+		"vite": "^6.0.7"
+	},
+	"dependencies": {
+		"@radix-ui/react-dialog": "^1.1.4"
+	}
 }
