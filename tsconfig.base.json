@@ -1,0 +1,182 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📦 Monorepo 基础 TypeScript 配置
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+/**
+ * 🎯 这个文件的作用
+ *
+ * 定义整个 Monorepo 的共享 TypeScript 配置
+ * 所有子包（packages/*, apps/*）都应该继承这个配置
+ *
+ * 📚 为什么需要基础配置？
+ * 1. DRY 原则 - 避免在每个包中重复相同配置
+ * 2. 一致性 - 确保所有包使用相同的编译规则
+ * 3. 易维护 - 修改一次，全部生效
+ * 4. 易扩展 - 子包可以覆盖或扩展基础配置
+ *
+ * 📖 继承机制示例：
+ * ```json
+ * // packages/qc-hooks/tsconfig.json
+ * {
+ *   "extends": "../../tsconfig.base.json",
+ *   "compilerOptions": {
+ *     "jsx": "react-jsx"  // 只需配置特殊的部分
+ *   }
+ * }
+ * ```
+ */
+{
+  "compilerOptions": {
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🎯 编译目标配置
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    /**
+     * target: 编译后的 JavaScript 版本
+     *
+     * ✅ 选择 ES2020 的原因：
+     * - 支持现代浏览器（Chrome 80+, Firefox 72+, Safari 13.1+）
+     * - 包含实用的新特性（可选链 ?. 和空值合并 ??）
+     * - 性能更好，代码更简洁
+     */
+    "target": "ES2020",
+
+    /**
+     * lib: 可用的内置库（类型定义）
+     *
+     * ✅ 基础配置包含：
+     * - ES2020: 覆盖现代 JS 语法
+     * - DOM: 大部分 Web 项目需要（document、window 等）
+     * - DOM.Iterable: for...of 遍历 DOM 集合
+     */
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📦 模块系统配置
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    /**
+     * module: 生成的模块系统
+     *
+     * ✅ 选择 ESNext：
+     * - 现代化，支持 tree-shaking
+     * - 所有现代打包工具都支持（Vite、Webpack、Rollup）
+     */
+    "module": "ESNext",
+
+    /**
+     * moduleResolution: 模块解析策略
+     *
+     * ✅ 选择 bundler（TypeScript 4.7+）：
+     * - 为现代打包工具优化
+     * - 支持 package.json 的 exports 字段
+     * - 允许省略 .js 扩展名
+     */
+    "moduleResolution": "bundler",
+
+    /**
+     * resolveJsonModule: 允许导入 JSON 文件
+     *
+     * ✅ 启用：可以直接 import config from './config.json'
+     */
+    "resolveJsonModule": true,
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🔒 严格类型检查
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    /**
+     * strict: 开启所有严格类型检查
+     *
+     * ✅ 强烈推荐：提高代码质量，捕获更多潜在错误
+     */
+    "strict": true,
+
+    /**
+     * noUnusedLocals: 检查未使用的局部变量
+     *
+     * ✅ 启用：保持代码整洁
+     */
+    "noUnusedLocals": true,
+
+    /**
+     * noUnusedParameters: 检查未使用的参数
+     *
+     * ✅ 启用：发现不必要的参数
+     * 💡 使用 _ 前缀标记有意未使用的参数
+     */
+    "noUnusedParameters": true,
+
+    /**
+     * noFallthroughCasesInSwitch: 检查 switch 中的 fallthrough
+     *
+     * ✅ 启用：防止忘记 break 的常见错误
+     */
+    "noFallthroughCasesInSwitch": true,
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 🔧 其他重要配置
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    /**
+     * skipLibCheck: 跳过库文件（.d.ts）的类型检查
+     *
+     * ✅ 推荐：显著加快编译速度
+     */
+    "skipLibCheck": true,
+
+    /**
+     * esModuleInterop: ES 模块和 CommonJS 互操作
+     *
+     * ✅ 推荐：允许 import React from 'react'
+     */
+    "esModuleInterop": true,
+
+    /**
+     * allowSyntheticDefaultImports: 允许合成默认导入
+     *
+     * ✅ 配合 esModuleInterop 使用
+     */
+    "allowSyntheticDefaultImports": true,
+
+    /**
+     * forceConsistentCasingInFileNames: 强制文件名大小写一致
+     *
+     * ✅ 必须：防止跨平台问题（macOS/Windows vs Linux）
+     */
+    "forceConsistentCasingInFileNames": true,
+
+    /**
+     * isolatedModules: 确保每个文件可以独立转译
+     *
+     * ✅ 使用 Vite/Rollup/esbuild 时必须
+     */
+    "isolatedModules": true,
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📤 输出配置（子包会覆盖）
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    /**
+     * declaration: 生成类型声明文件（.d.ts）
+     *
+     * ✅ 库项目必须开启
+     *
+     * 注意：outDir 和 rootDir 由各子包自己配置
+     * 因为不同包的目录结构可能不同
+     */
+    "declaration": true
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 📂 默认的排除规则
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ]
+}

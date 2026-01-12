@@ -7,43 +7,9 @@
 
 **目标**: 将 qc-monorepo 的工程架构复制到本地，不包含 git 历史
 
-- [TODO] [LC-001] 克隆 qc-monorepo 并复制基础架构
-  - **验收标准**:
-    - 当前目录包含 packages/ 目录及其所有包（qc-ui、qc-hooks、qc-libs）
-    - 当前目录包含 apps/qc-ui-interface/ 目录
-    - 当前目录包含根配置文件（package.json、pnpm-workspace.yaml、turbo.json、tsconfig.base.json、.npmrc）
-    - 当前目录包含 .changeset/ 目录
-    - 当前目录包含 .github/workflows/ 目录（但不包含 release.yml）
-    - 不存在 apps/web-app/ 目录
-    - 不存在 .github/workflows/release.yml 文件
-    - 不存在 .claude/ 目录
-    - 无 .git/ 目录（去除了 git 历史）
-  - **执行步骤**:
-    ```bash
-    # 1. 克隆 qc-monorepo 到临时目录
-    cd /tmp
-    git clone https://github.com/celery8911/qc-monorepo.git
-
-    # 2. 删除 .git 目录（去除历史）
-    cd qc-monorepo
-    rm -rf .git
-
-    # 3. 删除不需要的文件/目录
-    rm -rf apps/web-app
-    rm -f .github/workflows/release.yml
-    rm -rf .claude
-
-    # 4. 复制剩余内容到工作目录（保留 CLAUDE.md 和 CODEX.md）
-    cp -r packages /Users/zhangqin/offlineProject/
-    cp -r apps /Users/zhangqin/offlineProject/
-    cp -r .changeset /Users/zhangqin/offlineProject/
-    cp -r .github /Users/zhangqin/offlineProject/
-    cp package.json pnpm-workspace.yaml turbo.json tsconfig.base.json .npmrc /Users/zhangqin/offlineProject/
-
-    # 5. 清理临时目录
-    cd /Users/zhangqin/offlineProject
-    rm -rf /tmp/qc-monorepo
-    ```
+- [DONE] [LC-001] 克隆 qc-monorepo 并复制基础架构 (2026-01-12)
+  - **验收标准**: ✓ 所有标准已满足
+  - **Notes**: 由 Claude Code 在本地完成，因 Codex Cloud 无法访问私有仓库
 
 ---
 
@@ -51,19 +17,9 @@
 
 **目标**: 将 @qincai/* 命名空间更改为 @yt/*，更新项目标识
 
-- [TODO] [LC-002] 重命名包目录
-  - **验收标准**:
-    - packages/qc-ui/ 重命名为 packages/yt-ui/
-    - packages/qc-hooks/ 重命名为 packages/yt-hooks/
-    - packages/qc-libs/ 重命名为 packages/yt-libs/
-    - apps/qc-ui-interface/ 重命名为 apps/yt-ui-interface/
-  - **执行步骤**:
-    ```bash
-    mv packages/qc-ui packages/yt-ui
-    mv packages/qc-hooks packages/yt-hooks
-    mv packages/qc-libs packages/yt-libs
-    mv apps/qc-ui-interface apps/yt-ui-interface
-    ```
+- [DONE] [LC-002] 重命名包目录 (2026-01-12)
+  - **验收标准**: ✓ 所有目录已重命名
+  - **Notes**: 由 Claude Code 在本地完成
 
 - [TODO] [LC-003] 更新所有 package.json 的包名
   - **验收标准**:

@@ -1,0 +1,19 @@
+[2026-01-12T03:47:14.058973+00:00] startup: base_url=https://chatgpt.com/backend-api path_style=wham
+[2026-01-12T03:47:14.147036+00:00] auth: mode=ChatGPT account_id=9a3ab912-d7ee-465d-a542-9f5bc8642e9e
+[2026-01-12T03:47:14.147268+00:00] auth: set ChatGPT-Account-Id header: 9a3ab912-d7ee-465d-a542-9f5bc8642e9e
+[2026-01-12T03:47:14.219899+00:00] env: parsed HTTP GitHub origin => celery8911/yt-ai-monorepo
+[2026-01-12T03:47:18.108485+00:00] env: status=200 OK content-type=application/json
+[2026-01-12T03:47:19.912709+00:00] env: status=200 OK content-type=application/json
+[2026-01-12T03:47:23.106331+00:00] new_task: created id=task_e_69646eccc4308330a701c34952aed872 env=696465b9ca5c819194ea8f8a30a74b92 prompt_chars=1513
+[2026-01-12T03:47:44.037809+00:00] startup: base_url=https://chatgpt.com/backend-api path_style=wham
+[2026-01-12T03:47:44.135084+00:00] auth: mode=ChatGPT account_id=9a3ab912-d7ee-465d-a542-9f5bc8642e9e
+[2026-01-12T03:47:44.135310+00:00] auth: set ChatGPT-Account-Id header: 9a3ab912-d7ee-465d-a542-9f5bc8642e9e
+[2026-01-12T03:48:23.989575+00:00] startup: base_url=https://chatgpt.com/backend-api path_style=wham
+[2026-01-12T03:48:24.047656+00:00] auth: mode=ChatGPT account_id=9a3ab912-d7ee-465d-a542-9f5bc8642e9e
+[2026-01-12T03:48:24.047890+00:00] auth: set ChatGPT-Account-Id header: 9a3ab912-d7ee-465d-a542-9f5bc8642e9e
+[2026-01-12T03:49:05.052099+00:00] startup: base_url=https://chatgpt.com/backend-api path_style=wham
+[2026-01-12T03:49:05.177345+00:00] auth: mode=ChatGPT account_id=9a3ab912-d7ee-465d-a542-9f5bc8642e9e
+[2026-01-12T03:49:05.177747+00:00] auth: set ChatGPT-Account-Id header: 9a3ab912-d7ee-465d-a542-9f5bc8642e9e
+[2026-01-12T03:49:21.032774+00:00] startup: base_url=https://chatgpt.com/backend-api path_style=wham
+[2026-01-12T03:49:21.303950+00:00] auth: mode=ChatGPT account_id=9a3ab912-d7ee-465d-a542-9f5bc8642e9e
+[2026-01-12T03:49:21.304258+00:00] auth: set ChatGPT-Account-Id header: 9a3ab912-d7ee-465d-a542-9f5bc8642e9e

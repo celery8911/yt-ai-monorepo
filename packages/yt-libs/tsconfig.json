@@ -1,0 +1,36 @@
+{
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 📦 qc-libs - 纯 TypeScript 工具库配置
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  /**
+   * 🎯 配置说明
+   *
+   * qc-libs 是一个纯 TypeScript 工具库，不依赖 React
+   * - 继承 Monorepo 的基础配置
+   * - 移除 DOM 相关库（因为可能用于 Node.js 环境）
+   * - microbundle 自动处理构建（无需单独运行 tsc）
+   */
+
+  // 继承基础配置
+  "extends": "../../tsconfig.base.json",
+
+  "compilerOptions": {
+    /**
+     * lib: 可用的内置库
+     *
+     * 移除 DOM，使其成为通用库（可用于浏览器和 Node.js）
+     */
+    "lib": ["ES2020"],
+
+    // 输出配置（microbundle 需要这些信息）
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+
+  // 包含 src 目录下的所有文件
+  "include": ["src/**/*"],
+
+  // 排除不需要编译的文件
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+}

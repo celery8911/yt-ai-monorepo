@@ -1,0 +1,63 @@
+{
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 📦 qc-hooks - React Hooks 工具库配置
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  /**
+   * 🎯 配置说明
+   *
+   * qc-hooks 是 React Hooks 工具库
+   * - 继承 Monorepo 基础配置
+   * - 添加 JSX 支持（react-jsx）
+   * - 保留 DOM 库（React 需要）
+   */
+
+  // 继承基础配置
+  "extends": "../../tsconfig.base.json",
+
+  "compilerOptions": {
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // ⚛️ React 特定配置
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    /**
+     * jsx: JSX 转换模式
+     *
+     * react-jsx（React 17+ 新 JSX 转换）：
+     * - 自动导入 jsx-runtime
+     * - 不需要手动 import React
+     * - 更小的产物体积
+     */
+    "jsx": "react-jsx",
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 📤 输出配置
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    "declaration": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+
+    /**
+     * emitDeclarationOnly: 仅生成类型声明文件
+     *
+     * 工作流：
+     * - Rollup 负责生成 JS 文件
+     * - TypeScript 只生成 .d.ts 文件
+     */
+    "emitDeclarationOnly": true
+  },
+
+  // 包含 src 目录下的所有文件
+  "include": ["src/**/*"],
+
+  // 排除不需要编译的文件
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
+  ]
+}

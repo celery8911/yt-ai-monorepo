@@ -1,0 +1,25 @@
+{
+  "name": "qc-monorepo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "turbo run build && changeset publish",
+    "release:local": "turbo run build && changeset publish --registry http://localhost:4873/ --no-git-checks"
+  },
+  "keywords": [],
+  "private": true,
+  "packageManager": "pnpm@8.6.2",
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@changesets/cli": "^2.29.8",
+    "turbo": "^2.7.2"
+  }
+}
