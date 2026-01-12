@@ -164,7 +164,7 @@
 
 **目标**: 添加 Biome 工具并统一代码风格
 
-- [TODO] [LC-013] 添加 Biome 配置并格式化代码
+- [DONE] [LC-013] 添加 Biome 配置并格式化代码 (2026-01-12)
   - **验收标准**:
     - 根目录存在 biome.json 配置文件
     - package.json 中添加 Biome 依赖和脚本
@@ -198,7 +198,7 @@
 
 **目标**: 验证整个架构搭建的完整性和正确性
 
-- [TODO] [LC-014] 工程可用性验证
+- [DONE] [LC-014] 工程可用性验证 (2026-01-12)
   - **验收标准**:
     - pnpm install 成功，无错误
     - pnpm build 成功，所有包构建完成
@@ -208,7 +208,7 @@
     pnpm build
     ```
 
-- [TODO] [LC-015] 命名空间验证
+- [DONE] [LC-015] 命名空间验证 (2026-01-12)
   - **验收标准**:
     - 所有 package.json 中的 name 字段使用 @yt/* 命名空间
     - 无 @qincai/* 引用
@@ -221,7 +221,7 @@
     grep -r "@qincai" packages/ apps/ || echo "✓ No @qincai references found"
     ```
 
-- [TODO] [LC-016] AI 架构验证
+- [DONE] [LC-016] AI 架构验证 (2026-01-12)
   - **验收标准**:
     - subagents/ 目录存在，包含 3 个 agent 文档（frontend-agent.md、backend-agent.md、contract-agent.md）
     - commands/analyze.md 存在且内容完整
@@ -235,7 +235,7 @@
     ls -la task.md
     ```
 
-- [TODO] [LC-017] Git 仓库验证
+- [DONE] [LC-017] Git 仓库验证 (2026-01-12)
   - **验收标准**:
     - git remote -v 显示 origin 指向正确的远程仓库
     - git status 显示干净的工作区
