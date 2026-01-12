@@ -154,20 +154,43 @@
   - **影响文件**:
     - README.md
 
-- [TODO] [LC-013] 初始化 git 仓库
+- [DONE] [LC-013-old] 初始化 git 仓库并推送 (2026-01-12)
+  - **验收标准**: ✓ Git 仓库已初始化，代码已推送到 dev 分支
+  - **Notes**: 由 Claude Code 在本地完成，使用 dev 分支而非 main 分支
+
+---
+
+## Phase 6: 代码规范与工具链
+
+**目标**: 添加 Biome 工具并统一代码风格
+
+- [TODO] [LC-013] 添加 Biome 配置并格式化代码
   - **验收标准**:
-    - .git/ 目录存在
-    - git status 显示干净的工作区或已暂存的文件
-    - git remote -v 显示 origin 指向 https://github.com/celery8911/yt-ai-monorepo.git
+    - 根目录存在 biome.json 配置文件
+    - package.json 中添加 Biome 依赖和脚本
+    - 所有代码文件已格式化，无警告和错误
+    - 代码格式化不影响功能（仅格式变更，无破坏性修改）
+  - **配置要求**:
+    - 使用 Biome 作为 Formatter 和 Linter
+    - 配置精简且符合最佳实践
+    - 包含：formatter、linter、organizeImports
+    - 排除 node_modules、dist、build、storybook-static 等目录
   - **执行步骤**:
-    ```bash
-    git init
-    git add .
-    git commit -m "chore: initial commit - yt-ai-monorepo architecture"
-    git branch -M main
-    git remote add origin https://github.com/celery8911/yt-ai-monorepo.git
-    ```
-  - **注意**: 不执行 git push，等待后续验证通过后再推送
+    1. 安装 Biome：`pnpm add -Dw @biomejs/biome`
+    2. 创建 biome.json 配置文件
+    3. 在根 package.json 添加脚本：
+       - `"format": "biome format --write ."`
+       - `"lint": "biome lint ."`
+       - `"check": "biome check ."`
+    4. 运行格式化：`pnpm format`
+    5. 运行检查确保无错误：`pnpm check`
+  - **影响文件**:
+    - biome.json（新增）
+    - package.json（添加依赖和脚本）
+    - 所有 .ts/.tsx/.js/.jsx 文件（仅格式化，无功能变更）
+  - **Notes**:
+    - ⚠️ 确保格式化后构建仍然成功：`pnpm build`
+    - ⚠️ 只做代码风格调整，不修改逻辑
 
 ---
 
