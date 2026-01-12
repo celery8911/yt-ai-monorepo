@@ -8,8 +8,8 @@ import { fn } from '@storybook/test';
 import { useState } from 'react';
 
 // 🧩 导入 Dialog 组件
-// 从 @qincai/ui 包中导入组件
-import { Dialog } from '@qincai/ui';
+// 从 @yt/ui 包中导入组件
+import { Dialog } from '@yt/ui';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📖 元数据配置

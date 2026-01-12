@@ -1,5 +1,5 @@
 {
-  "name": "@qincai/ui",
+  "name": "@yt/ui",
   "version": "1.0.0",
   "description": "UI component library with TypeScript and Tailwind CSS",
   "type": "module",

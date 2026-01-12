@@ -1,11 +1,11 @@
-# @qincai/hooks
+# @yt/hooks
 
 React Hooks 工具库，提供常用的自定义 Hooks。
 
 ## 📦 安装
 
 ```bash
-pnpm add @qincai/hooks
+pnpm add @yt/hooks
 ```
 
 ## 🎣 Hooks 列表
@@ -64,7 +64,7 @@ setUser(draft => {
 #### 📖 基础用法
 
 ```tsx
-import { useImmer } from '@qincai/hooks';
+import { useImmer } from '@yt/hooks';
 
 function App() {
   const [state, setState] = useImmer(initialValue);
@@ -85,7 +85,7 @@ function App() {
 ##### 1. 待办事项列表
 
 ```tsx
-import { useImmer } from '@qincai/hooks';
+import { useImmer } from '@yt/hooks';
 
 function TodoList() {
   const [todos, setTodos] = useImmer([

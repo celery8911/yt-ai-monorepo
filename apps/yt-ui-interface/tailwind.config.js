@@ -7,9 +7,9 @@ export default {
     // 扫描 src 目录下的所有源文件
     "./src/**/*.{js,jsx,ts,tsx}",
 
-    // 扫描 @qincai/ui 组件库的源文件
+    // 扫描 @yt/ui 组件库的源文件
     // 因为组件使用 workspace 依赖（workspace:*），Storybook 直接引用源码
     // Tailwind 需要扫描组件库中的 className 来生成对应的样式
-    "../../packages/qc-ui/src/**/*.{js,jsx,ts,tsx}",
+    "../../packages/yt-ui/src/**/*.{js,jsx,ts,tsx}",
   ],
 };

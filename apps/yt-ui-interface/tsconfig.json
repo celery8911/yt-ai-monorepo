@@ -2,7 +2,6 @@
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 📦 qc-ui-interface - Storybook 应用配置
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
   /**
    * 🎯 配置说明
    *
@@ -10,21 +9,16 @@
    * - 继承 Monorepo 基础配置
    * - 添加应用特定配置（noEmit、路径别名等）
    */
-
   // 继承基础配置
   "extends": "../../tsconfig.base.json",
-
   "compilerOptions": {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // ⚛️ React 配置
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     "jsx": "react-jsx",
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 📦 应用特定配置
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     /**
      * noEmit: 不生成输出文件
      *
@@ -34,7 +28,6 @@
      * - 不需要生成 .js 或 .d.ts 文件
      */
     "noEmit": true,
-
     /**
      * allowImportingTsExtensions: 允许导入 .ts 扩展名
      *
@@ -43,11 +36,9 @@
      * - Vite 会处理这些导入
      */
     "allowImportingTsExtensions": true,
-
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // 📁 路径别名配置
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     /**
      * baseUrl 和 paths: 配置路径别名
      *
@@ -57,32 +48,33 @@
      * - 开发体验更好
      *
      * 使用示例：
-     * import { Button } from '@qincai/ui'
-     * // 实际指向: ../../packages/qc-ui/src
+     * import { Button } from '@yt/ui'
+     * // 实际指向: ../../packages/yt-ui/src
      */
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
-      "@qincai/ui": ["../../packages/qc-ui/src"],
-      "@qincai/ui/*": ["../../packages/qc-ui/src/*"]
+      "@yt/ui": [
+        "../../packages/yt-ui/src"
+      ],
+      "@yt/ui/*": [
+        "../../packages/yt-ui/src/*"
+      ]
     }
   },
-
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 📂 包含的文件
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
   "include": [
-    "stories/**/*",      // Storybook 故事文件
-    ".storybook/**/*",   // Storybook 配置
-    "src/**/*"           // 源代码
+    "stories/**/*", // Storybook 故事文件
+    ".storybook/**/*", // Storybook 配置
+    "src/**/*" // 源代码
   ],
-
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 🚫 排除的文件
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
   "exclude": [
     "node_modules",
-    "storybook-static"   // Storybook 构建输出
+    "storybook-static" // Storybook 构建输出
   ]
 }

@@ -1,8 +1,8 @@
 {
-  "name": "@qincai/ui-interface",
+  "name": "@yt/ui-interface",
   "version": "1.0.0",
   "private": true,
-  "description": "Storybook 展示界面 - 展示 @qincai/ui 组件库",
+  "description": "Storybook 展示界面 - 展示 @yt/ui 组件库",
   "type": "module",
   "scripts": {
     "dev": "storybook dev -p 6006",
@@ -11,7 +11,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
-    "@qincai/ui": "workspace:*",
+    "@yt/ui": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -26,11 +26,11 @@
     "@storybook/react": "^8.6.15",
     "@storybook/react-vite": "^8.6.15",
     "@storybook/test": "^8.6.15",
-    "@tailwindcss/vite": "^4.0.0-beta.7",
+    "@tailwindcss/vite": "^4.1.18",
     "@types/react": "^19.0.6",
     "@types/react-dom": "^19.0.2",
     "storybook": "^8.6.15",
-    "tailwindcss": "^4.0.0-beta.7",
+    "tailwindcss": "^4.1.18",
     "typescript": "~5.7.2",
     "vite": "^6.0.7"
   }

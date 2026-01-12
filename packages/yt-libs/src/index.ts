@@ -1,5 +1,5 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 @qincai/libs - 通用工具函数库
+// 📦 @yt/libs - 通用工具函数库
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 /**
@@ -29,15 +29,15 @@
  * 🔍 export { ... } from '...' 语法说明：
  * - 这是 ES6 的 re-export（重新导出）语法
  * - 作用：从其他模块导入，然后立即导出
- * - 好处：统一入口，用户只需从 '@qincai/libs' 导入
+ * - 好处：统一入口，用户只需从 '@yt/libs' 导入
  *
  * 📖 示例：
  * ```ts
  * // ❌ 不推荐：深层导入
- * import { formatAddress } from '@qincai/libs/address/formatAddress';
+ * import { formatAddress } from '@yt/libs/address/formatAddress';
  *
  * // ✅ 推荐：从根模块导入
- * import { formatAddress } from '@qincai/libs';
+ * import { formatAddress } from '@yt/libs';
  * ```
  */
 // 导出地址工具函数和类型
@@ -52,12 +52,12 @@ export { formatAddress, type FormatAddressOptions } from './address/formatAddres
  *
  * ```ts
  * // 1️⃣ 安装包
- * // npm install @qincai/libs
+ * // npm install @yt/libs
  * // 或
- * // pnpm add @qincai/libs
+ * // pnpm add @yt/libs
  *
  * // 2️⃣ 导入函数
- * import { formatAddress } from '@qincai/libs';
+ * import { formatAddress } from '@yt/libs';
  *
  * // 3️⃣ 使用函数
  * const address = '0x1234567890abcdef1234567890abcdef12345678';
@@ -65,7 +65,7 @@ export { formatAddress, type FormatAddressOptions } from './address/formatAddres
  * console.log(formatted); // '0x1234...5678'
  *
  * // 4️⃣ 使用自定义选项
- * import type { FormatAddressOptions } from '@qincai/libs';
+ * import type { FormatAddressOptions } from '@yt/libs';
  *
  * const options: FormatAddressOptions = {
  *   prefixLength: 8,
@@ -82,7 +82,7 @@ export { formatAddress, type FormatAddressOptions } from './address/formatAddres
  * React 中使用示例
  *
  * ```tsx
- * import { formatAddress } from '@qincai/libs';
+ * import { formatAddress } from '@yt/libs';
  *
  * function WalletDisplay({ address }: { address: string }) {
  *   return (
@@ -101,7 +101,7 @@ export { formatAddress, type FormatAddressOptions } from './address/formatAddres
  *
  * ```vue
  * <script setup lang="ts">
- * import { formatAddress } from '@qincai/libs';
+ * import { formatAddress } from '@yt/libs';
  *
  * const address = '0x1234567890abcdef1234567890abcdef12345678';
  * const formatted = formatAddress(address);

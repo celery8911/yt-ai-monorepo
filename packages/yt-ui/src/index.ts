@@ -1,5 +1,5 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 📦 @qincai/ui - 组件库入口文件
+// 📦 @yt/ui - 组件库入口文件
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 这个文件导出所有公共组件和类型
 // 其他项目通过这个文件导入组件
@@ -33,8 +33,8 @@ export type { DialogProps } from './components/Dialog';
 // 💡 使用示例：
 //
 // 在其他项目中导入：
-// import { Card } from '@qincai/ui';
-// import type { CardProps } from '@qincai/ui';
+// import { Card } from '@yt/ui';
+// import type { CardProps } from '@yt/ui';
 //
 // 使用组件：
 // <Card

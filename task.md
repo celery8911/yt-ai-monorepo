@@ -21,44 +21,21 @@
   - **验收标准**: ✓ 所有目录已重命名
   - **Notes**: 由 Claude Code 在本地完成
 
-- [TODO] [LC-003] 更新所有 package.json 的包名
-  - **验收标准**:
-    - packages/yt-ui/package.json 中 name 为 "@yt/ui"
-    - packages/yt-hooks/package.json 中 name 为 "@yt/hooks"
-    - packages/yt-libs/package.json 中 name 为 "@yt/libs"
-    - apps/yt-ui-interface/package.json 中 name 为 "@yt/ui-interface"
-  - **影响文件**:
-    - packages/yt-ui/package.json
-    - packages/yt-hooks/package.json
-    - packages/yt-libs/package.json
-    - apps/yt-ui-interface/package.json
+- [DONE] [LC-003] 更新所有 package.json 的包名 (2026-01-12)
+  - **验收标准**: ✓ 所有包名已更新为 @yt/*
+  - **Notes**: 由 Codex Cloud 完成
 
-- [TODO] [LC-004] 更新所有 package.json 的依赖引用
-  - **验收标准**:
-    - 所有 package.json 中的依赖从 "@qincai/*" 更改为 "@yt/*"
-    - grep -r "@qincai" packages/ apps/ 应该无结果
-  - **影响文件**:
-    - packages/yt-ui/package.json
-    - packages/yt-hooks/package.json
-    - apps/yt-ui-interface/package.json
+- [DONE] [LC-004] 更新所有 package.json 的依赖引用 (2026-01-12)
+  - **验收标准**: ✓ 所有 @qincai/* 引用已替换为 @yt/*
+  - **Notes**: 由 Codex Cloud 完成
 
-- [TODO] [LC-005] 更新根 package.json
-  - **验收标准**:
-    - name 字段更新为 "yt-ai-monorepo"
-    - description 字段更新为 "AI-Native Monorepo 工程平台"
-    - repository 字段指向 https://github.com/celery8911/yt-ai-monorepo.git
-  - **影响文件**:
-    - package.json
+- [DONE] [LC-005] 更新根 package.json (2026-01-12)
+  - **验收标准**: ✓ 所有字段已更新
+  - **Notes**: 由 Codex Cloud 完成
 
-- [TODO] [LC-006] 验证依赖安装
-  - **验收标准**:
-    - pnpm install 成功执行，无错误
-    - node_modules 目录存在
-    - 所有包的依赖都正确解析
-  - **执行步骤**:
-    ```bash
-    pnpm install
-    ```
+- [DONE] [LC-006] 验证依赖安装 (2026-01-12)
+  - **验收标准**: ✓ 依赖安装成功，740 个包已安装
+  - **Notes**: 由 Claude Code 在本地完成
 
 ---
 
@@ -66,7 +43,7 @@
 
 **目标**: 建立 AI 工作流的核心基础设施
 
-- [TODO] [LC-007] 创建目录结构
+- [DONE] [LC-007] 创建目录结构 (2026-01-12)
   - **验收标准**:
     - subagents/ 目录存在
     - commands/ 目录存在
@@ -76,7 +53,7 @@
     mkdir -p commands
     ```
 
-- [TODO] [LC-008] 创建 commands/analyze.md
+- [DONE] [LC-008] 创建 commands/analyze.md (2026-01-12)
   - **验收标准**:
     - commands/analyze.md 文件存在
     - 文件内容包含命令用途、工作流程、使用方式、task.md 格式规范、示例
@@ -142,21 +119,21 @@
 
 **目标**: 定义不同工程角色的 AI Agent 职责和能力边界
 
-- [TODO] [LC-009] 创建 subagents/frontend-agent.md
+- [DONE] [LC-009] 创建 subagents/frontend-agent.md (2026-01-12)
   - **验收标准**:
     - subagents/frontend-agent.md 文件存在
     - 文件内容包含：角色定位、职责范围（可以做的事、不能做的事）、能力边界、工作流程、约束条件
   - **影响文件**:
     - subagents/frontend-agent.md
 
-- [TODO] [LC-010] 创建 subagents/backend-agent.md
+- [DONE] [LC-010] 创建 subagents/backend-agent.md (2026-01-12)
   - **验收标准**:
     - subagents/backend-agent.md 文件存在
     - 文件内容包含：角色定位、职责范围（可以做的事、不能做的事）、能力边界、工作流程、约束条件
   - **影响文件**:
     - subagents/backend-agent.md
 
-- [TODO] [LC-011] 创建 subagents/contract-agent.md
+- [DONE] [LC-011] 创建 subagents/contract-agent.md (2026-01-12)
   - **验收标准**:
     - subagents/contract-agent.md 文件存在
     - 文件内容包含：角色定位、职责范围（可以做的事、不能做的事）、能力边界、工作流程、约束条件
@@ -169,7 +146,7 @@
 
 **目标**: 建立项目的身份标识和完整文档
 
-- [TODO] [LC-012] 创建 README.md
+- [DONE] [LC-012] 创建 README.md (2026-01-12)
   - **验收标准**:
     - README.md 文件存在
     - 文件内容包含：项目介绍、特性、项目结构、技术栈、快速开始、AI 工作流、包说明、开发指南

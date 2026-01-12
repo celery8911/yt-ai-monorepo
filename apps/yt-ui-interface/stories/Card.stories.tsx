@@ -7,8 +7,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { fn } from '@storybook/test';
 
 // 🧩 导入 Card 组件
-// 从 @qincai/ui 包中导入组件
-import { Card } from '@qincai/ui';
+// 从 @yt/ui 包中导入组件
+import { Card } from '@yt/ui';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📖 元数据配置

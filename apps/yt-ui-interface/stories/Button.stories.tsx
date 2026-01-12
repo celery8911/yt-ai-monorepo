@@ -4,7 +4,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { fn } from '@storybook/test';
-import { Button } from '@qincai/ui';
+import { Button } from '@yt/ui';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📖 元数据配置

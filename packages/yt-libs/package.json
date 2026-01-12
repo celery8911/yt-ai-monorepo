@@ -1,5 +1,5 @@
 {
-  "name": "@qincai/libs",
+  "name": "@yt/libs",
   "version": "3.1.0",
   "description": "通用工具函数库 - 包含地址格式化等实用工具",
   "type": "module",
