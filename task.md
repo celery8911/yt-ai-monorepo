@@ -1,278 +1,175 @@
-# yt-ai-monorepo 架构搭建任务清单
+# yt-ai-monorepo 任务总览
 
-> 本文档是项目唯一的执行状态机（Single Source of Truth）
-> 所有 AI Agent 只能执行标记为 [TODO] 的任务
-
-## Phase 1: 从 qc-monorepo 复制基础架构
-
-**目标**: 将 qc-monorepo 的工程架构复制到本地，不包含 git 历史
-
-- [DONE] [LC-001] 克隆 qc-monorepo 并复制基础架构 (2026-01-12)
-  - **验收标准**: ✓ 所有标准已满足
-  - **Notes**: 由 Claude Code 在本地完成，因 Codex Cloud 无法访问私有仓库
+> 本文件是只读的任务总览，实际任务清单已按工程角色拆分
 
 ---
 
-## Phase 2: 重命名和清理
+## 架构搭建（已完成）
 
-**目标**: 将 @qincai/* 命名空间更改为 @yt/*，更新项目标识
+所有架构搭建任务（LC-001 到 LC-018）已于 2026-01-12 完成。
 
-- [DONE] [LC-002] 重命名包目录 (2026-01-12)
-  - **验收标准**: ✓ 所有目录已重命名
-  - **Notes**: 由 Claude Code 在本地完成
+详细历史请查看：`git log`
 
-- [DONE] [LC-003] 更新所有 package.json 的包名 (2026-01-12)
-  - **验收标准**: ✓ 所有包名已更新为 @yt/*
-  - **Notes**: 由 Codex Cloud 完成
+### 完成的阶段
 
-- [DONE] [LC-004] 更新所有 package.json 的依赖引用 (2026-01-12)
-  - **验收标准**: ✓ 所有 @qincai/* 引用已替换为 @yt/*
-  - **Notes**: 由 Codex Cloud 完成
-
-- [DONE] [LC-005] 更新根 package.json (2026-01-12)
-  - **验收标准**: ✓ 所有字段已更新
-  - **Notes**: 由 Codex Cloud 完成
-
-- [DONE] [LC-006] 验证依赖安装 (2026-01-12)
-  - **验收标准**: ✓ 依赖安装成功，740 个包已安装
-  - **Notes**: 由 Claude Code 在本地完成
+- ✅ Phase 1: 从 qc-monorepo 复制基础架构
+- ✅ Phase 2: 重命名和清理
+- ✅ Phase 3: AI 工作流基础设施
+- ✅ Phase 4: Subagents 定义
+- ✅ Phase 5: 项目 Identity 和文档
+- ✅ Phase 6: 代码规范与工具链（Biome）
+- ✅ 验证阶段：所有验证通过
 
 ---
 
-## Phase 3: AI 工作流基础设施
+## 专门任务清单
 
-**目标**: 建立 AI 工作流的核心基础设施
+根据工程角色，任务清单已拆分为以下三个文件：
 
-- [DONE] [LC-007] 创建目录结构 (2026-01-12)
-  - **验收标准**:
-    - subagents/ 目录存在
-    - commands/ 目录存在
-  - **执行步骤**:
-    ```bash
-    mkdir -p subagents
-    mkdir -p commands
-    ```
+### 前端任务
+📋 [.ai/tasks/task-fe.md](.ai/tasks/task-fe.md)
 
-- [DONE] [LC-008] 创建 commands/analyze.md (2026-01-12)
-  - **验收标准**:
-    - commands/analyze.md 文件存在
-    - 文件内容包含命令用途、工作流程、使用方式、task.md 格式规范、示例
-  - **影响文件**:
-    - commands/analyze.md
-  - **文件内容**:
-    ```markdown
-    # /analyze - 需求分析命令
+**负责范围**：
+- @yt/ui 组件库开发
+- @yt/hooks Hooks 开发
+- Storybook 文档维护
+- 前端应用开发
 
-    ## 命令用途
-
-    将 PRD（产品需求文档）转换为可执行的开发计划和任务清单。
-
-    ## 工作流程
-
-    1. **输入**：prd.md（产品需求文档）
-    2. **处理**：
-       - 分析需求的技术可行性
-       - 识别涉及的工程角色（frontend/backend/contract）
-       - 拆解为原子化的开发任务
-       - 定义验收标准和依赖关系
-    3. **输出**：task.md（任务清单状态机）
-
-    ## 使用方式
-
-    1. 在项目根目录创建 `prd.md`
-    2. 执行分析命令（由 Claude Code 执行）
-    3. 生成或更新 `task.md`
-    4. Review task.md 并确认执行计划
-
-    ## task.md 格式规范
-
-    每个 Phase 包含：
-    - Phase 标题和目标描述
-    - TODO 列表
-
-    每个 TODO 包含：
-    - **ID**：唯一标识符（如 LC-001）
-    - **状态**：TODO / DOING / DONE
-    - **描述**：清晰的任务描述
-    - **验收标准**：可验证的完成条件
-    - **Notes**：执行过程中的备注（可选）
-    - **完成日期**：标记为 DONE 时填写（可选）
-
-    ## 示例
-
-    ### Phase 1: 环境初始化
-
-    - [TODO] [LC-001] 初始化 git 仓库
-      - 验收：git status 显示干净的工作区
-
-    - [DOING] [LC-002] 安装依赖
-      - 验收：pnpm install 成功，node_modules 存在
-
-    - [DONE] [LC-003] 配置 ESLint (2026-01-12)
-      - 验收：eslint . 无错误
-      - Notes: 使用了 @yt/eslint-config
-    ```
+**当前状态**：无待办任务
 
 ---
 
-## Phase 4: Subagents 定义
+### 后端任务
+📋 [.ai/tasks/task-be.md](.ai/tasks/task-be.md)
 
-**目标**: 定义不同工程角色的 AI Agent 职责和能力边界
+**负责范围**：
+- API 接口开发
+- 数据库设计和操作
+- 服务端逻辑实现
+- 后端测试
 
-- [DONE] [LC-009] 创建 subagents/frontend-agent.md (2026-01-12)
-  - **验收标准**:
-    - subagents/frontend-agent.md 文件存在
-    - 文件内容包含：角色定位、职责范围（可以做的事、不能做的事）、能力边界、工作流程、约束条件
-  - **影响文件**:
-    - subagents/frontend-agent.md
-
-- [DONE] [LC-010] 创建 subagents/backend-agent.md (2026-01-12)
-  - **验收标准**:
-    - subagents/backend-agent.md 文件存在
-    - 文件内容包含：角色定位、职责范围（可以做的事、不能做的事）、能力边界、工作流程、约束条件
-  - **影响文件**:
-    - subagents/backend-agent.md
-
-- [DONE] [LC-011] 创建 subagents/contract-agent.md (2026-01-12)
-  - **验收标准**:
-    - subagents/contract-agent.md 文件存在
-    - 文件内容包含：角色定位、职责范围（可以做的事、不能做的事）、能力边界、工作流程、约束条件
-  - **影响文件**:
-    - subagents/contract-agent.md
+**当前状态**：无待办任务
 
 ---
 
-## Phase 5: 项目 Identity 和文档
+### 智能合约任务
+📋 [.ai/tasks/task-sc.md](.ai/tasks/task-sc.md)
 
-**目标**: 建立项目的身份标识和完整文档
+**负责范围**：
+- Solidity 合约开发
+- 合约测试和部署
+- ABI 管理和类型生成
+- 区块链工具函数
 
-- [DONE] [LC-012] 创建 README.md (2026-01-12)
-  - **验收标准**:
-    - README.md 文件存在
-    - 文件内容包含：项目介绍、特性、项目结构、技术栈、快速开始、AI 工作流、包说明、开发指南
-    - 包含到 commands/analyze.md、task.md、subagents/ 的链接
-  - **影响文件**:
-    - README.md
-
-- [DONE] [LC-013-old] 初始化 git 仓库并推送 (2026-01-12)
-  - **验收标准**: ✓ Git 仓库已初始化，代码已推送到 dev 分支
-  - **Notes**: 由 Claude Code 在本地完成，使用 dev 分支而非 main 分支
+**当前状态**：无待办任务
 
 ---
 
-## Phase 6: 代码规范与工具链
+## 工作流程
 
-**目标**: 添加 Biome 工具并统一代码风格
+### 1. 创建任务
 
-- [DONE] [LC-013] 添加 Biome 配置并格式化代码 (2026-01-12)
-  - **验收标准**:
-    - 根目录存在 biome.json 配置文件
-    - package.json 中添加 Biome 依赖和脚本
-    - 所有代码文件已格式化，无警告和错误
-    - 代码格式化不影响功能（仅格式变更，无破坏性修改）
-  - **配置要求**:
-    - 使用 Biome 作为 Formatter 和 Linter
-    - 配置精简且符合最佳实践
-    - 包含：formatter、linter、organizeImports
-    - 排除 node_modules、dist、build、storybook-static 等目录
-  - **执行步骤**:
-    1. 安装 Biome：`pnpm add -Dw @biomejs/biome`
-    2. 创建 biome.json 配置文件
-    3. 在根 package.json 添加脚本：
-       - `"format": "biome format --write ."`
-       - `"lint": "biome lint ."`
-       - `"check": "biome check ."`
-    4. 运行格式化：`pnpm format`
-    5. 运行检查确保无错误：`pnpm check`
-  - **影响文件**:
-    - biome.json（新增）
-    - package.json（添加依赖和脚本）
-    - 所有 .ts/.tsx/.js/.jsx 文件（仅格式化，无功能变更）
-  - **Notes**:
-    - ⚠️ 确保格式化后构建仍然成功：`pnpm build`
-    - ⚠️ 只做代码风格调整，不修改逻辑
+当有新需求时：
 
----
+1. 使用 `/analyze` 命令分析 PRD
+2. 根据需求类型，在对应的任务清单中添加 [TODO] 任务：
+   - 前端需求 → `.ai/tasks/task-fe.md`
+   - 后端需求 → `.ai/tasks/task-be.md`
+   - 合约需求 → `.ai/tasks/task-sc.md`
 
-## 验证阶段
+### 2. 执行任务
 
-**目标**: 验证整个架构搭建的完整性和正确性
+1. 根据工程角色，查看对应的任务清单
+2. 选择标记为 [TODO] 的任务
+3. 通过 Codex Cloud 执行（或本地开发）
 
-- [DONE] [LC-014] 工程可用性验证 (2026-01-12)
-  - **验收标准**:
-    - pnpm install 成功，无错误
-    - pnpm build 成功，所有包构建完成
-  - **执行步骤**:
-    ```bash
-    pnpm install
-    pnpm build
-    ```
+### 3. 完成任务
 
-- [DONE] [LC-015] 命名空间验证 (2026-01-12)
-  - **验收标准**:
-    - 所有 package.json 中的 name 字段使用 @yt/* 命名空间
-    - 无 @qincai/* 引用
-  - **执行步骤**:
-    ```bash
-    # 检查所有包名
-    find packages apps -name package.json -exec grep '"name"' {} \;
+1. 完成任务后，更新状态为 [DONE]
+2. 添加完成日期和 Notes
+3. 推送到远程仓库
 
-    # 检查是否还有 @qincai 引用
-    grep -r "@qincai" packages/ apps/ || echo "✓ No @qincai references found"
-    ```
+### 4. 跨角色协作
 
-- [DONE] [LC-016] AI 架构验证 (2026-01-12)
-  - **验收标准**:
-    - subagents/ 目录存在，包含 3 个 agent 文档（frontend-agent.md、backend-agent.md、contract-agent.md）
-    - commands/analyze.md 存在且内容完整
-    - task.md 存在且格式正确
-    - README.md 包含 AI 工作流说明
-  - **执行步骤**:
-    ```bash
-    ls -la subagents/
-    ls -la commands/
-    ls -la README.md
-    ls -la task.md
-    ```
+如有跨角色依赖，在任务的"依赖"字段中明确标注：
 
-- [DONE] [LC-017] Git 仓库验证 (2026-01-12)
-  - **验收标准**:
-    - git remote -v 显示 origin 指向正确的远程仓库
-    - git status 显示干净的工作区
-    - git log 显示初始提交记录
-  - **执行步骤**:
-    ```bash
-    git remote -v
-    git status
-    git log --oneline
-    ```
-
-- [TODO] [LC-018] 推送到远程仓库
-  - **验收标准**:
-    - git push 成功
-    - https://github.com/celery8911/yt-ai-monorepo 可以看到所有文件
-  - **执行步骤**:
-    ```bash
-    git push -u origin main
-    ```
+```markdown
+- **依赖**：BE-003（用户 API 接口）, SC-001（合约 ABI）
+```
 
 ---
 
-## 任务执行说明
+## 任务 ID 规范
 
-1. **所有标记为 [TODO] 的任务** 可以由 Codex Cloud 执行
-2. **标记为 [DOING] 的任务** 正在执行中
-3. **标记为 [DONE] 的任务** 已完成，需要包含完成日期
-4. **每个任务完成后**，必须更新状态并添加 Notes（如果有）
+### 前缀含义
 
-## 下一步行动
+- **FE-XXX**：Frontend 前端任务
+- **BE-XXX**：Backend 后端任务
+- **SC-XXX**：Smart Contract 智能合约任务
+- **LC-XXX**：Lifecycle 生命周期任务（架构搭建，已完成）
 
-根据 CLAUDE.md 中定义的工作循环：
+### 编号规则
 
-1. ✅ 已创建 task.md
-2. 准备 Codex Cloud 执行指令
-3. 提交任务到 Codex Cloud
-4. 监控执行状态
-5. Review diff 结果
-6. Apply 到本地
-7. 更新 task.md
+- 从 001 开始递增
+- 不重复使用已完成任务的 ID
+- 建议按功能模块分组（如 FE-100～199 为认证模块）
+
+---
+
+## 任务格式规范
+
+每个任务必须包含：
+
+```markdown
+### [TODO] [ID] 任务标题
+
+- **验收标准**：
+  - 标准 1（清晰、可验证）
+  - 标准 2
+- **依赖**：[可选] 其他任务 ID
+- **执行步骤**：[可选]
+  1. 步骤 1
+  2. 步骤 2
+- **影响文件**：
+  - file1.ts
+  - file2.md
+- **Notes**：[可选] 备注信息
+```
+
+---
+
+## AI 工作流文档
+
+详细的 AI 工作流程和指导文档：
+
+- 📘 [工作流程](.ai/docs/workflow.md) - AI 协作流程
+- 📘 [架构文档](.ai/docs/architecture.md) - 项目架构说明
+- 📘 [Codex 指令](.ai/docs/codex-instructions.md) - Codex Cloud 执行规则
+- 📘 [需求分析](.ai/commands/analyze.md) - /analyze 命令说明
+
+---
+
+## Agent 定义
+
+各工程角色的详细职责和能力边界：
+
+- 🤖 [Frontend Agent](.ai/agents/frontend-agent.md)
+- 🤖 [Backend Agent](.ai/agents/backend-agent.md)
+- 🤖 [Contract Agent](.ai/agents/contract-agent.md)
+
+---
+
+## 快速导航
+
+| 角色 | 任务清单 | Agent 定义 | 工作范围 |
+|------|----------|------------|----------|
+| 前端工程师 | [task-fe.md](.ai/tasks/task-fe.md) | [frontend-agent.md](.ai/agents/frontend-agent.md) | UI组件, Hooks, Storybook |
+| 后端工程师 | [task-be.md](.ai/tasks/task-be.md) | [backend-agent.md](.ai/agents/backend-agent.md) | API, 数据库, 服务端 |
+| 合约工程师 | [task-sc.md](.ai/tasks/task-sc.md) | [contract-agent.md](.ai/agents/contract-agent.md) | Solidity, 合约测试, ABI |
+
+---
+
+## 版本历史
+
+- **2026-01-12**: 初始版本，完成架构搭建（LC-001 到 LC-018）
+- **2026-01-12**: 文档重组，拆分任务清单为三个专门文件

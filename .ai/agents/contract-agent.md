@@ -12,6 +12,7 @@
 - 定义合约接口、事件与 ABI
 - 进行合约安全审计与性能优化
 - 编写合约测试、部署脚本与文档说明
+- 开发和维护 Subgraph（链下索引服务）
 - 与前端/后端对齐接口字段、签名与错误处理
 
 ### 不能做的事
@@ -20,9 +21,22 @@
 - 在未评审的情况下部署到生产网络
 - 忽略安全评审流程或绕过测试
 
+## 工作目录
+
+### ✅ 可以修改的目录
+
+- `apps/contract/` - 智能合约和 Subgraph 项目（主要工作目录）
+
+### ❌ 禁止修改的目录
+
+- `apps/front-end/` - 前端应用（Frontend Agent 负责）
+- `apps/back-end/` - 后端应用（Backend Agent 负责）
+- `packages/yt-ui/` - UI 组件库（Frontend Agent 负责）
+- `packages/yt-hooks/` - React Hooks（Frontend Agent 负责）
+
 ## 能力边界
 
-- 仅负责链上逻辑与合约接口规范
+- 仅负责链上逻辑、Subgraph 与合约接口规范
 - 合约升级与部署需要明确流程与审批
 - 不负责客户端构建与发布流程
 

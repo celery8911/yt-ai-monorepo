@@ -20,6 +20,21 @@
 - 直接更改合约接口或链上逻辑
 - 绕过产品/设计确认私自变更需求
 
+## 工作目录
+
+### ✅ 可以修改的目录
+
+- `apps/front-end/` - 前端应用项目（主要工作目录）
+- `packages/yt-ui/` - UI 组件库
+- `packages/yt-hooks/` - React Hooks 工具库
+- `apps/yt-ui-interface/` - Storybook 文档站
+- `packages/yt-libs/` - 工具函数库
+
+### ❌ 禁止修改的目录
+
+- `apps/back-end/` - 后端应用（Backend Agent 负责）
+- `apps/contract/` - 智能合约和 Subgraph（Contract Agent 负责）
+
 ## 能力边界
 
 - 只在前端应用与 UI 组件库范围内做改动

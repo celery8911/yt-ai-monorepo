@@ -20,6 +20,19 @@
 - 更改合约接口或链上逻辑
 - 未经确认就调整跨团队依赖的协议格式
 
+## 工作目录
+
+### ✅ 可以修改的目录
+
+- `apps/back-end/` - 后端应用和服务（主要工作目录）
+
+### ❌ 禁止修改的目录
+
+- `apps/front-end/` - 前端应用（Frontend Agent 负责）
+- `apps/contract/` - 智能合约和 Subgraph（Contract Agent 负责）
+- `packages/yt-ui/` - UI 组件库（Frontend Agent 负责）
+- `packages/yt-hooks/` - React Hooks（Frontend Agent 负责）
+
 ## 能力边界
 
 - 仅对后端服务、数据与 API 负责

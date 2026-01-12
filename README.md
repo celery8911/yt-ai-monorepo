@@ -14,14 +14,20 @@ AI-Native Monorepo 工程平台，基于 qc-monorepo 的架构搭建，提供统
 ```
 .
 ├── apps/
+│   ├── front-end/           # 前端应用（Frontend Agent）
+│   ├── back-end/            # 后端服务（Backend Agent）
+│   ├── contract/            # 智能合约和 Subgraph（Contract Agent）
 │   └── yt-ui-interface/     # Storybook 展示应用
 ├── packages/
 │   ├── yt-ui/               # UI 组件库
 │   ├── yt-hooks/            # Hooks 工具库
 │   └── yt-libs/             # 通用工具库
-├── commands/                # AI 命令
-├── subagents/               # AI 角色定义
-├── task.md                  # 任务清单状态机
+├── .ai/                     # AI 相关文档
+│   ├── docs/                # 核心文档
+│   ├── agents/              # Agent 定义
+│   ├── commands/            # 命令说明
+│   └── tasks/               # 任务清单
+├── task.md                  # 任务总览
 └── README.md
 ```
 
