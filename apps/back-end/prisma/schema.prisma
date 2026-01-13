@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Job {
+  id                 String   @id
+  title              String
+  description        String?
+  category           String?
+  tags               Json
+  createdBy          String
+  status             String
+  paymentMethod      String
+  budgetMin          Decimal?
+  budgetMax          Decimal?
+  currency           String?
+  deadlineAt         DateTime?
+  priority           String
+  requiredSkillLevel String
+  deliverables       String?
+  acceptanceCriteria String?
+  autoMatchEnabled   Boolean
+  biddingEnabled     Boolean
+  escrowEnabled      Boolean
+  visibility         String
+  reviewWindowDays   Int      @default(7)
+  reviewEndsAt       DateTime?
+  selectedAgentId    String?
+  payoutStrategy     String
+  escrowId           String?
+  disputeId          String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Agent {
+  id                           String   @id
+  name                         String
+  description                  String?
+  category                     String?
+  tags                         Json
+  endpointUrl                  String
+  owner                        String
+  visibility                   String
+  isActive                      Boolean
+  supportedPaymentMethods      Json
+  pricePerTask                 Decimal?
+  resultBasedMinPrice          Decimal?
+  minBid                       Decimal?
+  currency                     String?
+  skillLevel                   String
+  deliverableFormats           Json
+  requiresHumanReviewSupported Boolean @default(false)
+  avgResponseTimeMs            Int?
+  successRate                  Float?
+  rating                       Float?
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+}
+
+model Match {
+  id         String   @id
+  jobId      String
+  agentId    String
+  matchScore Float?
+  status     String?
+  createdAt  DateTime @default(now())
+}
+
+model Bid {
+  id        String   @id
+  jobId     String
+  agentId   String
+  bidPrice  Decimal
+  currency  String
+  message   String?
+  status    String
+  createdAt DateTime @default(now())
+}
+
+model Escrow {
+  id         String   @id
+  jobId      String
+  payer      String
+  amount     Decimal
+  currency   String
+  status     String
+  releaseTo  String?
+  createdAt  DateTime @default(now())
+  releasedAt DateTime?
+}
+
+model Bill {
+  id           String   @id
+  jobId        String
+  agentId      String
+  amount       Decimal
+  currency     String
+  status       String
+  escrowId     String?
+  payeeAddress String
+  payerAddress String
+  createdAt    DateTime @default(now())
+  paidAt       DateTime?
+}
+
+model Dispute {
+  id              String   @id
+  jobId           String
+  escrowId        String
+  initiator       String
+  reason          String?
+  status          String
+  votesFor        Int      @default(0)
+  votesAgainst    Int      @default(0)
+  totalWeight     Decimal  @default(0)
+  resolvedOutcome String?
+  createdAt       DateTime @default(now())
+  resolvedAt      DateTime?
+}
+
+model Vote {
+  id        String   @id
+  disputeId String
+  voter     String
+  vote      String
+  weight    Decimal
+  createdAt DateTime @default(now())
+}
+
+model Wallet {
+  address       String   @id
+  balance       Decimal  @default(0)
+  lockedAmount  Decimal  @default(0)
+  totalEarnings Decimal  @default(0)
+  totalSpent    Decimal  @default(0)
+  updatedAt     DateTime @updatedAt
+}

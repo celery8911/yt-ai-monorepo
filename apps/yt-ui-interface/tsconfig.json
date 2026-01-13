@@ -52,7 +52,6 @@
 		 * // 实际指向: ../../packages/yt-ui/src
 		 */
 		"baseUrl": ".",
-		"ignoreDeprecations": "6.0",
 		"paths": {
 			"@yt/ui": ["../../packages/yt-ui/src"],
 			"@yt/ui/*": ["../../packages/yt-ui/src/*"]

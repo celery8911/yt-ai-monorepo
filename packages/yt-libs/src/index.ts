@@ -42,9 +42,20 @@
  */
 // 导出地址工具函数和类型
 export {
-	type FormatAddressOptions,
-	formatAddress,
+  type FormatAddressOptions,
+  formatAddress,
 } from "./address/formatAddress";
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 📤 导出 HTTP 请求工具
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export {
+	createHttpClient,
+	getHttpClient,
+	request,
+	setHttpClientOptions,
+} from "./http/client";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 📖 使用示例

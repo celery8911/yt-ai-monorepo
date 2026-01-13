@@ -32,10 +32,6 @@ const meta = {
 			control: "boolean",
 			description: "是否禁用",
 		},
-		fullWidth: {
-			control: "boolean",
-			description: "是否全宽显示",
-		},
 	},
 	args: {
 		onClick: fn(),
@@ -124,7 +120,7 @@ export const Disabled: Story = {
 export const FullWidth: Story = {
 	render: () => (
 		<div className="w-80">
-			<Button fullWidth variant="primary">
+			<Button variant="primary" className="w-full">
 				全宽按钮
 			</Button>
 		</div>

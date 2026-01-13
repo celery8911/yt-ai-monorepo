@@ -46,6 +46,11 @@
 		"vite": "^6.0.7"
 	},
 	"dependencies": {
-		"@radix-ui/react-dialog": "^1.1.4"
+		"@radix-ui/react-dialog": "^1.1.4",
+		"@radix-ui/react-switch": "^1.1.4",
+		"@radix-ui/react-tabs": "^1.1.2",
+		"class-variance-authority": "^0.7.0",
+		"clsx": "^2.1.1",
+		"tailwind-merge": "^2.6.0"
 	}
 }

@@ -7,7 +7,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "@storybook/test";
 // 🧩 导入 Dialog 组件
 // 从 @yt/ui 包中导入组件
-import { Dialog } from "@yt/ui";
+import { Button, Dialog, Input, Select } from "@yt/ui";
 import { useState } from "react";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -56,20 +56,16 @@ type Story = StoryObj<typeof meta>;
 // 🎯 基础用法 - 最简单的对话框
 export const Default: Story = {
 	args: {
-		trigger: (
-			<button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-				打开对话框
-			</button>
-		),
+		trigger: <Button>打开对话框</Button>,
 		title: "对话框标题",
 		description: "这是一个基于 Radix UI 构建的对话框组件，支持完整的无障碍性。",
 		children: (
 			<div className="space-y-4">
-				<p className="text-sm text-gray-600">
+				<p className="text-sm text-muted-foreground">
 					这是对话框的主体内容。你可以在这里放置任何内容，比如表单、图片、文本等。
 				</p>
-				<div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-					<p className="text-sm text-blue-800">
+				<div className="bg-primary/10 border border-primary/20 rounded-md p-4">
+					<p className="text-sm text-primary">
 						💡 <strong>提示：</strong>尝试按{" "}
 						<kbd className="px-2 py-1 bg-white border rounded">Esc</kbd>{" "}
 						键关闭对话框
@@ -89,11 +85,7 @@ export const WithForm: Story = {
 			<Dialog
 				open={open}
 				onOpenChange={setOpen}
-				trigger={
-					<button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-						创建新用户
-					</button>
-				}
+				trigger={<Button variant="secondary">创建新用户</Button>}
 				title="创建新用户"
 				description="请填写用户信息"
 				onPrimaryAction={() => {
@@ -104,55 +96,13 @@ export const WithForm: Story = {
 				secondaryActionLabel="取消"
 			>
 				<form className="space-y-4">
-					{/* 用户名输入 */}
-					<div>
-						<label
-							htmlFor="username"
-							className="block text-sm font-medium text-gray-700 mb-1"
-						>
-							用户名
-						</label>
-						<input
-							id="username"
-							type="text"
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-							placeholder="请输入用户名"
-						/>
-					</div>
-
-					{/* 邮箱输入 */}
-					<div>
-						<label
-							htmlFor="email"
-							className="block text-sm font-medium text-gray-700 mb-1"
-						>
-							邮箱
-						</label>
-						<input
-							id="email"
-							type="email"
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-							placeholder="user@example.com"
-						/>
-					</div>
-
-					{/* 角色选择 */}
-					<div>
-						<label
-							htmlFor="role"
-							className="block text-sm font-medium text-gray-700 mb-1"
-						>
-							角色
-						</label>
-						<select
-							id="role"
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-						>
-							<option>管理员</option>
-							<option>编辑者</option>
-							<option>查看者</option>
-						</select>
-					</div>
+					<Input id="username" label="用户名" placeholder="请输入用户名" />
+					<Input id="email" label="邮箱" type="email" placeholder="user@example.com" />
+					<Select id="role" label="角色">
+						<option>管理员</option>
+						<option>编辑者</option>
+						<option>查看者</option>
+					</Select>
 				</form>
 			</Dialog>
 		);
@@ -168,11 +118,7 @@ export const Confirmation: Story = {
 			<Dialog
 				open={open}
 				onOpenChange={setOpen}
-				trigger={
-					<button className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-						删除账户
-					</button>
-				}
+				trigger={<Button variant="outline">删除账户</Button>}
 				title="确认删除"
 				description="此操作无法撤销"
 				onPrimaryAction={() => {
@@ -186,7 +132,7 @@ export const Confirmation: Story = {
 				secondaryActionLabel="取消"
 				size="sm"
 			>
-				<div className="bg-red-50 border border-red-200 rounded-md p-4">
+				<div className="bg-destructive/10 border border-destructive/20 rounded-md p-4">
 					<div className="flex items-start gap-3">
 						<svg
 							className="h-6 w-6 text-red-600 flex-shrink-0"
@@ -202,11 +148,11 @@ export const Confirmation: Story = {
 							/>
 						</svg>
 						<div>
-							<h4 className="text-sm font-medium text-red-900 mb-1">警告</h4>
-							<p className="text-sm text-red-800">
+							<h4 className="text-sm font-medium text-destructive mb-1">警告</h4>
+							<p className="text-sm text-destructive/90">
 								删除账户后，所有数据将被永久清除，包括：
 							</p>
-							<ul className="mt-2 text-sm text-red-700 list-disc list-inside space-y-1">
+							<ul className="mt-2 text-sm text-destructive/80 list-disc list-inside space-y-1">
 								<li>个人资料</li>
 								<li>上传的文件</li>
 								<li>历史记录</li>

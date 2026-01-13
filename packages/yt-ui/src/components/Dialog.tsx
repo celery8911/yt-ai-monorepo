@@ -125,7 +125,7 @@ export const DialogComponent = ({
 				<Dialog.Overlay
 					className="
             fixed inset-0
-            bg-black/50
+            bg-black/60
             backdrop-blur-sm
             data-[state=open]:animate-in
             data-[state=closed]:animate-out
@@ -157,7 +157,10 @@ export const DialogComponent = ({
             z-50
             w-full
             ${sizeStyles[size]}
-            bg-white
+            bg-background
+            text-foreground
+            border
+            border-border
             rounded-lg
             shadow-xl
             p-6
@@ -186,7 +189,7 @@ export const DialogComponent = ({
                   自动生成唯一 ID，并通过 aria-labelledby 关联到 Content
                   屏幕阅读器会读出："标题文字，对话框"
               */}
-							<Dialog.Title className="text-xl font-semibold text-gray-900">
+							<Dialog.Title className="text-xl font-semibold text-foreground">
 								{title}
 							</Dialog.Title>
 
@@ -197,7 +200,7 @@ export const DialogComponent = ({
                   提供额外的上下文信息
               */}
 							{description && (
-								<Dialog.Description className="mt-2 text-sm text-gray-600">
+								<Dialog.Description className="mt-2 text-sm text-muted-foreground">
 									{description}
 								</Dialog.Description>
 							)}
@@ -217,14 +220,15 @@ export const DialogComponent = ({
                   hover:opacity-100
                   focus:outline-none
                   focus:ring-2
-                  focus:ring-blue-500
+                  focus:ring-ring
                   focus:ring-offset-2
+                  focus:ring-offset-background
                 "
 								aria-label="关闭对话框"
 							>
 								{/* ✕ 关闭图标 */}
 								<svg
-									className="h-5 w-5 text-gray-500"
+									className="h-5 w-5 text-muted-foreground"
 									fill="none"
 									viewBox="0 0 24 24"
 									stroke="currentColor"
@@ -263,14 +267,15 @@ export const DialogComponent = ({
                     py-2
                     text-sm
                     font-medium
-                    text-gray-700
-                    bg-gray-100
+                    text-secondary-foreground
+                    bg-secondary
                     rounded-md
-                    hover:bg-gray-200
+                    hover:bg-secondary/80
                     focus:outline-none
                     focus:ring-2
-                    focus:ring-gray-400
+                    focus:ring-ring
                     focus:ring-offset-2
+                    focus:ring-offset-background
                     transition-colors
                   "
 								>
@@ -287,14 +292,15 @@ export const DialogComponent = ({
                   py-2
                   text-sm
                   font-medium
-                  text-white
-                  bg-blue-600
+                  text-primary-foreground
+                  bg-primary
                   rounded-md
-                  hover:bg-blue-700
+                  hover:bg-primary/90
                   focus:outline-none
                   focus:ring-2
-                  focus:ring-blue-500
+                  focus:ring-ring
                   focus:ring-offset-2
+                  focus:ring-offset-background
                   transition-colors
                 "
 							>
