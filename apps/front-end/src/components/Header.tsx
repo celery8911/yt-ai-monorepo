@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { formatAddress } from "@yt/libs";
+import { useWallet } from "@yt/hooks";
 import { Button } from "@yt/ui";
 
 const navItems = [
@@ -16,7 +17,7 @@ const navItems = [
 
 const Header = () => {
   const pathname = usePathname();
-  const walletAddress = "0x4f92c7d8b10a7bc1c4f9d1a6b3c5e7d8a9b0c1d2";
+  const { address, isConnected, connect, disconnect, isConnecting } = useWallet();
 
   return (
     <header className="sticky top-0 z-50 glass border-b border-white/5">
@@ -84,9 +85,31 @@ const Header = () => {
               />
             </div>
           </Link>
-          <Button className="bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20 px-6">
-            {formatAddress(walletAddress)}
-          </Button>
+          {isConnected && address ? (
+            <div className="flex items-center gap-2">
+              <Button className="bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20 px-6">
+                {formatAddress(address)}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  void disconnect();
+                }}
+              >
+                断开
+              </Button>
+            </div>
+          ) : (
+            <Button
+              className="bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20 px-6"
+              onClick={() => {
+                void connect().catch(() => {});
+              }}
+              disabled={isConnecting}
+            >
+              {isConnecting ? "连接中..." : "连接钱包"}
+            </Button>
+          )}
         </div>
       </div>
     </header>

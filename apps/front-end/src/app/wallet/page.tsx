@@ -1,7 +1,23 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect } from "react";
+import { useWallet } from "@yt/hooks";
 import { Badge, Button, Card, CardContent, CardHeader, Table, TBody, TD, TH, THead, TR } from "@yt/ui";
+import { useUserStore } from "@/store/useUserStore";
 
 const Wallet = () => {
+  const { address, isConnected, balance, connect, disconnect, isConnecting, error } = useWallet();
+  const { user, setUser, clearUser } = useUserStore();
+
+  useEffect(() => {
+    if (isConnected && address) {
+      setUser({ address });
+    } else {
+      clearUser();
+    }
+  }, [isConnected, address, setUser, clearUser]);
+
   const transactions = [
     {
       id: 1,
@@ -31,6 +47,61 @@ const Wallet = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-10 pb-20">
+      <Card className="bg-slate-900/60 border-blue-500/20">
+        <CardHeader>
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-500">
+            钱包连接
+          </h2>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <p className="text-xs text-slate-500 font-bold uppercase">当前账户</p>
+              <p className="text-lg font-black">
+                {address ?? "未连接"}
+              </p>
+              <p className="text-xs text-slate-500 mt-2">
+                {balance
+                  ? `${balance.formatted} ${balance.symbol}`
+                  : "余额暂不可用"}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                onClick={() => {
+                  void connect().catch(() => {});
+                }}
+                className="neon-glow"
+                disabled={isConnecting || isConnected}
+              >
+                {isConnecting ? "连接中..." : "连接钱包"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => disconnect()}
+                disabled={!isConnected}
+              >
+                断开连接
+              </Button>
+            </div>
+          </div>
+
+          {error ? (
+            <p className="text-xs text-rose-400">{error.message}</p>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+            <span className="font-bold">用户状态:</span>
+            <Badge variant={user ? "green" : "outline"}>
+              {user ? "已登录" : "未登录"}
+            </Badge>
+            {user?.address ? (
+              <span className="font-mono">{user.address}</span>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex flex-col md:flex-row justify-between items-center gap-6">
         <h1 className="text-4xl font-black neon-text">资产钱包</h1>
         <div className="flex gap-3">

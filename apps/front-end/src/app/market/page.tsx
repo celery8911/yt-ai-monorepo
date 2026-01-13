@@ -4,11 +4,15 @@ import { Badge, Button, Card, CardContent, Input } from "@yt/ui";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { fetchAgentList, type AgentListItem } from "@/apis/agent";
 
 const Market = () => {
   const [activeTab, setActiveTab] = useState("ALL");
   const [search, setSearch] = useState("");
   const router = useRouter();
+  const [apiAgents, setApiAgents] = useState<AgentListItem[]>([]);
+  const [apiLoading, setApiLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
 
   const categories = [
     { id: "ALL", label: "全部" },
@@ -110,6 +114,21 @@ const Market = () => {
       return matchCat && matchSearch;
     });
   }, [activeTab, search, agents]);
+
+  const handleFetchAgents = async () => {
+    setApiLoading(true);
+    setApiError("");
+
+    try {
+      const response = await fetchAgentList();
+      setApiAgents(response.items ?? []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "请求失败";
+      setApiError(message);
+    } finally {
+      setApiLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-10 pb-20">
@@ -278,6 +297,53 @@ const Market = () => {
           </div>
         )}
       </div>
+
+      <Card className="bg-slate-900/50 border-white/5">
+        <CardContent className="p-8 space-y-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-2xl font-black">智能体列表 API Demo</h3>
+              <p className="text-sm text-slate-400">
+                使用 @yt/libs 的 axios 封装请求后端列表，便于后续拓展。
+              </p>
+            </div>
+            <Button
+              onClick={handleFetchAgents}
+              className="w-full lg:w-auto"
+              disabled={apiLoading}
+            >
+              {apiLoading ? "加载中..." : "获取列表"}
+            </Button>
+          </div>
+
+          {apiError ? (
+            <div className="text-sm text-rose-400">{apiError}</div>
+          ) : apiAgents.length === 0 ? (
+            <div className="text-sm text-slate-500">
+              暂无数据，点击按钮发起请求。
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {apiAgents.map((agent) => (
+                <div
+                  key={agent.id}
+                  className="p-4 rounded-2xl border border-white/5 bg-white/5"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-bold">{agent.name}</h4>
+                    <Badge variant="blue" className="text-[10px]">
+                      {agent.category}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    {agent.price ?? "价格待定"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
