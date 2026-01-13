@@ -110,16 +110,13 @@ export default {
 ### 使用组件
 
 ```tsx
-import { Card, Dialog } from '@yt/ui';
+import { Card, CardContent, CardHeader, Dialog } from '@yt/ui';
 
 function App() {
   return (
-    <Card
-      title="欢迎"
-      description="这是一个示例卡片"
-      variant="elevated"
-    >
-      <p>卡片内容...</p>
+    <Card>
+      <CardHeader>欢迎</CardHeader>
+      <CardContent>这是一个示例卡片</CardContent>
     </Card>
   );
 }
@@ -155,6 +152,76 @@ function App() {
     fontWeight: 500
   }}>
     💬 Dialog
+  </div>
+  <div style={{
+    padding: '16px',
+    borderRadius: '6px',
+    border: '1px solid #cbd5e1',
+    textAlign: 'center',
+    fontSize: '14px',
+    fontWeight: 500
+  }}>
+    🏷️ Badge
+  </div>
+  <div style={{
+    padding: '16px',
+    borderRadius: '6px',
+    border: '1px solid #cbd5e1',
+    textAlign: 'center',
+    fontSize: '14px',
+    fontWeight: 500
+  }}>
+    🧾 Input
+  </div>
+  <div style={{
+    padding: '16px',
+    borderRadius: '6px',
+    border: '1px solid #cbd5e1',
+    textAlign: 'center',
+    fontSize: '14px',
+    fontWeight: 500
+  }}>
+    🎚️ Select
+  </div>
+  <div style={{
+    padding: '16px',
+    borderRadius: '6px',
+    border: '1px solid #cbd5e1',
+    textAlign: 'center',
+    fontSize: '14px',
+    fontWeight: 500
+  }}>
+    🔀 Switch
+  </div>
+  <div style={{
+    padding: '16px',
+    borderRadius: '6px',
+    border: '1px solid #cbd5e1',
+    textAlign: 'center',
+    fontSize: '14px',
+    fontWeight: 500
+  }}>
+    🧮 Table
+  </div>
+  <div style={{
+    padding: '16px',
+    borderRadius: '6px',
+    border: '1px solid #cbd5e1',
+    textAlign: 'center',
+    fontSize: '14px',
+    fontWeight: 500
+  }}>
+    🧭 Tabs
+  </div>
+  <div style={{
+    padding: '16px',
+    borderRadius: '6px',
+    border: '1px solid #cbd5e1',
+    textAlign: 'center',
+    fontSize: '14px',
+    fontWeight: 500
+  }}>
+    ✍️ Textarea
   </div>
   <div style={{
     padding: '16px',

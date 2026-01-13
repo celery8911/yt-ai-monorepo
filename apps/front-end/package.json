@@ -1,0 +1,32 @@
+{
+  "name": "@yt/front-end",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@yt/hooks": "workspace:*",
+    "@yt/libs": "workspace:*",
+    "@yt/ui": "workspace:*",
+    "next": "15.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.6",
+    "@types/react-dom": "^19.0.2",
+    "@tailwindcss/postcss": "4.1.18",
+    "@tailwindcss/typography": "^0.5.13",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss-animate": "^1.0.7",
+    "tailwindcss": "4.1.18",
+    "typescript": "~5.7.2"
+  }
+}

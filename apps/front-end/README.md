@@ -13,9 +13,11 @@
 
 ## 技术栈
 
-- React / Next.js
-- TypeScript
-- Tailwind CSS
+- 框架: Next.js 16 + TypeScript
+- Web3: Wagmi + Viem + RainbowKit
+- UI: Tailwind CSS + shadcn/ui
+- 图表: Recharts
+- 状态: Zustand
 
 ## 依赖包
 
