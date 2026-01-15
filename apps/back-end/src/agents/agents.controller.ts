@@ -4,11 +4,16 @@ import { CreateAgentDto, UpdateAgentDto } from "./agents.dto";
 
 @Controller("agents")
 export class AgentsController {
-  constructor(private readonly agentsService: AgentsService) {}
+  constructor(private readonly agentsService: AgentsService) { }
 
   @Post()
   async create(@Body() payload: CreateAgentDto) {
     return this.agentsService.create(payload);
+  }
+
+  @Get("categories")
+  async getCategories() {
+    return this.agentsService.getCategories();
   }
 
   @Get()
@@ -18,7 +23,8 @@ export class AgentsController {
     @Query("paymentMethod") paymentMethod?: string,
     @Query("skillLevel") skillLevel?: string,
     @Query("isActive") isActive?: string,
-    @Query("visibility") visibility?: "public" | "private"
+    @Query("visibility") visibility?: "public" | "private",
+    @Query("search") search?: string
   ) {
     if (isActive && isActive !== "true" && isActive !== "false") {
       throw new BadRequestException("isActive must be 'true' or 'false'");
@@ -29,7 +35,8 @@ export class AgentsController {
       paymentMethod,
       skillLevel: skillLevel as never,
       isActive: isActive ? isActive === "true" : undefined,
-      visibility
+      visibility,
+      search
     });
   }
 
