@@ -3,7 +3,7 @@ import type { Job as PrismaJob } from "@prisma/client";
 import { Job, JobStatus } from "../common/types";
 import { generateId, nowIso, toNumber } from "../common/utils";
 import { PrismaService } from "../prisma/prisma.service";
-import { CreateJobDto } from "./jobs.dto";
+import { CreateJobDto, UpdateJobDto } from "./jobs.dto";
 
 @Injectable()
 export class JobsService {
@@ -41,19 +41,18 @@ export class JobsService {
     };
   }
 
-  private validateBudget(payload: CreateJobDto) {
-    if (payload.budgetMin !== undefined && payload.budgetMax !== undefined) {
-      if (payload.budgetMin > payload.budgetMax) {
-        throw new BadRequestException("budgetMin must be <= budgetMax");
-      }
+  private validateBudgetRange(budgetMin?: number, budgetMax?: number) {
+    if (budgetMin !== undefined && budgetMax !== undefined && budgetMin > budgetMax) {
+      throw new BadRequestException("budgetMin must be <= budgetMax");
     }
   }
 
   async create(payload: CreateJobDto): Promise<Job> {
-    this.validateBudget(payload);
+    this.validateBudgetRange(payload.budgetMin, payload.budgetMax);
+    const status = payload.status ?? "OPEN";
     const job: Job = {
       id: generateId("job"),
-      status: "OPEN",
+      status,
       reviewWindowDays: payload.reviewWindowDays ?? 7,
       createdAt: nowIso(),
       ...payload
@@ -90,6 +89,90 @@ export class JobsService {
     }
     this.jobs.push(job);
     return job;
+  }
+
+  async update(jobId: string, payload: UpdateJobDto): Promise<Job | undefined> {
+    const existing = await this.findById(jobId);
+    if (!existing) return undefined;
+    if (existing.status !== "DRAFT") {
+      throw new BadRequestException("Only draft jobs can be edited");
+    }
+    const merged = {
+      ...existing,
+      ...payload,
+      reviewWindowDays: payload.reviewWindowDays ?? existing.reviewWindowDays
+    };
+    this.validateBudgetRange(merged.budgetMin, merged.budgetMax);
+    if (this.useDatabase) {
+      const data: Record<string, unknown> = {};
+      if (payload.title !== undefined) data.title = payload.title;
+      if (payload.description !== undefined) data.description = payload.description;
+      if (payload.category !== undefined) data.category = payload.category;
+      if (payload.tags !== undefined) data.tags = payload.tags;
+      if (payload.createdBy !== undefined) data.createdBy = payload.createdBy;
+      if (payload.status !== undefined) data.status = payload.status;
+      if (payload.paymentMethod !== undefined) data.paymentMethod = payload.paymentMethod;
+      if (payload.budgetMin !== undefined) data.budgetMin = payload.budgetMin;
+      if (payload.budgetMax !== undefined) data.budgetMax = payload.budgetMax;
+      if (payload.currency !== undefined) data.currency = payload.currency;
+      if (payload.deadlineAt !== undefined) {
+        data.deadlineAt = payload.deadlineAt ? new Date(payload.deadlineAt) : undefined;
+      }
+      if (payload.priority !== undefined) data.priority = payload.priority;
+      if (payload.requiredSkillLevel !== undefined) {
+        data.requiredSkillLevel = payload.requiredSkillLevel;
+      }
+      if (payload.deliverables !== undefined) data.deliverables = payload.deliverables;
+      if (payload.acceptanceCriteria !== undefined) {
+        data.acceptanceCriteria = payload.acceptanceCriteria;
+      }
+      if (payload.autoMatchEnabled !== undefined) {
+        data.autoMatchEnabled = payload.autoMatchEnabled;
+      }
+      if (payload.biddingEnabled !== undefined) data.biddingEnabled = payload.biddingEnabled;
+      if (payload.escrowEnabled !== undefined) data.escrowEnabled = payload.escrowEnabled;
+      if (payload.visibility !== undefined) data.visibility = payload.visibility;
+      if (payload.reviewWindowDays !== undefined) {
+        data.reviewWindowDays = payload.reviewWindowDays;
+      }
+      if (payload.payoutStrategy !== undefined) data.payoutStrategy = payload.payoutStrategy;
+      const updated = await this.prisma.job.update({ where: { id: jobId }, data });
+      return this.mapJob(updated);
+    }
+    if (payload.title !== undefined) existing.title = payload.title;
+    if (payload.description !== undefined) existing.description = payload.description;
+    if (payload.category !== undefined) existing.category = payload.category;
+    if (payload.tags !== undefined) existing.tags = payload.tags;
+    if (payload.createdBy !== undefined) existing.createdBy = payload.createdBy;
+    if (payload.status !== undefined) existing.status = payload.status;
+    if (payload.paymentMethod !== undefined) existing.paymentMethod = payload.paymentMethod;
+    if (payload.budgetMin !== undefined) existing.budgetMin = payload.budgetMin;
+    if (payload.budgetMax !== undefined) existing.budgetMax = payload.budgetMax;
+    if (payload.currency !== undefined) existing.currency = payload.currency;
+    if (payload.deadlineAt !== undefined) existing.deadlineAt = payload.deadlineAt;
+    if (payload.priority !== undefined) existing.priority = payload.priority;
+    if (payload.requiredSkillLevel !== undefined) {
+      existing.requiredSkillLevel = payload.requiredSkillLevel;
+    }
+    if (payload.deliverables !== undefined) existing.deliverables = payload.deliverables;
+    if (payload.acceptanceCriteria !== undefined) {
+      existing.acceptanceCriteria = payload.acceptanceCriteria;
+    }
+    if (payload.autoMatchEnabled !== undefined) {
+      existing.autoMatchEnabled = payload.autoMatchEnabled;
+    }
+    if (payload.biddingEnabled !== undefined) {
+      existing.biddingEnabled = payload.biddingEnabled;
+    }
+    if (payload.escrowEnabled !== undefined) existing.escrowEnabled = payload.escrowEnabled;
+    if (payload.visibility !== undefined) existing.visibility = payload.visibility;
+    if (payload.reviewWindowDays !== undefined) {
+      existing.reviewWindowDays = payload.reviewWindowDays;
+    }
+    if (payload.payoutStrategy !== undefined) {
+      existing.payoutStrategy = payload.payoutStrategy;
+    }
+    return existing;
   }
 
   async list(filters: {

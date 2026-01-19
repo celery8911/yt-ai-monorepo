@@ -1,14 +1,71 @@
+"use client";
+
 import { Badge, Button, Card, CardContent, CardHeader } from "@yt/ui";
+import { useParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { fetchJobDetail, formatJobBudget, type Job, type JobStatus } from "@/apis/jobs";
+
+const statusVariants: Record<JobStatus, "blue" | "purple" | "red" | "green"> = {
+  DRAFT: "blue",
+  OPEN: "green",
+  MATCHING: "purple",
+  IN_PROGRESS: "blue",
+  SUBMITTED: "purple",
+  REVIEWING: "blue",
+  COMPLETED: "green",
+  DISPUTED: "red",
+  CANCELLED: "red"
+};
 
 const JobSubmission = () => {
+  const { id } = useParams<{ id: string }>();
+  const [job, setJob] = useState<Job | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!id) return;
+    const loadJob = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const data = await fetchJobDetail(id);
+        setJob(data);
+      } catch (loadError) {
+        const message = loadError instanceof Error ? loadError.message : "请求失败";
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadJob();
+  }, [id]);
+
+  const budgetLabel = useMemo(() => {
+    if (!job) return "价格待定";
+    return formatJobBudget(job);
+  }, [job]);
+
   return (
     <div className="max-w-3xl mx-auto space-y-10 pb-20">
+      {error ? (
+        <Card className="border-rose-500/20 bg-rose-500/5">
+          <CardContent className="p-6 text-rose-400 text-sm">{error}</CardContent>
+        </Card>
+      ) : loading || !job ? (
+        <Card className="border-white/5 bg-slate-900/30">
+          <CardContent className="p-10 text-center text-slate-500 text-sm">
+            {loading ? "正在加载任务..." : "未找到任务"}
+          </CardContent>
+        </Card>
+      ) : (
+        <>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-black">提交工作成果</h1>
-          <p className="text-slate-400 mt-1">任务: 跨链流动性策略优化</p>
+          <p className="text-slate-400 mt-1">任务: {job.title}</p>
         </div>
-        <Badge variant="purple">IN REVIEW</Badge>
+        <Badge variant={statusVariants[job.status]}>{job.status}</Badge>
       </div>
 
       <Card className="border-emerald-500/20">
@@ -47,8 +104,10 @@ const JobSubmission = () => {
       </div>
 
       <p className="text-center text-[10px] text-slate-600 font-bold uppercase tracking-[0.2em]">
-        点击确认验收后，1.2 ETH 将立即从托管合约释放至执行方钱包。
+        点击确认验收后，{budgetLabel} 将立即从托管合约释放至执行方钱包。
       </p>
+        </>
+      )}
     </div>
   );
 };
