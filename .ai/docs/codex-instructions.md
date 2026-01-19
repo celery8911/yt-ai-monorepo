@@ -17,15 +17,11 @@
 
 根据你的 Agent 类型，请阅读并执行对应任务清单中标记为 [TODO] 的任务：
 
-### Dashboard 模块 - Backend Agent (当前优先)
+### Dashboard 模块 - Backend Agent (已完成)
 任务清单：`.ai/tasks/dashboard/task-be.md`
+状态：✅ 全部完成
 
-负责：
-- Dashboard API 接口开发
-- 统计查询和分页实现
-- Prisma 数据库查询
-
-### Dashboard 模块 - Frontend Agent
+### Dashboard 模块 - Frontend Agent (当前优先)
 任务清单：`.ai/tasks/dashboard/task-fe.md`
 
 负责：
