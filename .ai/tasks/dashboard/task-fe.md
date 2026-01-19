@@ -8,7 +8,7 @@
 
 ## Phase 1: API 层
 
-### [TODO] DASH-FE-001 创建 Dashboard API 类型定义
+### [DONE] DASH-FE-001 创建 Dashboard API 类型定义
 
 - **验收标准**：
   - 创建 `apps/front-end/src/apis/dashboard.types.ts`
@@ -20,8 +20,9 @@
   - 定义 `DisputeItem` 接口
 - **依赖**：后端 DASH-BE-001 完成
 - **Notes**：类型与后端响应结构保持一致
+- **完成日期**：2026-01-19
 
-### [TODO] DASH-FE-002 创建 Dashboard API 函数
+### [DONE] DASH-FE-002 创建 Dashboard API 函数
 
 - **验收标准**：
   - 创建 `apps/front-end/src/apis/dashboard.ts`
@@ -33,8 +34,9 @@
   - 使用 `@yt/libs/http` 的 request 方法
 - **依赖**：DASH-FE-001
 - **Notes**：参考 `apis/agent.ts` 的实现模式
+- **完成日期**：2026-01-19
 
-### [TODO] DASH-FE-003 创建 Dashboard 数据 Hooks
+### [DONE] DASH-FE-003 创建 Dashboard 数据 Hooks
 
 - **验收标准**：
   - 创建 `apps/front-end/src/hooks/useDashboard.ts`
@@ -46,12 +48,13 @@
   - 包含 loading, error, data 状态
 - **依赖**：DASH-FE-002
 - **Notes**：使用 React useState + useEffect 或 SWR/React Query
+- **完成日期**：2026-01-19
 
 ---
 
 ## Phase 2: 组件开发
 
-### [TODO] DASH-FE-004 重构 Dashboard 主页面
+### [DONE] DASH-FE-004 重构 Dashboard 主页面
 
 - **验收标准**：
   - 修改 `apps/front-end/src/app/dashboard/page.tsx`
@@ -61,8 +64,9 @@
   - 未连接钱包时显示提示信息
 - **依赖**：无
 - **Notes**：使用 wagmi 的 useAccount 获取钱包地址
+- **完成日期**：2026-01-19
 
-### [TODO] DASH-FE-005 实现 DashboardStats 统计卡片组件
+### [DONE] DASH-FE-005 实现 DashboardStats 统计卡片组件
 
 - **验收标准**：
   - 创建 `apps/front-end/src/app/dashboard/components/DashboardStats.tsx`
@@ -73,8 +77,9 @@
   - 支持 loading 和 error 状态
 - **依赖**：DASH-FE-003, DASH-FE-004
 - **Notes**：参考现有卡片 UI 样式
+- **完成日期**：2026-01-19
 
-### [TODO] DASH-FE-006 实现 PublishedJobsTab 组件
+### [DONE] DASH-FE-006 实现 PublishedJobsTab 组件
 
 - **验收标准**：
   - 创建 `apps/front-end/src/app/dashboard/components/PublishedJobsTab.tsx`
@@ -84,8 +89,9 @@
   - 空数据显示友好提示
 - **依赖**：DASH-FE-003, DASH-FE-004
 - **Notes**：状态使用不同颜色标签展示
+- **完成日期**：2026-01-19
 
-### [TODO] DASH-FE-007 实现 PublishedAgentsTab 组件
+### [DONE] DASH-FE-007 实现 PublishedAgentsTab 组件
 
 - **验收标准**：
   - 创建 `apps/front-end/src/app/dashboard/components/PublishedAgentsTab.tsx`
@@ -94,8 +100,9 @@
   - 支持分页
 - **依赖**：DASH-FE-003, DASH-FE-004
 - **Notes**：isActive 显示为 在线/离线 状态
+- **完成日期**：2026-01-19
 
-### [TODO] DASH-FE-008 实现 SignedAgentsTab 组件
+### [DONE] DASH-FE-008 实现 SignedAgentsTab 组件
 
 - **验收标准**：
   - 创建 `apps/front-end/src/app/dashboard/components/SignedAgentsTab.tsx`
@@ -104,8 +111,9 @@
   - 支持分页
 - **依赖**：DASH-FE-003, DASH-FE-004
 - **Notes**：无
+- **完成日期**：2026-01-19
 
-### [TODO] DASH-FE-009 实现 DisputesTab 组件
+### [DONE] DASH-FE-009 实现 DisputesTab 组件
 
 - **验收标准**：
   - 创建 `apps/front-end/src/app/dashboard/components/DisputesTab.tsx`
@@ -115,8 +123,9 @@
   - 显示是否为我发起的争议
 - **依赖**：DASH-FE-003, DASH-FE-004
 - **Notes**：tags 和 priority 字段暂不显示 (MVP 阶段)
+- **完成日期**：2026-01-19
 
-### [TODO] DASH-FE-010 实现 Pagination 分页组件
+### [DONE] DASH-FE-010 实现 Pagination 分页组件
 
 - **验收标准**：
   - 创建 `apps/front-end/src/app/dashboard/components/Pagination.tsx`
@@ -125,12 +134,13 @@
   - 禁用边界按钮 (第一页禁用上一页，最后一页禁用下一页)
 - **依赖**：DASH-FE-004
 - **Notes**：可复用于其他页面
+- **完成日期**：2026-01-19
 
 ---
 
 ## Phase 3: 集成测试
 
-### [TODO] DASH-FE-011 前后端联调测试
+### [DONE] DASH-FE-011 前后端联调测试
 
 - **验收标准**：
   - 所有 Tab 正确显示后端数据
@@ -140,9 +150,12 @@
   - 加载状态有 loading 提示
 - **依赖**：后端所有 DASH-BE-* 任务完成
 - **Notes**：使用 Supabase 测试数据
+- **完成日期**：2026-01-19
 
 ---
 
 ## 版本历史
 
 - **2026-01-19**: 初始版本，基于 PRD 3.7 拆解
+- **2026-01-19**: DASH-FE-001 ~ 011 全部完成，由 Codex Cloud 执行
+
