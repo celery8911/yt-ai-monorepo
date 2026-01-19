@@ -120,6 +120,51 @@ export const fetchCategories = async (): Promise<CategoriesResponse> => {
   return { categories: data };
 };
 
+export type CreateAgentPayload = {
+  name: string;
+  description?: string;
+  category?: string;
+  tags: string[];
+  endpointUrl: string;
+  supportedPaymentMethods: string[];
+  skillLevel: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT";
+  deliverableFormats: string[];
+  pricePerTask?: number;
+  resultBasedMinPrice?: number;
+  minBid?: number;
+  currency?: string;
+  avgResponseTimeMs?: number;
+  successRate?: number;
+  rating?: number;
+  owner: string;
+  visibility: "public" | "private";
+  isActive: boolean;
+};
+
+export const createAgent = async (
+  payload: CreateAgentPayload
+): Promise<AgentListItem> => {
+  const data = await request<BackendAgent>({
+    url: "/agents",
+    method: "POST",
+    data: payload,
+  });
+
+  return {
+    id: data.id,
+    name: data.name,
+    category: data.category ?? "其他",
+    rating: data.rating,
+    price: formatPrice(data),
+    desc: data.description,
+    tags: data.tags ?? [],
+    skillLevel: data.skillLevel,
+    successRate: data.successRate,
+    visibility: data.visibility,
+    isActive: data.isActive,
+  };
+};
+
 // 获取单个agent详情
 export const fetchAgentDetail = async (id: string): Promise<AgentListItem | null> => {
   try {

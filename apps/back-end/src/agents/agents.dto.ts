@@ -23,7 +23,7 @@ export class CreateAgentDto {
   tags!: string[];
 
   @Field()
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   endpointUrl!: string;
 
   @Field(() => [String])
@@ -118,7 +118,7 @@ export class UpdateAgentDto {
 
   @Field({ nullable: true })
   @IsOptional()
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   endpointUrl?: string;
 
   @Field(() => [String], { nullable: true })
