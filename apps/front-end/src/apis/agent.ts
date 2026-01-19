@@ -119,3 +119,15 @@ export const fetchCategories = async (): Promise<CategoriesResponse> => {
 
   return { categories: data };
 };
+
+// 获取单个agent详情
+export const fetchAgentDetail = async (id: string): Promise<AgentListItem | null> => {
+  try {
+    const response = await fetchAgentList();
+    const agent = response.items.find(item => item.id === id);
+    return agent || null;
+  } catch (error) {
+    console.error("获取Agent详情失败:", error);
+    return null;
+  }
+};
