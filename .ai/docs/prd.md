@@ -292,42 +292,89 @@ GET  /api/dao/{id}      查看争议详情
 
 ---
 
-### 3.7 Dashboard (数据看板)
+### 3.7 Dashboard (数据看板) - [Updated Layout]
 
-**展示指标**
+**UI 布局需求**
+
+界面由核心指标卡片(Top Cards)、业务标签页(Tabs)、和各标签对应的详细列表(Tab Content)组成。
+
+**1. 核心指标卡片 (Top Cards)**
+- **Published Agents**: 平台发布智能体总数及月增长趋势。
+- **Active Contracts**: 活跃合约/任务总数及周增长趋势。
+- **Completed Jobs**: 累计完成任务总数。
+- **Total Earnings**: 平台累计成交总额。
+- **In Progress Jobs**: 当前正在执行中的任务数。
+- **Disputes**: 累计争议案件数及周变化趋势。
+
+**2. 业务标签页 (Tabs)**
+
+所有列表均需支持根据当前登录用户的钱包地址进行过滤。
+
+#### Tab 1: My Published Jobs (我发布的任务)
+展示用户作为雇主发布的所有任务列表。
+- **字段要求**:
+  - **Job Information**: 任务标题 (`Job.title`)。
+  - **Status**: 任务当前状态 (`Job.status`)。
+  - **Budget**: 预算范围 (`Job.budgetMin` - `Job.budgetMax`)。
+  - **Applications/Assignment**: 竞价人数 (关联 `Bid` 数量) 或 已选定 Agent (`Job.selectedAgentId`)。
+  - **Deadline**: 截止日期 (`Job.deadlineAt`)。
+  - **Progress**: 执行进度 (百分比)。
+- **统计**: 总任务数。
+
+#### Tab 2: My Published Agents (我发布的智能体)
+展示用户作为开发者注册并运营的 Agent。
+- **字段要求**:
+  - **Agent Information**: Agent 名称与简介 (`Agent.name`, `Agent.description`)。
+  - **Status**: 运行状态 (`Agent.isActive`)。
+  - **Job Count**: 累计承接任务数。
+  - **Earnings**: 累计收益总额 (关联 `Bill` 表已支付金额)。
+  - **Last Activity**: 最近一次心跳时间或任务提交时间。
+- **统计**: 总 Agent 数。
+
+> **MVP 阶段备注**: `Last Activity` 字段暂不实现，数据库缺少 `Agent.lastActivityAt` 字段，后续版本补充。
+
+#### Tab 3: Signed Agents (已签约的智能体)
+展示用户当前雇佣正在为其工作的 Agent (即用户的 Active Engagements)。
+- **字段要求**:
+  - **Agent 信息**: Agent 名称、描述、发布者名。
+  - **合约状态**: 对应任务状态 (如 "生效中")。
+  - **任务进度**: 该任务的具体完成进度。
+  - **收益/费用**: 为该 Agent 支付的总费用及计费标准。
+  - **合约期限**: 签署日期及剩余天数 (基于 `Job.deadlineAt`)。
+- **子统计**: 生效合约数、待生效数、总支出、活跃对话数。
+
+#### Tab 4: Disputed Agents (争议处理中心)
+展示与该用户相关的争议案件（无论作为原告还是被告）。
+- **字段要求**:
+  - **Dispute Information**: 争议 Agent 名称、关联任务标题、原因摘要、标签 (如 "质量问题")、优先级 (`High`/`Medium`/`Low`)。
+  - **Type/Status**: 争议状态 (`Dispute.status`: 调查中/投票中/已裁决)。
+  - **Amount**: 争议涉及的托管金额 (`Escrow.amount`)。
+  - **Reporter**: 发起人名/地址及日期。
+  - **Progress**: 处理进度（仲裁员/投票状态、最后更新时间、进度条）。
+- **统计**: 总争议案件数。
+
+> **MVP 阶段备注**:
+> - `标签 (tags)` 字段暂不实现，数据库缺少 `Dispute.tags` 字段
+> - `优先级 (priority)` 字段暂不实现，数据库缺少 `Dispute.priority` 字段
+> - 以上字段后续版本补充
+
+**关键API (需适配新UI)**
 
 ```typescript
-DashboardData {
-  // 平台总览
-  totalAgents: number
-  totalJobs: number
-  totalEscrow: number
-  activeJobs: number
-  completedJobs: number
-  disputedJobs: number
-  
-  // Agent视图
-  myTotalEarnings: number
-  mySuccessRate: number
-  myActiveJobs: number
-  
-  // User视图
-  myTotalSpent: number
-  myPublishedJobs: number
-  myCompletedJobs: number
-  
-  // 趋势图
-  dailyStats: Array<{date: string, value: number}>
-  agentPerformance: Array<{agentId: string, earnings: number}>
-}
-```
+// 1. 统计概览
+GET /api/dashboard/stats?address={walletAddress}
 
-**关键API**
+// 2. 我发布的任务
+GET /api/dashboard/published-jobs?address={walletAddress}
 
-```
-GET /api/dashboard/overview           总览
-GET /api/dashboard/agent-performance  Agent表现
-GET /api/dashboard/job-trends         任务趋势
+// 3. 我发布的智能体
+GET /api/dashboard/published-agents?address={walletAddress}
+
+// 4. 已签署合约 (雇佣列表)
+GET /api/dashboard/signed-agents?address={walletAddress}
+
+// 5. 争议中心
+GET /api/dashboard/disputes?address={walletAddress}
 ```
 
 ---
