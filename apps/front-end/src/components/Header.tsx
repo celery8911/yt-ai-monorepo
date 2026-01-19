@@ -1,44 +1,39 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { formatAddress } from "@yt/libs";
-import { useWallet } from "@yt/hooks";
-import { Button } from "@yt/ui";
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { formatAddress } from '@yt/libs';
+import { useWallet } from '@yt/hooks';
+import { Button } from '@yt/ui';
 
 const navItems = [
-  { label: "智能体", path: "/market" },
-  { label: "任务", path: "/jobs" },
-  { label: "钱包", path: "/wallet" },
-  { label: "控制台", path: "/dashboard" },
-  { label: "账单", path: "/billing" },
-  { label: "DAO", path: "/dao" }
+  { label: '智能体', path: '/market' },
+  { label: '任务', path: '/jobs' },
+  { label: '钱包', path: '/wallet' },
+  { label: '控制台', path: '/dashboard' },
+  { label: '账单', path: '/billing' },
+  { label: 'DAO', path: '/dao' },
 ];
 
 const Header = () => {
   const pathname = usePathname();
-  const { address, isConnected, connect, disconnect, isConnecting } = useWallet();
+  const { address, isConnected, connect, disconnect, isConnecting } =
+    useWallet();
 
   return (
     <header className="sticky top-0 z-50 glass border-b border-white/5">
       <div className="container mx-auto px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="size-8 bg-blue-600 rounded-lg flex items-center justify-center neon-glow group-hover:scale-110 transition-transform">
-            <svg
-              className="w-5 h-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
+          <div className="size-12 rounded-lg overflow-hidden neon-glow group-hover:scale-110 transition-transform">
+            <Image
+              src="/images/logo.png"
+              alt="CyberAgent"
+              width={48}
+              height={48}
+            />
           </div>
-          <span className="text-xl font-black tracking-tighter neon-text uppercase">
+          <span className="text-2xl font-black italic neon-text uppercase text-white drop-shadow-[0_0_16px_rgba(96,165,250,0.6)]">
             CyberAgent
           </span>
         </Link>
@@ -49,7 +44,9 @@ const Header = () => {
               key={item.path}
               href={item.path}
               className={`text-xs font-bold transition-colors hover:text-blue-400 ${
-                pathname.startsWith(item.path) ? "text-blue-400" : "text-slate-400"
+                pathname.startsWith(item.path)
+                  ? 'text-blue-400'
+                  : 'text-slate-400'
               }`}
             >
               {item.label}
@@ -77,11 +74,16 @@ const Header = () => {
               />
             </svg>
           </button>
-          <Link href="/profile" className="hidden sm:flex items-center gap-2 group">
+          <Link
+            href="/profile"
+            className="hidden sm:flex items-center gap-2 group"
+          >
             <div className="size-8 rounded-full border border-white/10 bg-slate-800 flex items-center justify-center group-hover:border-blue-500/50 transition-all overflow-hidden">
-              <img
+              <Image
                 src="https://api.dicebear.com/7.x/pixel-art/svg?seed=0x4f"
                 alt="User"
+                width={32}
+                height={32}
               />
             </div>
           </Link>
@@ -107,7 +109,7 @@ const Header = () => {
               }}
               disabled={isConnecting}
             >
-              {isConnecting ? "连接中..." : "连接钱包"}
+              {isConnecting ? '连接中...' : '连接钱包'}
             </Button>
           )}
         </div>
