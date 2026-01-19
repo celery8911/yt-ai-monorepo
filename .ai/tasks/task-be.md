@@ -17,9 +17,39 @@
 
 ## 待办任务
 
-目前无待办任务。
+### Phase 1: 账单号账簿功能实现
 
-当有新的后端需求时，将在此添加 [TODO] 任务。
+#### [DONE] BE-001: 创建账单种子数据脚本 (2026-01-19)
+
+**任务描述**: 创建数据库种子脚本，生成账单测试数据以支持前端账单页面展示
+
+- **验收标准**:
+  - 创建 `apps/back-end/src/seed/bills.seed.ts` 文件
+  - 生成至少 10 条账单记录，覆盖 2024年1-3月
+  - 账单总金额符合 UI 设计（累计 ~14.82 ETH，支出 ~5.21 ETH）
+  - 包含不同的付款方和收款方地址
+  - 所有账单状态为 PAID，包含合理的 createdAt 和 paidAt 时间
+  - 创建 `apps/back-end/src/seed/index.ts` 入口文件
+  - 在 `package.json` 中添加 `seed` 脚本命令
+  - 成功运行 `pnpm seed` 命令生成数据到数据库
+
+- **影响文件**:
+  - `apps/back-end/src/seed/bills.seed.ts` (新建)
+  - `apps/back-end/src/seed/index.ts` (新建)
+  - `apps/back-end/package.json` (修改 scripts)
+
+- **依赖**: 无
+
+- **完成日期**: 2026-01-19
+
+- **执行结果**:
+  - ✅ 成功创建 14 条账单记录
+  - ✅ 总收入: 12.90 ETH (11条账单)
+  - ✅ 总支出: 5.21 ETH (3条账单)
+  - ✅ 覆盖 2024年1-3月
+  - ✅ 所有账单状态为 PAID
+
+- **Notes**: 数据已成功写入 Supabase PostgreSQL 数据库，可供前端调用
 
 ---
 
