@@ -3,7 +3,7 @@ import { AgentsService } from "../agents/agents.service";
 import { DaoService } from "../dao/dao.service";
 import { MatchingService } from "../matching/matching.service";
 import { JobsService } from "./jobs.service";
-import { CreateJobDto, DisputeJobDto, SelectAgentDto } from "./jobs.dto";
+import { CreateJobDto, DisputeJobDto, SelectAgentDto, UpdateJobDto } from "./jobs.dto";
 
 @Controller("jobs")
 export class JobsController {
@@ -64,6 +64,15 @@ export class JobsController {
       throw new NotFoundException("Job not found");
     }
     return job;
+  }
+
+  @Put(":id")
+  async update(@Param("id") id: string, @Body() payload: UpdateJobDto) {
+    const updated = await this.jobsService.update(id, payload);
+    if (!updated) {
+      throw new NotFoundException("Job not found");
+    }
+    return updated;
   }
 
   @Put(":id/select")

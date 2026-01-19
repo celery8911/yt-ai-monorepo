@@ -103,12 +103,21 @@ const JobDetail = () => {
         </Card>
       ) : (
         <>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-3">
           <Badge variant={priorityVariants[job.priority]}>{job.priority}</Badge>
           <Badge variant={statusVariants[job.status]}>{job.status}</Badge>
         </div>
-        <span className="text-slate-500 font-mono text-xs">JOB_ID: {job.id}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-slate-500 font-mono text-xs">JOB_ID: {job.id}</span>
+          {job.status === "DRAFT" ? (
+            <Link href={`/jobs/${id}/edit`}>
+              <Button size="sm" variant="outline">
+                编辑任务
+              </Button>
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       <div className="space-y-4">

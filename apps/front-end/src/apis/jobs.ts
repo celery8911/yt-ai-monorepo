@@ -60,6 +60,8 @@ export type JobListFilters = {
   tag?: string;
   paymentMethod?: JobPaymentMethod;
   priority?: JobPriority;
+  budgetMin?: number;
+  budgetMax?: number;
   page?: number;
   limit?: number;
 };
@@ -84,7 +86,32 @@ export type CreateJobPayload = {
   visibility: JobVisibility;
   reviewWindowDays?: number;
   payoutStrategy: JobPayoutStrategy;
+  status?: JobStatus;
   createdBy: string;
+};
+
+export type UpdateJobPayload = {
+  title?: string;
+  description?: string;
+  category?: string;
+  tags?: string[];
+  paymentMethod?: JobPaymentMethod;
+  budgetMin?: number;
+  budgetMax?: number;
+  currency?: string;
+  requiredSkillLevel?: JobSkillLevel;
+  deliverables?: string;
+  acceptanceCriteria?: string;
+  deadlineAt?: string;
+  priority?: JobPriority;
+  autoMatchEnabled?: boolean;
+  biddingEnabled?: boolean;
+  escrowEnabled?: boolean;
+  visibility?: JobVisibility;
+  reviewWindowDays?: number;
+  payoutStrategy?: JobPayoutStrategy;
+  status?: JobStatus;
+  createdBy?: string;
 };
 
 type JobListResponse = {
@@ -167,6 +194,14 @@ export const createJob = async (payload: CreateJobPayload): Promise<CreateJobRes
   return request<CreateJobResponse>({
     url: "/jobs",
     method: "POST",
+    data: payload
+  });
+};
+
+export const updateJob = async (id: string, payload: UpdateJobPayload): Promise<Job> => {
+  return request<Job>({
+    url: `/jobs/${id}`,
+    method: "PUT",
     data: payload
   });
 };
