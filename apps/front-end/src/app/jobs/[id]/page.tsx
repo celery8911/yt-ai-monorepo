@@ -2,11 +2,71 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { Badge, Button, Card, CardContent, CardHeader } from "@yt/ui";
+import {
+  fetchJobDetail,
+  formatJobBudget,
+  type Job,
+  type JobPriority,
+  type JobStatus
+} from "@/apis/jobs";
+
+const statusVariants: Record<JobStatus, "blue" | "purple" | "red" | "green"> = {
+  DRAFT: "blue",
+  OPEN: "green",
+  MATCHING: "purple",
+  IN_PROGRESS: "blue",
+  SUBMITTED: "purple",
+  REVIEWING: "blue",
+  COMPLETED: "green",
+  DISPUTED: "red",
+  CANCELLED: "red"
+};
+
+const priorityVariants: Record<JobPriority, "blue" | "purple" | "red" | "green"> = {
+  LOW: "green",
+  MEDIUM: "blue",
+  HIGH: "purple",
+  URGENT: "red"
+};
 
 const JobDetail = () => {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const [job, setJob] = useState<Job | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!id) return;
+    const loadJob = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const data = await fetchJobDetail(id);
+        setJob(data);
+      } catch (loadError) {
+        const message = loadError instanceof Error ? loadError.message : "请求失败";
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadJob();
+  }, [id]);
+
+  const budgetLabel = useMemo(() => {
+    if (!job) return "价格待定";
+    return formatJobBudget(job);
+  }, [job]);
+
+  const deadlineLabel = useMemo(() => {
+    if (!job?.deadlineAt) return "暂无";
+    const parsed = new Date(job.deadlineAt);
+    if (Number.isNaN(parsed.getTime())) return "暂无";
+    return parsed.toLocaleDateString();
+  }, [job]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
@@ -31,27 +91,42 @@ const JobDetail = () => {
         返回列表
       </Button>
 
+      {error ? (
+        <Card className="border-rose-500/20 bg-rose-500/5">
+          <CardContent className="p-6 text-rose-400 text-sm">{error}</CardContent>
+        </Card>
+      ) : loading || !job ? (
+        <Card className="border-white/5 bg-slate-900/30">
+          <CardContent className="p-10 text-center text-slate-500 text-sm">
+            {loading ? "正在加载任务详情..." : "未找到任务"}
+          </CardContent>
+        </Card>
+      ) : (
+        <>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Badge variant="blue">MATCHED</Badge>
-          <Badge variant="purple">EXECUTING</Badge>
+          <Badge variant={priorityVariants[job.priority]}>{job.priority}</Badge>
+          <Badge variant={statusVariants[job.status]}>{job.status}</Badge>
         </div>
-        <span className="text-slate-500 font-mono text-xs">JOB_ID: #JB-29402</span>
+        <span className="text-slate-500 font-mono text-xs">JOB_ID: {job.id}</span>
       </div>
 
       <div className="space-y-4">
-        <h1 className="text-5xl font-black tracking-tighter">跨链流动性策略优化</h1>
+        <h1 className="text-5xl font-black tracking-tighter">{job.title}</h1>
         <div className="flex gap-4 items-center">
           <p className="text-slate-400 font-medium">
-            发布人: <span className="text-blue-400 font-bold">0xDecen...Admin</span>
+            发布人: <span className="text-blue-400 font-bold">{job.createdBy}</span>
           </p>
           <div className="size-1 rounded-full bg-slate-700" />
           <p className="text-slate-400 font-medium">
-            执行方: <span className="text-purple-400 font-bold">CyberTrade_Alpha_Bot</span>
+            执行方:{" "}
+            <span className="text-purple-400 font-bold">
+              {job.selectedAgentId ?? "尚未选择"}
+            </span>
           </p>
           <div className="size-1 rounded-full bg-slate-700" />
           <p className="text-slate-400 font-medium">
-            预算: <span className="text-white font-black">1.2 ETH</span>
+            预算: <span className="text-white font-black">{budgetLabel}</span>
           </p>
         </div>
       </div>
@@ -60,22 +135,21 @@ const JobDetail = () => {
         <CardContent className="p-8 prose prose-invert">
           <h3 className="text-white font-bold">任务描述</h3>
           <p className="text-slate-400 leading-relaxed">
-            我们需要一个高效的 AI 代理，能够实时监控 Ethereum, Arbitrum, 和 Optimism 之间的稳定币流动性池。
-            代理需要能够识别利差，并根据 gas 费用自动计算最优路径，输出每日操作报告。
+            {job.description ?? "暂无描述"}
           </p>
           <div className="h-px bg-white/5 my-8" />
           <h3 className="text-white mb-4 font-bold">技能要求</h3>
-          <div className="flex gap-2">
-            <Badge variant="outline" className="border-white/5">
-              Multichain
-            </Badge>
-            <Badge variant="outline" className="border-white/5">
-              Liquidity Analysis
-            </Badge>
-            <Badge variant="outline" className="border-white/5">
-              Report Generation
-            </Badge>
-          </div>
+          {job.tags.length > 0 ? (
+            <div className="flex gap-2 flex-wrap">
+              {job.tags.map((tag) => (
+                <Badge key={tag} variant="outline" className="border-white/5">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <p className="text-slate-500 text-sm">暂无标签</p>
+          )}
         </CardContent>
       </Card>
 
@@ -100,7 +174,9 @@ const JobDetail = () => {
             </h4>
           </CardHeader>
           <CardContent className="py-10 text-center">
-            <p className="text-4xl font-black neon-text">23h 42m</p>
+            <p className="text-4xl font-black neon-text">
+              {deadlineLabel}
+            </p>
             <p className="text-xs text-slate-500 uppercase mt-1 font-bold">
               在此之后资金将自动释放
             </p>
@@ -137,6 +213,8 @@ const JobDetail = () => {
           </Link>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };
