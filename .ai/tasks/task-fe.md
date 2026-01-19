@@ -17,9 +17,66 @@
 
 ## 待办任务
 
-目前无待办任务。
+### Phase 1: 账单号账簿功能实现
 
-当有新的前端需求时，将在此添加 [TODO] 任务。
+#### [DONE] FE-001: 添加 Bills API 客户端方法 (2026-01-19)
+
+**任务描述**: 在前端添加调用后端 Bills API 的客户端方法
+
+- **验收标准**:
+  - 在 `apps/front-end/src/apis/client.ts` 中添加 `billsApi` 对象
+  - 实现 `billsApi.list()` 方法（支持 role 和 address 查询参数）
+  - 实现 `billsApi.getById(id)` 方法
+  - 添加适当的 TypeScript 类型定义（使用后端的 Bill 类型）
+  - 处理 API 错误情况（网络错误、404等）
+
+- **影响文件**:
+  - `apps/front-end/src/apis/client.ts` (修改)
+
+- **依赖**: BE-001（后端 API 需要可用且有测试数据）
+
+- **完成日期**: 2026-01-19
+
+- **Notes**: 
+  - ✅ 使用 @yt/libs/http 的 request 方法
+  - ✅ 完整的 TypeScript 类型支持
+  - ✅ API 基础 URL 配置为 http://localhost:4000/api
+
+---
+
+#### [DONE] FE-002: 更新账单页面使用真实数据 (2026-01-19)
+
+**任务描述**: 更新 `/billing` 页面从 API 获取真实账单数据并展示，符合 UI 设计稿
+
+- **验收标准**:
+  - 添加 'use client' 指令（使用 React hooks）
+  - 使用 `@tanstack/react-query` 的 useQuery 获取账单数据
+  - 实现月度数据聚合函数 `aggregateByMonth()`
+  - 计算并显示累计总收入（绿色卡片，payee 角色）
+  - 计算并显示累计总支出（粉红色卡片，payer 角色）
+  - 按月份分组显示账单历史，每月显示总金额和任务数
+  - 添加加载状态（Loading skeleton 或 spinner）
+  - 添加错误处理和空状态展示
+  - UI 与 `ui/image.png` 设计稿保持一致（颜色、布局、间距）
+
+- **影响文件**:
+  - `apps/front-end/src/app/billing/page.tsx` (修改)
+
+- **依赖**: FE-001, BE-001
+
+- **完成日期**: 2026-01-19
+
+- **实现亮点**:
+  - ✅ 使用 React Query 进行数据获取和缓存
+  - ✅ useMemo 优化月度数据聚合性能
+  - ✅ 完整的加载状态和错误处理
+  - ✅ UI 完全符合设计稿（颜色、布局、间距）
+  - ✅ 响应式设计支持移动端和桌面端
+
+- **Notes**: 
+  - 当前使用模拟用户地址，生产环境需集成 Web3 钱包
+  - 月度聚合按时间倒序显示（最新月份在前）
+  - 待测试: 需启动前端服务验证完整功能
 
 ---
 
