@@ -9,7 +9,7 @@ datasource db {
 }
 
 model Job {
-  id                 String   @id
+  id                 String    @id
   title              String
   description        String?
   category           String?
@@ -29,14 +29,14 @@ model Job {
   biddingEnabled     Boolean
   escrowEnabled      Boolean
   visibility         String
-  reviewWindowDays   Int      @default(7)
+  reviewWindowDays   Int       @default(7)
   reviewEndsAt       DateTime?
   selectedAgentId    String?
   payoutStrategy     String
   escrowId           String?
   disputeId          String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }
 
 model Agent {
@@ -48,7 +48,7 @@ model Agent {
   endpointUrl                  String
   owner                        String
   visibility                   String
-  isActive                      Boolean
+  isActive                     Boolean
   supportedPaymentMethods      Json
   pricePerTask                 Decimal?
   resultBasedMinPrice          Decimal?
@@ -56,7 +56,7 @@ model Agent {
   currency                     String?
   skillLevel                   String
   deliverableFormats           Json
-  requiresHumanReviewSupported Boolean @default(false)
+  requiresHumanReviewSupported Boolean  @default(false)
   avgResponseTimeMs            Int?
   successRate                  Float?
   rating                       Float?
@@ -85,19 +85,19 @@ model Bid {
 }
 
 model Escrow {
-  id         String   @id
+  id         String    @id
   jobId      String
   payer      String
   amount     Decimal
   currency   String
   status     String
   releaseTo  String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
   releasedAt DateTime?
 }
 
 model Bill {
-  id           String   @id
+  id           String    @id
   jobId        String
   agentId      String
   amount       Decimal
@@ -106,22 +106,22 @@ model Bill {
   escrowId     String?
   payeeAddress String
   payerAddress String
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
   paidAt       DateTime?
 }
 
 model Dispute {
-  id              String   @id
+  id              String    @id
   jobId           String
   escrowId        String
   initiator       String
   reason          String?
   status          String
-  votesFor        Int      @default(0)
-  votesAgainst    Int      @default(0)
-  totalWeight     Decimal  @default(0)
+  votesFor        Int       @default(0)
+  votesAgainst    Int       @default(0)
+  totalWeight     Decimal   @default(0)
   resolvedOutcome String?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
   resolvedAt      DateTime?
 }
 

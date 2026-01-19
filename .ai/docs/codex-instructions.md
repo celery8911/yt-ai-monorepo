@@ -9,13 +9,29 @@
 搭建一个 AI-Native Monorepo 工程平台 yt-ai-monorepo。
 
 **远程仓库**: https://github.com/celery8911/yt-ai-monorepo
-**工作分支**: dev
+**工作分支**: feat/celery
 
 ---
 
 ## 当前任务
 
 根据你的 Agent 类型，请阅读并执行对应任务清单中标记为 [TODO] 的任务：
+
+### Dashboard 模块 - Backend Agent (已完成)
+任务清单：`.ai/tasks/dashboard/task-be.md`
+状态：✅ 全部完成
+
+### Dashboard 模块 - Frontend Agent (当前优先)
+任务清单：`.ai/tasks/dashboard/task-fe.md`
+
+负责：
+- Dashboard 页面组件开发
+- API 调用和数据展示
+- Tab 切换和分页组件
+
+---
+
+### 通用任务清单
 
 ### Frontend Agent
 任务清单：`.ai/tasks/task-fe.md`

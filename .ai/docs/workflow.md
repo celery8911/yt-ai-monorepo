@@ -121,7 +121,7 @@ START
    - ⚠️ Codex Cloud 读取的是远程仓库，不是本地！
   ↓
 3. 提交 Codex Cloud 任务（根据 Agent 类型）
-   cat codex-fe.md | codex cloud exec --env yt-ai-monorepo --branch dev -
+   cat codex-fe.md | codex cloud exec --env yt-ai-monorepo --branch feat/celery -
    → 获得 TASK_ID 和 URL
   ↓
 4. 监控任务状态（每 30 秒检查一次）
@@ -150,7 +150,7 @@ START
 9. 推送任务清单
     git add .ai/tasks/task-*.md
     git commit -m "Update task list: mark XXX DONE, add YYY TODO"
-    git push origin dev
+    git push origin feat/celery
   ↓
   回到步骤 1（继续循环）
 ```
