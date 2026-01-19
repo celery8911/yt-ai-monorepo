@@ -97,7 +97,7 @@
 
 ## Phase 3: 测试与验证
 
-### [TODO] DASH-BE-007 API 接口测试
+### [DONE] DASH-BE-007 API 接口测试
 
 - **验收标准**：
   - 所有 5 个接口可通过 curl/Postman 正常调用
@@ -106,6 +106,7 @@
   - 无效 address 返回空结果而非错误
 - **依赖**：DASH-BE-002, DASH-BE-003, DASH-BE-004, DASH-BE-005, DASH-BE-006
 - **Notes**：使用 Supabase 测试数据库
+- **完成日期**：2026-01-19
 
 ---
 

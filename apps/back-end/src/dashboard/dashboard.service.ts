@@ -108,7 +108,7 @@ export class DashboardService {
       });
       const publishedAgentsCount = await tx.agent.count({ where: { owner: address } });
       const jobIds = await tx.job.findMany({ where: { createdBy: address }, select: { id: true } });
-      const disputeOrFilters = [{ initiator: address }];
+      const disputeOrFilters: Array<{ initiator?: string; jobId?: { in: string[] } }> = [{ initiator: address }];
       if (jobIds.length > 0) {
         disputeOrFilters.push({ jobId: { in: jobIds.map((job) => job.id) } });
       }
@@ -374,7 +374,7 @@ export class DashboardService {
 
     return this.prisma.$transaction(async (tx) => {
       const jobIds = await tx.job.findMany({ where: { createdBy: address }, select: { id: true } });
-      const orFilters = [{ initiator: address }];
+      const orFilters: Array<{ initiator?: string; jobId?: { in: string[] } }> = [{ initiator: address }];
       if (jobIds.length > 0) {
         orFilters.push({ jobId: { in: jobIds.map((job) => job.id) } });
       }
