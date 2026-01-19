@@ -14,11 +14,14 @@ type PaginationParams = {
 };
 
 export const fetchDashboardStats = async (address: string): Promise<DashboardStatsResponse> => {
-  return request<DashboardStatsResponse>({
-    url: "/dashboard/stats",
-    method: "GET",
-    params: { address }
-  });
+  return request<DashboardStatsResponse>(
+    {
+      url: "/dashboard/stats",
+      method: "GET",
+      params: { address }
+    },
+    { timeout: 20000 }
+  );
 };
 
 export const fetchPublishedJobs = async (

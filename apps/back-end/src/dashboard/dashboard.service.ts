@@ -94,41 +94,39 @@ export class DashboardService {
       };
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const wallet = await tx.wallet.findUnique({ where: { address } });
-      const publishedJobsCount = await tx.job.count({ where: { createdBy: address } });
-      const activeJobsCount = await tx.job.count({
-        where: { createdBy: address, status: { in: activeStatuses } }
-      });
-      const completedJobsCount = await tx.job.count({
-        where: { createdBy: address, status: "COMPLETED" }
-      });
-      const signedAgentsCount = await tx.job.count({
-        where: { createdBy: address, selectedAgentId: { not: null } }
-      });
-      const publishedAgentsCount = await tx.agent.count({ where: { owner: address } });
-      const jobIds = await tx.job.findMany({ where: { createdBy: address }, select: { id: true } });
-      const disputeOrFilters: Array<{ initiator?: string; jobId?: { in: string[] } }> = [{ initiator: address }];
-      if (jobIds.length > 0) {
-        disputeOrFilters.push({ jobId: { in: jobIds.map((job) => job.id) } });
-      }
-      const openDisputesCount = await tx.dispute.count({
-        where: { status: { in: ["OPEN", "VOTING"] }, OR: disputeOrFilters }
-      });
-
-      return {
-        walletBalance: toNumber(wallet?.balance) ?? 0,
-        lockedAmount: toNumber(wallet?.lockedAmount) ?? 0,
-        totalEarnings: toNumber(wallet?.totalEarnings) ?? 0,
-        totalSpent: toNumber(wallet?.totalSpent) ?? 0,
-        publishedJobsCount,
-        activeJobsCount,
-        completedJobsCount,
-        publishedAgentsCount,
-        signedAgentsCount,
-        openDisputesCount
-      };
+    const wallet = await this.prisma.wallet.findUnique({ where: { address } });
+    const publishedJobsCount = await this.prisma.job.count({ where: { createdBy: address } });
+    const activeJobsCount = await this.prisma.job.count({
+      where: { createdBy: address, status: { in: activeStatuses } }
     });
+    const completedJobsCount = await this.prisma.job.count({
+      where: { createdBy: address, status: "COMPLETED" }
+    });
+    const signedAgentsCount = await this.prisma.job.count({
+      where: { createdBy: address, selectedAgentId: { not: null } }
+    });
+    const publishedAgentsCount = await this.prisma.agent.count({ where: { owner: address } });
+    const jobIds = await this.prisma.job.findMany({ where: { createdBy: address }, select: { id: true } });
+    const disputeOrFilters: Array<{ initiator?: string; jobId?: { in: string[] } }> = [{ initiator: address }];
+    if (jobIds.length > 0) {
+      disputeOrFilters.push({ jobId: { in: jobIds.map((job) => job.id) } });
+    }
+    const openDisputesCount = await this.prisma.dispute.count({
+      where: { status: { in: ["OPEN", "VOTING"] }, OR: disputeOrFilters }
+    });
+
+    return {
+      walletBalance: toNumber(wallet?.balance) ?? 0,
+      lockedAmount: toNumber(wallet?.lockedAmount) ?? 0,
+      totalEarnings: toNumber(wallet?.totalEarnings) ?? 0,
+      totalSpent: toNumber(wallet?.totalSpent) ?? 0,
+      publishedJobsCount,
+      activeJobsCount,
+      completedJobsCount,
+      publishedAgentsCount,
+      signedAgentsCount,
+      openDisputesCount
+    };
   }
 
   async getPublishedJobs(address: string, page = 1, limit = 10) {
@@ -302,7 +300,9 @@ export class DashboardService {
   async getSignedAgents(address: string, page = 1, limit = 10) {
     if (!this.useDatabase) {
       const jobs = await this.jobsService.all();
-      const filtered = jobs.filter((job) => job.createdBy === address && job.selectedAgentId);
+      const agents = await this.agentsService.list({});
+      const ownedAgentIds = new Set(agents.filter((agent) => agent.owner === address).map((agent) => agent.id));
+      const filtered = jobs.filter((job) => job.selectedAgentId && ownedAgentIds.has(job.selectedAgentId));
       const start = (page - 1) * limit;
       const paged = filtered.slice(start, start + limit);
       const escrows = await this.walletService.listEscrows();
@@ -328,14 +328,23 @@ export class DashboardService {
       return { data, pagination: this.buildPagination(page, limit, filtered.length) };
     }
 
+    const ownedAgents = await this.prisma.agent.findMany({
+      where: { owner: address },
+      select: { id: true }
+    });
+    const ownedAgentIds = ownedAgents.map((agent) => agent.id);
+    if (ownedAgentIds.length === 0) {
+      return { data: [], pagination: this.buildPagination(page, limit, 0) };
+    }
+
     const [jobs, total] = await this.prisma.$transaction([
       this.prisma.job.findMany({
-        where: { createdBy: address, selectedAgentId: { not: null } },
+        where: { selectedAgentId: { in: ownedAgentIds } },
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * limit,
         take: limit
       }),
-      this.prisma.job.count({ where: { createdBy: address, selectedAgentId: { not: null } } })
+      this.prisma.job.count({ where: { selectedAgentId: { in: ownedAgentIds } } })
     ]);
     if (jobs.length === 0) {
       return { data: [], pagination: this.buildPagination(page, limit, total) };
@@ -372,55 +381,59 @@ export class DashboardService {
       return { data: [], pagination: this.buildPagination(page, limit, 0) };
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const jobIds = await tx.job.findMany({ where: { createdBy: address }, select: { id: true } });
-      const orFilters: Array<{ initiator?: string; jobId?: { in: string[] } }> = [{ initiator: address }];
-      if (jobIds.length > 0) {
-        orFilters.push({ jobId: { in: jobIds.map((job) => job.id) } });
-      }
-      const [disputes, total] = await Promise.all([
-        tx.dispute.findMany({
-          where: { OR: orFilters },
-          orderBy: { createdAt: "desc" },
-          skip: (page - 1) * limit,
-          take: limit
-        }),
-        tx.dispute.count({ where: { OR: orFilters } })
-      ]);
-      if (disputes.length === 0) {
-        return { data: [], pagination: this.buildPagination(page, limit, total) };
-      }
-      const jobMap = new Map(
-        (
-          await tx.job.findMany({
-            where: { id: { in: disputes.map((dispute) => dispute.jobId) } },
-            select: { id: true, title: true }
-          })
-        ).map((job) => [job.id, job.title])
-      );
-      const escrows = await tx.escrow.findMany({ where: { id: { in: disputes.map((dispute) => dispute.escrowId) } } });
-      const escrowMap = new Map(escrows.map((escrow) => [escrow.id, escrow]));
-      const data = disputes.map((dispute) => {
-        const escrow = escrowMap.get(dispute.escrowId);
-        return {
-          id: dispute.id,
-          jobId: dispute.jobId,
-          jobTitle: jobMap.get(dispute.jobId),
-          status: dispute.status,
-          initiator: dispute.initiator,
-          isMyInitiated: dispute.initiator === address,
-          reason: dispute.reason ?? undefined,
-          votesFor: dispute.votesFor,
-          votesAgainst: dispute.votesAgainst,
-          totalWeight: toNumber(dispute.totalWeight) ?? 0,
-          escrowAmount: toNumber(escrow?.amount),
-          currency: escrow?.currency ?? undefined,
-          resolvedOutcome: dispute.resolvedOutcome ?? undefined,
-          createdAt: dispute.createdAt.toISOString(),
-          resolvedAt: dispute.resolvedAt ? dispute.resolvedAt.toISOString() : undefined
-        };
-      });
-      return { data, pagination: this.buildPagination(page, limit, total) };
+    const jobIds = await this.prisma.job.findMany({ where: { createdBy: address }, select: { id: true } });
+    const orFilters: Array<{ initiator?: string; jobId?: { in: string[] } }> = [{ initiator: address }];
+    if (jobIds.length > 0) {
+      orFilters.push({ jobId: { in: jobIds.map((job) => job.id) } });
+    }
+
+    const [disputes, total] = await Promise.all([
+      this.prisma.dispute.findMany({
+        where: { OR: orFilters },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit
+      }),
+      this.prisma.dispute.count({ where: { OR: orFilters } })
+    ]);
+
+    if (disputes.length === 0) {
+      return { data: [], pagination: this.buildPagination(page, limit, total) };
+    }
+
+    const jobMap = new Map(
+      (
+        await this.prisma.job.findMany({
+          where: { id: { in: disputes.map((dispute) => dispute.jobId) } },
+          select: { id: true, title: true }
+        })
+      ).map((job) => [job.id, job.title])
+    );
+    const escrows = await this.prisma.escrow.findMany({
+      where: { id: { in: disputes.map((dispute) => dispute.escrowId) } }
     });
+    const escrowMap = new Map(escrows.map((escrow) => [escrow.id, escrow]));
+    const data = disputes.map((dispute) => {
+      const escrow = escrowMap.get(dispute.escrowId);
+      return {
+        id: dispute.id,
+        jobId: dispute.jobId,
+        jobTitle: jobMap.get(dispute.jobId),
+        status: dispute.status,
+        initiator: dispute.initiator,
+        isMyInitiated: dispute.initiator === address,
+        reason: dispute.reason ?? undefined,
+        votesFor: dispute.votesFor,
+        votesAgainst: dispute.votesAgainst,
+        totalWeight: toNumber(dispute.totalWeight) ?? 0,
+        escrowAmount: toNumber(escrow?.amount),
+        currency: escrow?.currency ?? undefined,
+        resolvedOutcome: dispute.resolvedOutcome ?? undefined,
+        createdAt: dispute.createdAt.toISOString(),
+        resolvedAt: dispute.resolvedAt ? dispute.resolvedAt.toISOString() : undefined
+      };
+    });
+
+    return { data, pagination: this.buildPagination(page, limit, total) };
   }
 }

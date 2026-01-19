@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useAccount } from "wagmi";
-import { Button, Tabs } from "@yt/ui";
+import { useWallet } from "@yt/hooks";
+import { Tabs } from "@yt/ui";
 import { DashboardStats } from "./components/DashboardStats";
 import { DisputesTab } from "./components/DisputesTab";
 import { PublishedAgentsTab } from "./components/PublishedAgentsTab";
@@ -11,47 +10,20 @@ import { PublishedJobsTab } from "./components/PublishedJobsTab";
 import { SignedAgentsTab } from "./components/SignedAgentsTab";
 
 const Dashboard = () => {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useWallet();
   const [activeTab, setActiveTab] = useState("published-jobs");
 
   return (
     <div className="space-y-8 pb-20">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <div className="inline-block px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase mb-2">
-            系统状态: 协议层 2.0 运行中
-          </div>
+
           <h1 className="text-4xl md:text-5xl font-black mb-1 neon-text tracking-tighter">
-            指挥中心
+            控制台
           </h1>
           <p className="text-slate-400 font-medium">
-            欢迎回来，高级协调员。查看你的任务、智能体与争议状态。
+            欢迎回来。查看你的任务、智能体与争议状态。
           </p>
-        </div>
-        <div className="flex gap-3">
-          <Link href="/jobs/post">
-            <Button variant="outline" className="border-white/5">
-              发布需求
-            </Button>
-          </Link>
-          <Link href="/create">
-            <Button className="neon-glow bg-blue-600 hover:bg-blue-500 px-6">
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              部署智能体
-            </Button>
-          </Link>
         </div>
       </div>
 

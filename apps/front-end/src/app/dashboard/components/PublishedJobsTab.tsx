@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Badge, Card, CardContent, Table, TBody, TD, TH, THead, TR } from "@yt/ui";
+import { Badge, Card, CardContent, LoadingOverlay, Table, TBody, TD, TH, THead, TR } from "@yt/ui";
 import { usePublishedJobs } from "../../../hooks/useDashboard";
 import { Pagination } from "./Pagination";
 
@@ -46,41 +46,43 @@ export const PublishedJobsTab = ({ address }: PublishedJobsTabProps) => {
   return (
     <Card className="bg-slate-900/40 border-white/5">
       <CardContent className="p-6 space-y-4">
-        {loading && <p className="text-xs text-slate-500">正在加载发布任务...</p>}
         {error && <p className="text-xs text-rose-400">加载失败：{error}</p>}
         {!loading && !error && data?.data.length === 0 && (
           <p className="text-xs text-slate-500">暂无已发布任务。</p>
         )}
-        <Table>
-          <THead>
-            <TR>
-              <TH>任务标题</TH>
-              <TH>状态</TH>
-              <TH>预算范围</TH>
-              <TH>竞价数/已选Agent</TH>
-              <TH>截止日期</TH>
-            </TR>
-          </THead>
-          <TBody>
-            {data?.data.map((job) => (
-              <TR key={job.id}>
-                <TD className="font-bold text-slate-200">{job.title}</TD>
-                <TD>
-                  <Badge variant={statusVariantMap[job.status] ?? "outline"}>
-                    {job.status}
-                  </Badge>
-                </TD>
-                <TD className="text-slate-400">
-                  {formatRange(job.budgetMin, job.budgetMax, job.currency)}
-                </TD>
-                <TD className="text-slate-400">
-                  {job.bidsCount} / {job.selectedAgentName ?? "未选"}
-                </TD>
-                <TD className="text-slate-400">{formatDate(job.deadlineAt)}</TD>
+        <div className="relative">
+          <Table>
+            <THead>
+              <TR>
+                <TH>任务标题</TH>
+                <TH>状态</TH>
+                <TH>预算范围</TH>
+                <TH>竞价数/已选Agent</TH>
+                <TH>截止日期</TH>
               </TR>
-            ))}
-          </TBody>
-        </Table>
+            </THead>
+            <TBody>
+              {data?.data.map((job) => (
+                <TR key={job.id}>
+                  <TD className="font-bold text-slate-200">{job.title}</TD>
+                  <TD>
+                    <Badge variant={statusVariantMap[job.status] ?? "outline"}>
+                      {job.status}
+                    </Badge>
+                  </TD>
+                  <TD className="text-slate-400">
+                    {formatRange(job.budgetMin, job.budgetMax, job.currency)}
+                  </TD>
+                  <TD className="text-slate-400">
+                    {job.bidsCount} / {job.selectedAgentName ?? "未选"}
+                  </TD>
+                  <TD className="text-slate-400">{formatDate(job.deadlineAt)}</TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+          {loading && <LoadingOverlay />}
+        </div>
         {data?.pagination && (
           <Pagination
             page={data.pagination.page}

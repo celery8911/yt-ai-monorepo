@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Badge, Card, CardContent, Table, TBody, TD, TH, THead, TR } from "@yt/ui";
+import { Badge, Card, CardContent, LoadingOverlay, Table, TBody, TD, TH, THead, TR } from "@yt/ui";
 import { useDisputes } from "../../../hooks/useDashboard";
 import { Pagination } from "./Pagination";
 
@@ -39,48 +39,50 @@ export const DisputesTab = ({ address }: DisputesTabProps) => {
   return (
     <Card className="bg-slate-900/40 border-white/5">
       <CardContent className="p-6 space-y-4">
-        {loading && <p className="text-xs text-slate-500">正在加载争议中心...</p>}
         {error && <p className="text-xs text-rose-400">加载失败：{error}</p>}
         {!loading && !error && data?.data.length === 0 && (
           <p className="text-xs text-slate-500">暂无争议记录。</p>
         )}
-        <Table>
-          <THead>
-            <TR>
-              <TH>任务标题</TH>
-              <TH>争议状态</TH>
-              <TH>发起人</TH>
-              <TH>金额</TH>
-              <TH>投票进度</TH>
-              <TH>创建日期</TH>
-            </TR>
-          </THead>
-          <TBody>
-            {data?.data.map((dispute) => (
-              <TR key={dispute.id}>
-                <TD className="font-bold text-slate-200">{dispute.jobTitle ?? "--"}</TD>
-                <TD>
-                  <Badge variant={resolveStatusVariant(dispute.status)}>{dispute.status}</Badge>
-                </TD>
-                <TD className="text-slate-400">
-                  {dispute.initiator}
-                  {dispute.isMyInitiated && (
-                    <Badge variant="blue" className="ml-2">
-                      我发起
-                    </Badge>
-                  )}
-                </TD>
-                <TD className="text-slate-400">
-                  {formatAmount(dispute.escrowAmount, dispute.currency)}
-                </TD>
-                <TD className="text-slate-400">
-                  {dispute.votesFor} / {dispute.votesAgainst}
-                </TD>
-                <TD className="text-slate-400">{formatDate(dispute.createdAt)}</TD>
+        <div className="relative">
+          <Table>
+            <THead>
+              <TR>
+                <TH>任务标题</TH>
+                <TH>争议状态</TH>
+                <TH>发起人</TH>
+                <TH>金额</TH>
+                <TH>投票进度</TH>
+                <TH>创建日期</TH>
               </TR>
-            ))}
-          </TBody>
-        </Table>
+            </THead>
+            <TBody>
+              {data?.data.map((dispute) => (
+                <TR key={dispute.id}>
+                  <TD className="font-bold text-slate-200">{dispute.jobTitle ?? "--"}</TD>
+                  <TD>
+                    <Badge variant={resolveStatusVariant(dispute.status)}>{dispute.status}</Badge>
+                  </TD>
+                  <TD className="text-slate-400">
+                    {dispute.initiator}
+                    {dispute.isMyInitiated && (
+                      <Badge variant="blue" className="ml-2">
+                        我发起
+                      </Badge>
+                    )}
+                  </TD>
+                  <TD className="text-slate-400">
+                    {formatAmount(dispute.escrowAmount, dispute.currency)}
+                  </TD>
+                  <TD className="text-slate-400">
+                    {dispute.votesFor} / {dispute.votesAgainst}
+                  </TD>
+                  <TD className="text-slate-400">{formatDate(dispute.createdAt)}</TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+          {loading && <LoadingOverlay />}
+        </div>
         {data?.pagination && (
           <Pagination
             page={data.pagination.page}
