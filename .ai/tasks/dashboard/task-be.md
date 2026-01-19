@@ -8,7 +8,7 @@
 
 ## Phase 1: 基础设施
 
-### [TODO] DASH-BE-001 创建 Dashboard DTO 定义
+### [DONE] DASH-BE-001 创建 Dashboard DTO 定义
 
 - **验收标准**：
   - 创建 `apps/back-end/src/dashboard/dashboard.dto.ts`
@@ -17,8 +17,9 @@
   - 使用 class-validator 装饰器进行参数校验
 - **依赖**：无
 - **Notes**：分页默认值 page=1, limit=10
+- **完成日期**：2026-01-19
 
-### [TODO] DASH-BE-002 实现 getStats() 统计概览接口
+### [DONE] DASH-BE-002 实现 getStats() 统计概览接口
 
 - **验收标准**：
   - 在 `dashboard.service.ts` 添加 `getStats(address: string)` 方法
@@ -29,12 +30,13 @@
   - 在 `dashboard.controller.ts` 添加 `GET /dashboard/stats` 路由
 - **依赖**：DASH-BE-001
 - **Notes**：activeJobs 定义为 status IN (OPEN, MATCHING, IN_PROGRESS)
+- **完成日期**：2026-01-19
 
 ---
 
 ## Phase 2: 核心 API 实现
 
-### [TODO] DASH-BE-003 实现 getPublishedJobs() 我发布的任务接口
+### [DONE] DASH-BE-003 实现 getPublishedJobs() 我发布的任务接口
 
 - **验收标准**：
   - 添加 `getPublishedJobs(address, page, limit)` 方法
@@ -46,8 +48,9 @@
   - 添加 `GET /dashboard/published-jobs` 路由
 - **依赖**：DASH-BE-001
 - **Notes**：需要关联查询 Bid 表获取竞价数量，关联 Agent 表获取选中 Agent 名称
+- **完成日期**：2026-01-19
 
-### [TODO] DASH-BE-004 实现 getPublishedAgents() 我发布的智能体接口
+### [DONE] DASH-BE-004 实现 getPublishedAgents() 我发布的智能体接口
 
 - **验收标准**：
   - 添加 `getPublishedAgents(address, page, limit)` 方法
@@ -59,8 +62,9 @@
   - 添加 `GET /dashboard/published-agents` 路由
 - **依赖**：DASH-BE-001
 - **Notes**：totalEarnings 通过 Bill 表聚合 (status=PAID)，jobCount 通过 Job.selectedAgentId 统计
+- **完成日期**：2026-01-19
 
-### [TODO] DASH-BE-005 实现 getSignedAgents() 已签约智能体接口
+### [DONE] DASH-BE-005 实现 getSignedAgents() 已签约智能体接口
 
 - **验收标准**：
   - 添加 `getSignedAgents(address, page, limit)` 方法
@@ -72,8 +76,9 @@
   - 添加 `GET /dashboard/signed-agents` 路由
 - **依赖**：DASH-BE-001
 - **Notes**：需要三层关联查询 Job → Agent + Escrow
+- **完成日期**：2026-01-19
 
-### [TODO] DASH-BE-006 实现 getDisputes() 争议中心接口
+### [DONE] DASH-BE-006 实现 getDisputes() 争议中心接口
 
 - **验收标准**：
   - 添加 `getDisputes(address, page, limit)` 方法
@@ -86,6 +91,7 @@
   - 添加 `GET /dashboard/disputes` 路由
 - **依赖**：DASH-BE-001
 - **Notes**：tags 和 priority 字段暂不实现 (MVP 阶段跳过)
+- **完成日期**：2026-01-19
 
 ---
 
@@ -106,3 +112,5 @@
 ## 版本历史
 
 - **2026-01-19**: 初始版本，基于 PRD 3.7 拆解
+- **2026-01-19**: DASH-BE-001 ~ 006 完成，由 Codex Cloud 执行
+
