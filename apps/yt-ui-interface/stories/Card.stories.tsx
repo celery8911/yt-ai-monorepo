@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Card, CardContent, CardHeader } from "@yt/ui";
+import { Card, CardContent, CardHeader, LoadingOverlay } from "@yt/ui";
 
 const meta = {
   title: "Components/Card",
@@ -38,6 +38,20 @@ export const WithGlow: Story = {
         <p className="text-3xl font-black text-blue-400">2.45 ETH</p>
         <p className="text-xs text-slate-500 uppercase">过去 7 天累计</p>
       </CardContent>
+    </Card>
+  )
+};
+
+export const WithLoadingOverlay: Story = {
+  render: () => (
+    <Card className="relative w-[320px]">
+      <CardHeader>
+        <h3 className="text-lg font-bold">数据面板</h3>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <p className="text-sm text-slate-400">加载状态下的卡片样式。</p>
+      </CardContent>
+      <LoadingOverlay />
     </Card>
   )
 };

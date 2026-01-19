@@ -18,11 +18,11 @@ const Dashboard = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
 
-          <h1 className="text-4xl md:text-5xl font-black mb-1 neon-text tracking-tighter">
+          <h1 className="text-4xl md:text-5xl font-black mb-2 neon-text tracking-tighter">
             控制台
           </h1>
           <p className="text-slate-400 font-medium">
-            欢迎回来。查看你的任务、智能体与争议状态。
+            欢迎回来，查看你的任务、智能体与争议状态
           </p>
         </div>
       </div>
