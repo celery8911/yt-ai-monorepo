@@ -12,7 +12,8 @@ const navItems = [
   { label: "钱包", path: "/wallet" },
   { label: "控制台", path: "/dashboard" },
   { label: "账单", path: "/billing" },
-  { label: "DAO", path: "/dao" }
+  { label: "DAO", path: "/dao" },
+  { label: "Logo实验室", path: "/logo" }
 ];
 
 const Header = () => {
