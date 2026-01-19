@@ -1,30 +1,120 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Badge, Button, Card, CardContent, CardHeader, Tabs } from "@yt/ui";
+import { fetchAgentDetail, type AgentListItem } from "@/apis/agent";
 
 const AgentDetail = () => {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("overview");
+  const [agent, setAgent] = useState<AgentListItem | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const agent = {
-    name: "CyberTrade Alpha v3.0",
-    developer: "QuantLabs DAO",
-    category: "DEFI",
-    price: "0.45 ETH",
-    rating: 4.95,
-    users: "2,401",
-    description:
-      "CyberTrade Alpha 是市场上最先进的去中心化量化代理，支持多达 14 条公链。它利用实时深度学习模型预测市场剧烈波动，并在亚毫秒级内执行复杂的套利策略。",
-    features: [
-      "毫秒级跨链套利",
-      "风险自动对冲协议",
-      "自定义止盈止损策略",
-      "24/7 实时数据流支持"
-    ]
-  };
+  useEffect(() => {
+    const loadAgent = async () => {
+      if (!id) {
+        setError("Agent ID is missing");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const data = await fetchAgentDetail(id);
+        if (data) {
+          setAgent(data);
+        } else {
+          setError("Agent not found");
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load agent");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAgent();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-12 pb-20">
+        <Button
+          variant="ghost"
+          onClick={() => router.push("/market")}
+          className="text-slate-400 hover:text-blue-400 group"
+        >
+          <svg
+            className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
+          </svg>
+          返回市场
+        </Button>
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+          <p className="mt-4 text-slate-400">加载中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !agent) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-12 pb-20">
+        <Button
+          variant="ghost"
+          onClick={() => router.push("/market")}
+          className="text-slate-400 hover:text-blue-400 group"
+        >
+          <svg
+            className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
+          </svg>
+          返回市场
+        </Button>
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="size-16 bg-white/5 rounded-full flex items-center justify-center mb-4 text-slate-600">
+            <svg
+              className="w-8 h-8"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold mb-2">未找到该智能体</h3>
+          <p className="text-slate-500">{error || "该智能体不存在或已被删除"}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-12 pb-20">
@@ -53,9 +143,9 @@ const AgentDetail = () => {
         <div className="lg:col-span-2 space-y-8">
           <div className="aspect-video glass rounded-3xl overflow-hidden relative border border-white/10 group">
             <img
-              src={`https://picsum.photos/seed/${id ?? "cybertrade"}/1200/800`}
+              src={`https://picsum.photos/seed/${agent.id}/1200/800`}
               className="w-full h-full object-cover opacity-30 group-hover:opacity-50 transition-all duration-700"
-              alt="Agent Preview"
+              alt={agent.name}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
             <div className="absolute bottom-8 left-8 flex items-end gap-6">
@@ -75,9 +165,11 @@ const AgentDetail = () => {
                 </svg>
               </div>
               <div>
-                <Badge variant="red" className="mb-2">
-                  Verified Enterprise
-                </Badge>
+                {agent.category && (
+                  <Badge variant="red" className="mb-2">
+                    {agent.category}
+                  </Badge>
+                )}
                 <h1 className="text-3xl font-black tracking-tighter neon-text">
                   {agent.name}
                 </h1>
@@ -90,7 +182,6 @@ const AgentDetail = () => {
               tabs={[
                 { id: "overview", label: "详情概览" },
                 { id: "metrics", label: "性能指标" },
-                { id: "reviews", label: "用户评价" }
               ]}
               activeTab={activeTab}
               onChange={setActiveTab}
@@ -99,34 +190,57 @@ const AgentDetail = () => {
             <div className="prose prose-invert max-w-none">
               {activeTab === "overview" && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-                  <p className="text-slate-400 text-lg leading-relaxed">
-                    {agent.description}
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {agent.features.map((feature) => (
-                      <div
-                        key={feature}
-                        className="flex items-center gap-3 p-4 bg-white/5 rounded-xl border border-white/5"
-                      >
-                        <div className="size-2 rounded-full bg-blue-500" />
-                        <span className="text-sm font-bold">{feature}</span>
+                  {agent.desc && (
+                    <p className="text-slate-400 text-lg leading-relaxed">
+                      {agent.desc}
+                    </p>
+                  )}
+
+                  {agent.tags && agent.tags.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-black uppercase tracking-widest text-slate-500 mb-4">
+                        特性标签
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {agent.tags.map((tag) => (
+                          <div
+                            key={tag}
+                            className="flex items-center gap-3 p-4 bg-white/5 rounded-xl border border-white/5"
+                          >
+                            <div className="size-2 rounded-full bg-blue-500" />
+                            <span className="text-sm font-bold">#{tag}</span>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
               {activeTab === "metrics" && (
                 <div className="p-8 bg-black/40 rounded-3xl border border-white/5 font-mono text-sm space-y-4">
-                  <p className="text-emerald-500">&gt;&gt; 初始化性能审计模块...</p>
-                  <p className="text-slate-500">
-                    &gt; 平均响应时间: <span className="text-white">12.4ms</span>
-                  </p>
-                  <p className="text-slate-500">
-                    &gt; 预测准确率: <span className="text-white">94.2%</span>
-                  </p>
-                  <p className="text-slate-500">
-                    &gt; Uptime: <span className="text-white">99.998%</span>
-                  </p>
+                  <p className="text-emerald-500">&gt;&gt; 性能数据概览...</p>
+                  {agent.successRate !== undefined && (
+                    <p className="text-slate-500">
+                      &gt; 成功率: <span className="text-white">{(agent.successRate * 100).toFixed(1)}%</span>
+                    </p>
+                  )}
+                  {agent.skillLevel && (
+                    <p className="text-slate-500">
+                      &gt; 技能等级: <span className="text-white">{agent.skillLevel}</span>
+                    </p>
+                  )}
+                  {agent.isActive !== undefined && (
+                    <p className="text-slate-500">
+                      &gt; 状态: <span className={agent.isActive ? "text-emerald-400" : "text-yellow-400"}>
+                        {agent.isActive ? "活跃" : "暂停"}
+                      </span>
+                    </p>
+                  )}
+                  {agent.visibility && (
+                    <p className="text-slate-500">
+                      &gt; 可见性: <span className="text-white">{agent.visibility}</span>
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -144,21 +258,25 @@ const AgentDetail = () => {
               <div className="flex items-end justify-between">
                 <span className="text-sm text-slate-400">授权费用</span>
                 <span className="text-3xl font-black text-blue-400">
-                  {agent.price}
+                  {agent.price || "面议"}
                 </span>
               </div>
 
               <div className="space-y-3 py-6 border-y border-white/5">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">评分</span>
-                  <span className="font-bold text-yellow-400">⭐ {agent.rating}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">开发者</span>
-                  <span className="font-bold text-blue-400 underline">
-                    {agent.developer}
-                  </span>
-                </div>
+                {agent.rating !== undefined && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">评分</span>
+                    <span className="font-bold text-yellow-400">⭐ {agent.rating.toFixed(2)}</span>
+                  </div>
+                )}
+                {agent.category && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">分类</span>
+                    <span className="font-bold text-blue-400">
+                      {agent.category}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3">
