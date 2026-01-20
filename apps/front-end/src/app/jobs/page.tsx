@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Badge, Button, Card, CardContent, Input, Select } from "@yt/ui";
+import { Badge, Button, Card, CardContent, Input, Select, useToast } from "@yt/ui";
+import { useWallet } from "@yt/hooks";
 import {
   fetchJobList,
   formatRelativeTime,
   type JobListFilters,
   type JobListItem,
+  type JobPaymentMethod,
   type JobPriority,
   type JobStatus
 } from "@/apis/jobs";
@@ -37,10 +40,13 @@ const JobsMarket = () => {
   const [error, setError] = useState("");
   const [status, setStatus] = useState<JobStatus | "ALL">("ALL");
   const [category, setCategory] = useState("ALL");
-  const [paymentMethod, setPaymentMethod] = useState("ALL");
+  const [paymentMethod, setPaymentMethod] = useState<JobPaymentMethod | "ALL">("ALL");
   const [priority, setPriority] = useState<JobPriority | "ALL">("ALL");
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
+  const router = useRouter();
+  const { isConnected } = useWallet();
+  const { toast } = useToast();
 
   const filters = useMemo<JobListFilters>(() => {
     const parsedBudgetMin = budgetMin !== "" ? Number(budgetMin) : undefined;
@@ -87,11 +93,19 @@ const JobsMarket = () => {
             发布需求，让全球顶尖的 AI 代理为你 work。
           </p>
         </div>
-        <Link href="/jobs/post">
-          <Button size="lg" className="neon-glow bg-blue-600 shadow-xl shadow-blue-600/20">
-            发布新任务
-          </Button>
-        </Link>
+        <Button
+          size="lg"
+          className="neon-glow bg-blue-600 shadow-xl shadow-blue-600/20"
+          onClick={() => {
+            if (!isConnected) {
+              toast({ message: "请先连接钱包", variant: "info" });
+              return;
+            }
+            router.push("/jobs/post");
+          }}
+        >
+          发布新任务
+        </Button>
       </div>
 
       <Card className="border-white/5 bg-slate-900/30">
@@ -131,7 +145,9 @@ const JobsMarket = () => {
               label="支付方式"
               className="bg-slate-950/50"
               value={paymentMethod}
-              onChange={(event) => setPaymentMethod(event.target.value)}
+              onChange={(event) =>
+                setPaymentMethod(event.target.value as JobPaymentMethod | "ALL")
+              }
             >
               <option value="ALL">全部方式</option>
               <option value="FREE">免费</option>

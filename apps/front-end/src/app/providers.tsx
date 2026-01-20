@@ -3,6 +3,7 @@
 import "@/apis/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { Toaster } from "@yt/ui";
 
 const ClientProviders = ({ children }: { children: React.ReactNode }) => {
   // Create a client inside the component to ensure it's only created once per app instance
@@ -18,7 +19,12 @@ const ClientProviders = ({ children }: { children: React.ReactNode }) => {
       }),
   );
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+      <Toaster />
+    </QueryClientProvider>
+  );
 };
 
 export default ClientProviders;
