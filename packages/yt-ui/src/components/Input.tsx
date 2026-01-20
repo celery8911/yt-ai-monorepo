@@ -4,7 +4,7 @@ import { cn } from "../utils/cn";
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   icon?: ReactNode;
   iconPosition?: "left" | "right";
-  label?: string;
+  label?: ReactNode;
 }
 
 export const Input = ({

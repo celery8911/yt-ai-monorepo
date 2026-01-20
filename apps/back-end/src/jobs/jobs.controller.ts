@@ -1,7 +1,9 @@
 import { BadRequestException, Body, Controller, Get, NotFoundException, Param, Post, Put, Query } from "@nestjs/common";
 import { AgentsService } from "../agents/agents.service";
+import type { Job } from "../common/types";
 import { DaoService } from "../dao/dao.service";
 import { MatchingService } from "../matching/matching.service";
+import { JobsMatchingQueueService } from "./jobs.matching.queue";
 import { JobsService } from "./jobs.service";
 import { CreateJobDto, DisputeJobDto, SelectAgentDto, UpdateJobDto } from "./jobs.dto";
 
@@ -11,15 +13,65 @@ export class JobsController {
     private readonly jobsService: JobsService,
     private readonly agentsService: AgentsService,
     private readonly matchingService: MatchingService,
-    private readonly daoService: DaoService
+    private readonly daoService: DaoService,
+    private readonly matchingQueue: JobsMatchingQueueService
   ) {}
+
+  private async buildMatches(job: Job) {
+    const stored = await this.jobsService.getStoredMatches(job.id);
+    if (stored.length) {
+      const agents = await this.agentsService.findByIds(stored.map((match) => match.agentId));
+      const agentMap = new Map(agents.map((agent) => [agent.id, agent]));
+      return stored
+        .map((match) => {
+          const agent = agentMap.get(match.agentId);
+          if (!agent) return undefined;
+          return { ...agent, score: match.matchScore ?? 0 };
+        })
+        .filter((match): match is (typeof agents)[number] & { score: number } => Boolean(match));
+    }
+
+    if (!this.jobsService.isDatabaseEnabled()) {
+      const agents = await this.agentsService.all();
+      return this.matchingService.match(job, agents);
+    }
+
+    return [];
+  }
+
+  private async buildSelectedAgent(selectedAgentId?: string) {
+    if (!selectedAgentId) return undefined;
+    return this.agentsService.findById(selectedAgentId);
+  }
 
   @Post()
   async create(@Body() payload: CreateJobDto) {
     const job = await this.jobsService.create(payload);
+    if (!payload.autoMatchEnabled) {
+      return { job, matches: [] };
+    }
+
+    const hasRedisHost = Boolean(process.env.REDIS_HOST);
+    if (hasRedisHost) {
+      await this.matchingQueue.enqueue(job.id);
+      return { job, matches: [] };
+    }
+
     const agents = await this.agentsService.all();
-    const matches = payload.autoMatchEnabled ? this.matchingService.match(job, agents) : [];
-    return { job, matches };
+    const matches = this.matchingService.match(job, agents);
+    const noMatchReason =
+      matches.length === 0 ? this.matchingService.explainNoMatch(job, agents) : null;
+    await this.jobsService.saveMatches(
+      job.id,
+      matches.map((agent) => ({ id: agent.id, score: agent.score }))
+    );
+    const updated =
+      (await this.jobsService.setMatchStatus(
+        job.id,
+        matches.length ? "IN_PROGRESS" : "FAILED",
+        matches.length ? null : noMatchReason
+      )) ?? job;
+    return { job: updated, matches };
   }
 
   @Get()
@@ -63,7 +115,42 @@ export class JobsController {
     if (!job) {
       throw new NotFoundException("Job not found");
     }
-    return job;
+    const matches = job.status === "IN_PROGRESS" ? await this.buildMatches(job) : [];
+    const selectedAgent =
+      job.status === "SUBMITTED" || job.status === "REVIEWING" || job.status === "COMPLETED"
+        ? await this.buildSelectedAgent(job.selectedAgentId)
+        : undefined;
+    return { job, matches, selectedAgent };
+  }
+
+  @Get(":id/matches")
+  async matches(@Param("id") id: string) {
+    const job = await this.jobsService.findById(id);
+    if (!job) {
+      throw new NotFoundException("Job not found");
+    }
+
+    const stored = await this.jobsService.getStoredMatches(id);
+    if (stored.length) {
+      const agents = await this.agentsService.findByIds(stored.map((match) => match.agentId));
+      const agentMap = new Map(agents.map((agent) => [agent.id, agent]));
+      const matches = stored
+        .map((match) => {
+          const agent = agentMap.get(match.agentId);
+          if (!agent) return undefined;
+          return { ...agent, score: match.matchScore ?? 0 };
+        })
+        .filter((match): match is (typeof agents)[number] & { score: number } => Boolean(match));
+      return { job, matches };
+    }
+
+    if (!this.jobsService.isDatabaseEnabled()) {
+      const agents = await this.agentsService.all();
+      const matches = this.matchingService.match(job, agents);
+      return { job, matches };
+    }
+
+    return { job, matches: [] };
   }
 
   @Put(":id")

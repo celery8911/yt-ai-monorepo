@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, CardContent, CardHeader, Input, Select, Switch, Textarea } from "@yt/ui";
+import { Button, Card, CardContent, CardHeader, Input, Select, Switch, Textarea, useToast } from "@yt/ui";
 import {
   createJob,
   fetchJobDetail,
@@ -27,7 +27,6 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
   const router = useRouter();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -51,43 +50,50 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
   const [payoutStrategy, setPayoutStrategy] =
     useState<CreateJobPayload["payoutStrategy"]>("WINNER_TAKE_ALL");
   const { address } = useWallet();
+  const { toast } = useToast();
+
+  const withRequiredMark = (label: string) => (
+    <span>
+      <span className="text-rose-400">*</span>
+      {label}
+    </span>
+  );
 
   useEffect(() => {
     if (!jobId) return;
     const loadJob = async () => {
       setLoading(true);
-      setError("");
       try {
         const data = await fetchJobDetail(jobId);
-        setJob(data);
-        setTitle(data.title ?? "");
-        setDescription(data.description ?? "");
-        setCategory(data.category ?? "");
-        setTags(data.tags.join(", "));
-        setPaymentMethod(data.paymentMethod);
-        setBudgetMin(data.budgetMin !== undefined ? String(data.budgetMin) : "");
-        setBudgetMax(data.budgetMax !== undefined ? String(data.budgetMax) : "");
+        setJob(data.job);
+        setTitle(data.job.title ?? "");
+        setDescription(data.job.description ?? "");
+        setCategory(data.job.category ?? "");
+        setTags(data.job.tags.join(", "));
+        setPaymentMethod(data.job.paymentMethod);
+        setBudgetMin(data.job.budgetMin !== undefined ? String(data.job.budgetMin) : "");
+        setBudgetMax(data.job.budgetMax !== undefined ? String(data.job.budgetMax) : "");
         setCurrency("CBT");
-        setRequiredSkillLevel(data.requiredSkillLevel);
-        setDeliverables(data.deliverables ?? "");
-        setAcceptanceCriteria(data.acceptanceCriteria ?? "");
-        setDeadlineAt(formatDateInput(data.deadlineAt));
-        setPriority(data.priority);
-        setVisibility(data.visibility);
-        setAutoMatchEnabled(data.autoMatchEnabled);
-        setBiddingEnabled(data.biddingEnabled);
-        setEscrowEnabled(data.escrowEnabled);
-        setReviewWindowDays(String(data.reviewWindowDays ?? 7));
-        setPayoutStrategy(data.payoutStrategy);
+        setRequiredSkillLevel(data.job.requiredSkillLevel);
+        setDeliverables(data.job.deliverables ?? "");
+        setAcceptanceCriteria(data.job.acceptanceCriteria ?? "");
+        setDeadlineAt(formatDateInput(data.job.deadlineAt));
+        setPriority(data.job.priority);
+        setVisibility(data.job.visibility);
+        setAutoMatchEnabled(data.job.autoMatchEnabled);
+        setBiddingEnabled(data.job.biddingEnabled);
+        setEscrowEnabled(data.job.escrowEnabled);
+        setReviewWindowDays(String(data.job.reviewWindowDays ?? 7));
+        setPayoutStrategy(data.job.payoutStrategy);
       } catch (loadError) {
         const message = loadError instanceof Error ? loadError.message : "请求失败";
-        setError(message);
+        toast({ message, variant: "error" });
       } finally {
         setLoading(false);
       }
     };
     loadJob();
-  }, [jobId]);
+  }, [jobId, toast]);
 
   const isEditing = Boolean(jobId);
   const canEditDraft = useMemo(
@@ -96,13 +102,45 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
   );
 
   const handleSubmit = async (status: CreateJobPayload["status"] = "OPEN") => {
-    if (!title.trim()) {
-      setError("请填写任务标题。");
+    const trimmedTitle = title.trim();
+    const tagsList = tags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+    if (!trimmedTitle) {
+      toast({ message: "请填写任务标题。", variant: "error" });
       return;
     }
     if (!address) {
-      setError("请先连接钱包。");
+      toast({ message: "请先连接钱包。", variant: "error" });
       return;
+    }
+
+    if (status !== "DRAFT") {
+      if (!category.trim()) {
+        toast({ message: "请选择任务分类。", variant: "error" });
+        return;
+      }
+      if (!tagsList.length) {
+        toast({ message: "请至少填写一个标签。", variant: "error" });
+        return;
+      }
+      if (!description.trim()) {
+        toast({ message: "请填写详细说明。", variant: "error" });
+        return;
+      }
+      if (!deadlineAt) {
+        toast({ message: "请选择截止日期。", variant: "error" });
+        return;
+      }
+      if (!deliverables.trim()) {
+        toast({ message: "请填写交付物说明。", variant: "error" });
+        return;
+      }
+      if (!acceptanceCriteria.trim()) {
+        toast({ message: "请填写验收标准。", variant: "error" });
+        return;
+      }
     }
 
     const parsedBudgetMin = budgetMin !== "" ? Number(budgetMin) : undefined;
@@ -115,14 +153,21 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
       reviewWindowDays !== "" ? Number(reviewWindowDays) : undefined;
     const hasReviewWindowDays =
       parsedReviewWindowDays !== undefined && !Number.isNaN(parsedReviewWindowDays);
+    if (status !== "DRAFT") {
+      if (paymentMethod !== "FREE" && !hasBudgetMin && !hasBudgetMax) {
+        toast({ message: "请填写预算下限或上限。", variant: "error" });
+        return;
+      }
+      if (!hasReviewWindowDays) {
+        toast({ message: "请填写验收期天数。", variant: "error" });
+        return;
+      }
+    }
     const payload = {
-      title: title.trim(),
+      title: trimmedTitle,
       description: description.trim() || undefined,
       category: category.trim() || undefined,
-      tags: tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
+      tags: tagsList,
       paymentMethod,
       budgetMin: hasBudgetMin ? parsedBudgetMin : undefined,
       budgetMax: hasBudgetMax ? parsedBudgetMax : undefined,
@@ -143,18 +188,25 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
     } satisfies CreateJobPayload;
 
     setLoading(true);
-    setError("");
     try {
       if (jobId) {
         await updateJob(jobId, payload);
+        toast({
+          message: status === "DRAFT" ? "草稿已保存" : "任务已更新",
+          variant: "success"
+        });
         router.push(status === "DRAFT" ? "/jobs" : `/jobs/${jobId}`);
       } else {
         const response = await createJob(payload);
+        toast({
+          message: status === "DRAFT" ? "草稿已保存" : "任务已发布",
+          variant: "success"
+        });
         router.push(status === "DRAFT" ? "/jobs" : `/jobs/${response.job.id}`);
       }
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : "提交失败";
-      setError(message);
+      toast({ message, variant: "error" });
     } finally {
       setLoading(false);
     }
@@ -192,8 +244,6 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
         </p>
       </div>
 
-      {error ? <div className="text-sm text-rose-400">{error}</div> : null}
-
       {!loading && isEditing && job && !canEditDraft ? (
         <Card className="border-rose-500/20 bg-rose-500/5">
           <CardContent className="p-6 text-rose-400 text-sm">
@@ -218,13 +268,13 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
             </CardHeader>
             <CardContent className="space-y-6">
               <Input
-                label="任务标题"
+                label={withRequiredMark("任务标题")}
                 placeholder="例如: 自动分析某代币的链上持仓分布"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
               />
               <Select
-                label="分类"
+                label={withRequiredMark("分类")}
                 value={category}
                 onChange={(event) => setCategory(event.target.value)}
               >
@@ -236,13 +286,13 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
                 <option value="内容与研究">内容与研究</option>
               </Select>
               <Input
-                label="标签 (逗号分隔)"
+                label={withRequiredMark("标签 (逗号分隔)")}
                 placeholder="onchain, defi, report"
                 value={tags}
                 onChange={(event) => setTags(event.target.value)}
               />
               <Textarea
-                label="详细说明"
+                label={withRequiredMark("详细说明")}
                 placeholder="详细说明任务目标、数据来源及交付物要求..."
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
@@ -256,7 +306,7 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
             </CardHeader>
             <CardContent className="space-y-6">
               <Select
-                label="支付方式"
+                label={withRequiredMark("支付方式")}
                 value={paymentMethod}
                 onChange={(event) =>
                   setPaymentMethod(event.target.value as CreateJobPayload["paymentMethod"])
@@ -269,14 +319,14 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
               </Select>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
-                  label="预算下限"
+                  label={withRequiredMark("预算下限")}
                   placeholder="100"
                   value={budgetMin}
                   onChange={(event) => setBudgetMin(event.target.value)}
                   disabled={paymentMethod === "FREE"}
                 />
                 <Input
-                  label="预算上限"
+                  label={withRequiredMark("预算上限")}
                   placeholder="500"
                   value={budgetMax}
                   onChange={(event) => setBudgetMax(event.target.value)}
@@ -284,7 +334,7 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
                 />
               </div>
               <Select
-                label="币种"
+                label={withRequiredMark("币种")}
                 value={currency}
                 onChange={(event) => setCurrency(event.target.value)}
                 disabled={paymentMethod === "FREE"}
@@ -301,7 +351,7 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
-                  label="截止日期"
+                  label={withRequiredMark("截止日期")}
                   type="date"
                   value={deadlineAt}
                   onChange={(event) => setDeadlineAt(event.target.value)}
@@ -324,7 +374,7 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
                   className="[&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-90 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                 />
                 <Select
-                  label="优先级"
+                  label={withRequiredMark("优先级")}
                   value={priority}
                   onChange={(event) =>
                     setPriority(event.target.value as CreateJobPayload["priority"])
@@ -337,7 +387,7 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
                 </Select>
               </div>
               <Select
-                label="技能等级"
+                label={withRequiredMark("技能等级")}
                 value={requiredSkillLevel}
                 onChange={(event) =>
                   setRequiredSkillLevel(
@@ -351,13 +401,13 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
                 <option value="EXPERT">专家</option>
               </Select>
               <Textarea
-                label="交付物说明"
+                label={withRequiredMark("交付物说明")}
                 placeholder="列出需要交付的内容，例如代码仓库、部署文档、测试报告等..."
                 value={deliverables}
                 onChange={(event) => setDeliverables(event.target.value)}
               />
               <Textarea
-                label="验收标准"
+                label={withRequiredMark("验收标准")}
                 placeholder="描述验收方式与标准，例如功能清单、性能指标、验收流程等..."
                 value={acceptanceCriteria}
                 onChange={(event) => setAcceptanceCriteria(event.target.value)}
@@ -371,7 +421,7 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
             </CardHeader>
             <CardContent className="space-y-6">
               <Select
-                label="任务可见性"
+                label={withRequiredMark("任务可见性")}
                 value={visibility}
                 onChange={(event) =>
                   setVisibility(event.target.value as CreateJobPayload["visibility"])
@@ -382,13 +432,13 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
               </Select>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
-                  label="验收期 (天)"
+                  label={withRequiredMark("验收期 (天)")}
                   placeholder="7"
                   value={reviewWindowDays}
                   onChange={(event) => setReviewWindowDays(event.target.value)}
                 />
                 <Select
-                  label="结算策略"
+                  label={withRequiredMark("结算策略")}
                   value={payoutStrategy}
                   onChange={(event) =>
                     setPayoutStrategy(

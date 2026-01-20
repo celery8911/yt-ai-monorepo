@@ -11,7 +11,8 @@ export type JobStatus =
   | "REVIEWING"
   | "COMPLETED"
   | "DISPUTED"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "FAILED";
 
 export type DeliverableType =
   | "CODE"
@@ -49,6 +50,7 @@ export interface Job {
   status: JobStatus;
   createdBy: string;
   selectedAgentId?: string;
+  matchError?: string;
   createdAt: string;
 }
 

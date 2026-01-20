@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { GraphQLModule } from "@nestjs/graphql";
+import { BullModule } from "@nestjs/bull";
 import { ApolloDriver, ApolloDriverConfig } from "@nestjs/apollo";
 import { AgentsModule } from "./agents/agents.module";
 import { BidsModule } from "./bids/bids.module";
@@ -14,6 +15,14 @@ import { WalletModule } from "./wallet/wallet.module";
 
 @Module({
   imports: [
+    BullModule.forRoot({
+      redis: {
+        host: process.env.REDIS_HOST ?? "127.0.0.1",
+        port: Number(process.env.REDIS_PORT ?? 6379),
+        password: process.env.REDIS_PASSWORD || undefined,
+        db: process.env.REDIS_DB ? Number(process.env.REDIS_DB) : undefined
+      }
+    }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: true,

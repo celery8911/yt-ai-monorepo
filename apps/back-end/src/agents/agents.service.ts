@@ -71,6 +71,12 @@ export class AgentsService {
     return this.mapAgent(agent);
   }
 
+  async findByIds(ids: string[]): Promise<Agent[]> {
+    if (!ids.length) return [];
+    const items = await this.prisma.agent.findMany({ where: { id: { in: ids } } });
+    return items.map((item) => this.mapAgent(item));
+  }
+
   async create(payload: CreateAgentDto): Promise<Agent> {
     const data = {
       id: generateId("agent"),

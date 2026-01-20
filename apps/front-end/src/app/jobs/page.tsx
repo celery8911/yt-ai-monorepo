@@ -1,10 +1,18 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Badge, Button, Card, CardContent, Input, Select, useToast } from "@yt/ui";
-import { useWallet } from "@yt/hooks";
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  Input,
+  Select,
+  useToast,
+} from '@yt/ui';
+import { useWallet } from '@yt/hooks';
 import {
   fetchJobList,
   formatRelativeTime,
@@ -12,68 +20,78 @@ import {
   type JobListItem,
   type JobPaymentMethod,
   type JobPriority,
-  type JobStatus
-} from "@/apis/jobs";
+  type JobStatus,
+} from '@/apis/jobs';
 
-const priorityVariants: Record<JobPriority, "blue" | "purple" | "red" | "green"> = {
-  LOW: "green",
-  MEDIUM: "blue",
-  HIGH: "purple",
-  URGENT: "red"
+const priorityVariants: Record<
+  JobPriority,
+  'blue' | 'purple' | 'red' | 'green'
+> = {
+  LOW: 'green',
+  MEDIUM: 'blue',
+  HIGH: 'purple',
+  URGENT: 'red',
 };
 
-const statusVariants: Record<JobStatus, "blue" | "purple" | "red" | "green"> = {
-  DRAFT: "blue",
-  OPEN: "green",
-  MATCHING: "purple",
-  IN_PROGRESS: "blue",
-  SUBMITTED: "purple",
-  REVIEWING: "blue",
-  COMPLETED: "green",
-  DISPUTED: "red",
-  CANCELLED: "red"
+const statusVariants: Record<JobStatus, 'blue' | 'purple' | 'red' | 'green'> = {
+  DRAFT: 'blue',
+  OPEN: 'green',
+  MATCHING: 'purple',
+  IN_PROGRESS: 'blue',
+  SUBMITTED: 'purple',
+  REVIEWING: 'blue',
+  COMPLETED: 'green',
+  DISPUTED: 'red',
+  CANCELLED: 'red',
+  FAILED: 'red',
 };
 
 const JobsMarket = () => {
   const [jobs, setJobs] = useState<JobListItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [status, setStatus] = useState<JobStatus | "ALL">("ALL");
-  const [category, setCategory] = useState("ALL");
-  const [paymentMethod, setPaymentMethod] = useState<JobPaymentMethod | "ALL">("ALL");
-  const [priority, setPriority] = useState<JobPriority | "ALL">("ALL");
-  const [budgetMin, setBudgetMin] = useState("");
-  const [budgetMax, setBudgetMax] = useState("");
+  const [error, setError] = useState('');
+  const [status, setStatus] = useState<JobStatus | 'ALL'>('ALL');
+  const [category, setCategory] = useState('ALL');
+  const [paymentMethod, setPaymentMethod] = useState<JobPaymentMethod | 'ALL'>(
+    'ALL',
+  );
+  const [priority, setPriority] = useState<JobPriority | 'ALL'>('ALL');
+  const [budgetMin, setBudgetMin] = useState('');
+  const [budgetMax, setBudgetMax] = useState('');
   const router = useRouter();
   const { isConnected } = useWallet();
   const { toast } = useToast();
 
   const filters = useMemo<JobListFilters>(() => {
-    const parsedBudgetMin = budgetMin !== "" ? Number(budgetMin) : undefined;
-    const parsedBudgetMax = budgetMax !== "" ? Number(budgetMax) : undefined;
-    const hasBudgetMin = parsedBudgetMin !== undefined && !Number.isNaN(parsedBudgetMin);
-    const hasBudgetMax = parsedBudgetMax !== undefined && !Number.isNaN(parsedBudgetMax);
+    const parsedBudgetMin = budgetMin !== '' ? Number(budgetMin) : undefined;
+    const parsedBudgetMax = budgetMax !== '' ? Number(budgetMax) : undefined;
+    const hasBudgetMin =
+      parsedBudgetMin !== undefined && !Number.isNaN(parsedBudgetMin);
+    const hasBudgetMax =
+      parsedBudgetMax !== undefined && !Number.isNaN(parsedBudgetMax);
     return {
-      status: status === "ALL" ? undefined : status,
-      category: category === "ALL" ? undefined : category,
-      paymentMethod: paymentMethod === "ALL" ? undefined : paymentMethod,
-      priority: priority === "ALL" ? undefined : priority,
+      status: status === 'ALL' ? undefined : status,
+      category: category === 'ALL' ? undefined : category,
+      paymentMethod: paymentMethod === 'ALL' ? undefined : paymentMethod,
+      priority: priority === 'ALL' ? undefined : priority,
       budgetMin: hasBudgetMin ? parsedBudgetMin : undefined,
-      budgetMax: hasBudgetMax ? parsedBudgetMax : undefined
+      budgetMax: hasBudgetMax ? parsedBudgetMax : undefined,
     };
   }, [budgetMax, budgetMin, category, paymentMethod, priority, status]);
 
   const loadJobs = useCallback(async () => {
     setLoading(true);
-    setError("");
+    setError('');
     try {
       const response = await fetchJobList(filters);
       const sorted = [...response.items].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
       setJobs(sorted);
     } catch (loadError) {
-      const message = loadError instanceof Error ? loadError.message : "请求失败";
+      const message =
+        loadError instanceof Error ? loadError.message : '请求失败';
       setError(message);
     } finally {
       setLoading(false);
@@ -98,10 +116,10 @@ const JobsMarket = () => {
           className="neon-glow bg-blue-600 shadow-xl shadow-blue-600/20"
           onClick={() => {
             if (!isConnected) {
-              toast({ message: "请先连接钱包", variant: "info" });
+              toast({ message: '请先连接钱包', variant: 'info' });
               return;
             }
-            router.push("/jobs/post");
+            router.push('/jobs/post');
           }}
         >
           发布新任务
@@ -115,7 +133,9 @@ const JobsMarket = () => {
               label="任务状态"
               className="bg-slate-950/50"
               value={status}
-              onChange={(event) => setStatus(event.target.value as JobStatus | "ALL")}
+              onChange={(event) =>
+                setStatus(event.target.value as JobStatus | 'ALL')
+              }
             >
               <option value="ALL">全部状态</option>
               <option value="DRAFT">草稿</option>
@@ -146,7 +166,7 @@ const JobsMarket = () => {
               className="bg-slate-950/50"
               value={paymentMethod}
               onChange={(event) =>
-                setPaymentMethod(event.target.value as JobPaymentMethod | "ALL")
+                setPaymentMethod(event.target.value as JobPaymentMethod | 'ALL')
               }
             >
               <option value="ALL">全部方式</option>
@@ -159,7 +179,9 @@ const JobsMarket = () => {
               label="优先级"
               className="bg-slate-950/50"
               value={priority}
-              onChange={(event) => setPriority(event.target.value as JobPriority | "ALL")}
+              onChange={(event) =>
+                setPriority(event.target.value as JobPriority | 'ALL')
+              }
             >
               <option value="ALL">全部优先级</option>
               <option value="LOW">低</option>
@@ -188,18 +210,18 @@ const JobsMarket = () => {
             <Button
               variant="secondary"
               onClick={() => {
-                setStatus("ALL");
-                setCategory("ALL");
-                setPaymentMethod("ALL");
-                setPriority("ALL");
-                setBudgetMin("");
-                setBudgetMax("");
+                setStatus('ALL');
+                setCategory('ALL');
+                setPaymentMethod('ALL');
+                setPriority('ALL');
+                setBudgetMin('');
+                setBudgetMax('');
               }}
             >
               重置
             </Button>
             <Button onClick={loadJobs} disabled={loading}>
-              {loading ? "加载中..." : "筛选"}
+              {loading ? '加载中...' : '筛选'}
             </Button>
           </div>
         </CardContent>
@@ -208,12 +230,14 @@ const JobsMarket = () => {
       <div className="space-y-4">
         {error ? (
           <Card className="border-rose-500/20 bg-rose-500/5">
-            <CardContent className="p-6 text-rose-400 text-sm">{error}</CardContent>
+            <CardContent className="p-6 text-rose-400 text-sm">
+              {error}
+            </CardContent>
           </Card>
         ) : jobs.length === 0 ? (
           <Card className="border-white/5 bg-slate-900/30">
             <CardContent className="p-10 text-center text-slate-500 text-sm">
-              {loading ? "正在加载任务..." : "暂无任务，发布第一个需求吧。"}
+              {loading ? '正在加载任务...' : '暂无任务，发布第一个需求吧。'}
             </CardContent>
           </Card>
         ) : (
@@ -226,8 +250,12 @@ const JobsMarket = () => {
               <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="space-y-3 flex-grow">
                   <div className="flex items-center gap-3">
-                    <Badge variant={priorityVariants[job.priority]}>{job.priority}</Badge>
-                    <Badge variant={statusVariants[job.status]}>{job.status}</Badge>
+                    <Badge variant={priorityVariants[job.priority]}>
+                      {job.priority}
+                    </Badge>
+                    <Badge variant={statusVariants[job.status]}>
+                      {job.status}
+                    </Badge>
                     <Badge variant="outline" className="border-white/5">
                       {job.category}
                     </Badge>
@@ -257,16 +285,26 @@ const JobsMarket = () => {
                     {job.budgetLabel}
                   </div>
                   <div className="flex flex-col gap-2 w-full sm:w-auto">
-                    {job.status !== "DRAFT" ? (
-                      <Link href={`/jobs/${job.id}`} className="w-full sm:w-auto">
+                    {job.status !== 'DRAFT' ? (
+                      <Link
+                        href={`/jobs/${job.id}`}
+                        className="w-full sm:w-auto"
+                      >
                         <Button variant="outline" size="sm" className="w-full">
                           查看详情
                         </Button>
                       </Link>
                     ) : null}
-                    {job.status === "DRAFT" ? (
-                      <Link href={`/jobs/${job.id}/edit`} className="w-full sm:w-auto">
-                        <Button variant="secondary" size="sm" className="w-full">
+                    {job.status === 'DRAFT' ? (
+                      <Link
+                        href={`/jobs/${job.id}/edit`}
+                        className="w-full sm:w-auto"
+                      >
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="w-full"
+                        >
                           编辑任务
                         </Button>
                       </Link>

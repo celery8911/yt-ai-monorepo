@@ -9,7 +9,8 @@ export type JobStatus =
   | "REVIEWING"
   | "COMPLETED"
   | "DISPUTED"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "FAILED";
 
 export type JobPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 export type JobPaymentMethod = "FREE" | "PER_TASK" | "HUMAN_HIRING" | "RESULT_BASED";
@@ -41,7 +42,25 @@ export type Job = {
   status: JobStatus;
   createdBy: string;
   selectedAgentId?: string;
+  matchError?: string;
   createdAt: string;
+};
+
+export type MatchedAgent = {
+  id: string;
+  name: string;
+  skillLevel?: JobSkillLevel;
+  rating?: number;
+  successRate?: number;
+  avgResponseTimeMs?: number;
+  tags?: string[];
+  score?: number;
+};
+
+export type JobDetailResponse = {
+  job: Job;
+  matches: MatchedAgent[];
+  selectedAgent?: MatchedAgent;
 };
 
 export type JobListItem = {
@@ -183,8 +202,8 @@ export const fetchJobList = async (filters: JobListFilters = {}): Promise<{
   };
 };
 
-export const fetchJobDetail = async (id: string): Promise<Job> => {
-  return request<Job>({
+export const fetchJobDetail = async (id: string): Promise<JobDetailResponse> => {
+  return request<JobDetailResponse>({
     url: `/jobs/${id}`,
     method: "GET"
   });

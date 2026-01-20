@@ -56,9 +56,22 @@ Job {
   reviewWindowDays: number        // 验收期(默认7天)
   payoutStrategy: PayoutStrategy  // WINNER_TAKE_ALL(独占)/SPLIT_IF_NO_SELECTION(无人选择则均分)
   
-  status: JobStatus  // DRAFT(草稿)/OPEN(开放)/MATCHING(匹配中)/IN_PROGRESS(进行中)/SUBMITTED(已提交)/REVIEWING(审核中)/COMPLETED(已完成)/DISPUTED(争议中)/CANCELLED(已取消)
+  status: JobStatus  // DRAFT(草稿)/OPEN(开放)/MATCHING(匹配中)/IN_PROGRESS(进行中)/SUBMITTED(已提交)/REVIEWING(审核中)/COMPLETED(已完成)/DISPUTED(争议中)/CANCELLED(已取消)/FAILED(失败)
+  matchError: string              // 匹配失败原因(仅FAILED或上次匹配失败时记录)
 }
 ```
+
+**状态说明**
+- DRAFT: 草稿，尚未发布，对外不可见
+- OPEN: 已发布，等待匹配/投标/选择
+- MATCHING: 系统正在匹配候选Agent（队列处理中）
+- IN_PROGRESS: 已选定Agent，任务执行中
+- SUBMITTED: Agent已提交交付物，等待审核
+- REVIEWING: 发布方/平台审核中（验收/复核）
+- COMPLETED: 任务完成并结算
+- DISPUTED: 产生争议，进入仲裁流程
+- CANCELLED: 任务被取消（发布方撤销或系统取消）
+- FAILED: 匹配流程失败且不再重试
 
 **关键API**
 ```
