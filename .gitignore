@@ -51,6 +51,18 @@ storybook-static/
 *.temp
 .cache/
 
+# Hardhat / Contracts
+apps/contract/artifacts/
+apps/contract/cache/
+apps/contract/coverage/
+apps/contract/coverage.json
+apps/contract/gas-report.txt
+apps/contract/typechain-types/
+
+# Subgraph build outputs
+apps/contract/subgraph/build/
+apps/contract/subgraph/generated/
+
 # OS files
 Thumbs.db
 .DS_Store

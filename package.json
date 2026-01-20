@@ -1,7 +1,7 @@
 {
 	"name": "yt-ai-monorepo",
 	"version": "1.0.0",
-	"description": "AI-Native Monorepo \u5de5\u7a0b\u5e73\u53f0",
+	"description": "AI-Native Monorepo 工程平台",
 	"main": "index.js",
 	"scripts": {
 		"build": "turbo run build",
@@ -27,6 +27,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.11",
 		"@changesets/cli": "^2.29.8",
+		"@types/minimatch": "^6.0.0",
 		"pino-pretty": "^10.3.1",
 		"turbo": "^2.7.2"
 	}
