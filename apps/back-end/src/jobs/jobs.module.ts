@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { AgentsModule } from "../agents/agents.module";
 import { DaoModule } from "../dao/dao.module";
 import { MatchingModule } from "../matching/matching.module";
@@ -7,7 +7,7 @@ import { JobsResolver } from "./jobs.resolver";
 import { JobsService } from "./jobs.service";
 
 @Module({
-  imports: [AgentsModule, MatchingModule, DaoModule],
+  imports: [AgentsModule, MatchingModule, forwardRef(() => DaoModule)],
   controllers: [JobsController],
   providers: [JobsService, JobsResolver],
   exports: [JobsService]

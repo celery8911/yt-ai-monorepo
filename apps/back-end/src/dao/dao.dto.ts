@@ -1,5 +1,6 @@
 import { Field, InputType } from "@nestjs/graphql";
 import { IsIn, IsNumber, IsOptional, IsString, Min } from "class-validator";
+import type { VoteValue } from "../common/types";
 
 @InputType()
 export class InitiateDisputeDto {
@@ -34,10 +35,11 @@ export class VoteDto {
 
   @Field()
   @IsIn(["approve", "reject"])
-  vote!: "approve" | "reject";
+  vote!: VoteValue;
 
-  @Field()
+  @Field({ nullable: true })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  weight!: number;
+  weight?: number;
 }

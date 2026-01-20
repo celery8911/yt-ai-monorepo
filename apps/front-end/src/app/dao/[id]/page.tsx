@@ -1,11 +1,73 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Badge, Button, Card, CardContent, CardHeader } from "@yt/ui";
+import { fetchDisputeDetail, voteDispute } from "@/apis/dao";
+
+const CURRENT_USER_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1";
+
+const resolveStatusVariant = (status?: string) => {
+  if (status === "OPEN" || status === "VOTING") return "yellow";
+  if (status === "RESOLVED") return "green";
+  return "outline";
+};
+
+const formatDateTime = (value?: string) => {
+  if (!value) return "--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+  return date.toLocaleString("zh-CN");
+};
 
 const DisputeDetail = () => {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const [voteError, setVoteError] = useState("");
+  const [isVoting, setIsVoting] = useState(false);
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["dao-dispute", id],
+    queryFn: () => fetchDisputeDetail(String(id)),
+    enabled: Boolean(id)
+  });
+
+  const dispute = data?.dispute;
+  const votes = data?.votes ?? [];
+  const totalVotes = (dispute?.votesFor ?? 0) + (dispute?.votesAgainst ?? 0);
+  const percentFor = totalVotes > 0 ? Math.round((dispute!.votesFor / totalVotes) * 100) : 0;
+  const percentAgainst = totalVotes > 0 ? Math.max(0, 100 - percentFor) : 0;
+
+  const canVote = dispute?.status !== "RESOLVED";
+  const voteHint = useMemo(() => {
+    if (!dispute) return "--";
+    if (dispute.status === "RESOLVED") return "已完成裁决";
+    return "投票进行中";
+  }, [dispute]);
+
+  const handleVote = async (value: "approve" | "reject") => {
+    if (!id) return;
+    setVoteError("");
+    setIsVoting(true);
+    try {
+      await voteDispute({ disputeId: String(id), voter: CURRENT_USER_ADDRESS, vote: value });
+      await refetch();
+    } catch (err) {
+      setVoteError(err instanceof Error ? err.message : "投票失败");
+    } finally {
+      setIsVoting(false);
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-8 pb-20">
+        <Card className="border-rose-500/20 bg-rose-500/5">
+          <CardContent className="p-6 text-rose-400 text-sm">争议详情加载失败。</CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
@@ -30,72 +92,109 @@ const DisputeDetail = () => {
         返回治理列表
       </Button>
 
-      <div className="flex justify-between items-center">
-        <Badge variant="purple">仲裁阶段: 投票中</Badge>
-        <span className="text-slate-500 font-mono text-xs">截止日期: 2024.03.15 12:00 UTC</span>
-      </div>
+      {isLoading || !dispute ? (
+        <Card className="border-white/5 bg-slate-900/30">
+          <CardContent className="p-10 text-center text-slate-500 text-sm">
+            {isLoading ? "正在加载争议详情..." : "未找到争议信息"}
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="flex justify-between items-center">
+            <Badge variant={resolveStatusVariant(dispute.status)}>
+              仲裁阶段: {dispute.status}
+            </Badge>
+            <span className="text-slate-500 font-mono text-xs">
+              发起时间: {formatDateTime(dispute.createdAt)}
+            </span>
+          </div>
 
-      <h1 className="text-4xl font-black tracking-tight">
-        争议详情: 交付物不符合描述 - 任务 #JB-{id}
-      </h1>
+          <h1 className="text-4xl font-black tracking-tight">
+            争议详情: 任务 #{dispute.jobId}
+          </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <h3 className="font-black text-sm uppercase">证据链 (On-chain)</h3>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-white/2 border border-white/5 rounded-xl">
-                <h4 className="text-xs font-bold text-blue-400 uppercase mb-2">甲方诉求</h4>
-                <p className="text-sm text-slate-300">
-                  "对方交付的报告中，数据缺失了最近 12 小时的跨链利差分析，这在原始任务描述中是核心要求。"
-                </p>
-              </div>
-              <div className="p-4 bg-white/2 border border-white/5 rounded-xl">
-                <h4 className="text-xs font-bold text-purple-400 uppercase mb-2">乙方辩护</h4>
-                <p className="text-sm text-slate-300">
-                  "由于 RPC 节点在当时出现大规模拥堵，数据抓取已在尝试 10 次后自动暂停，但我已提供了补救性的替代方案。"
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          <div className="lg:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <h3 className="font-black text-sm uppercase">争议说明</h3>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 bg-white/2 border border-white/5 rounded-xl">
+                  <h4 className="text-xs font-bold text-blue-400 uppercase mb-2">发起原因</h4>
+                  <p className="text-sm text-slate-300">
+                    {dispute.reason ?? "暂无争议说明。"}
+                  </p>
+                </div>
+                <div className="p-4 bg-white/2 border border-white/5 rounded-xl">
+                  <h4 className="text-xs font-bold text-purple-400 uppercase mb-2">投票记录</h4>
+                  {votes.length === 0 ? (
+                    <p className="text-sm text-slate-400">暂无投票记录。</p>
+                  ) : (
+                    <div className="space-y-2 text-xs text-slate-300">
+                      {votes.map((vote) => (
+                        <div key={vote.id} className="flex items-center justify-between">
+                          <span className="font-mono">{vote.voter}</span>
+                          <span className="uppercase">{vote.vote}</span>
+                          <span className="text-slate-500">{vote.weight}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        <div className="lg:col-span-1 space-y-6">
-          <Card className="bg-blue-600/5">
-            <CardHeader>
-              <h3 className="font-black text-sm uppercase">当前投票分布</h3>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-bold">
-                  <span>支持甲方 (返还资金)</span>
-                  <span>62%</span>
+          <div className="lg:col-span-1 space-y-6">
+            <Card className="bg-blue-600/5">
+              <CardHeader>
+                <h3 className="font-black text-sm uppercase">当前投票分布</h3>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span>支持返还 (approve)</span>
+                    <span>{percentFor}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500" style={{ width: `${percentFor}%` }} />
+                  </div>
                 </div>
-                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 w-[62%]" />
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span>支持释放 (reject)</span>
+                    <span>{percentAgainst}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-purple-500" style={{ width: `${percentAgainst}%` }} />
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs font-bold">
-                  <span>支持乙方 (释放资金)</span>
-                  <span>38%</span>
-                </div>
-                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-purple-500 w-[38%]" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                <p className="text-[10px] uppercase text-slate-500 font-bold">{voteHint}</p>
+              </CardContent>
+            </Card>
 
-          <div className="flex flex-col gap-3">
-            <Button className="w-full py-4 bg-blue-600 hover:bg-blue-500">支持甲方</Button>
-            <Button className="w-full py-4 bg-purple-600 hover:bg-purple-500">支持乙方</Button>
-            <Button variant="outline" className="w-full">弃权</Button>
+            {voteError ? <p className="text-xs text-rose-400">{voteError}</p> : null}
+            <div className="flex flex-col gap-3">
+              <Button
+                className="w-full py-4 bg-blue-600 hover:bg-blue-500"
+                onClick={() => handleVote("approve")}
+                disabled={!canVote || isVoting}
+              >
+                支持返还
+              </Button>
+              <Button
+                className="w-full py-4 bg-purple-600 hover:bg-purple-500"
+                onClick={() => handleVote("reject")}
+                disabled={!canVote || isVoting}
+              >
+                支持释放
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

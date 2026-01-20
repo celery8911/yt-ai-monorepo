@@ -24,6 +24,7 @@ export type DeliverableType =
 export type EscrowStatus = "LOCKED" | "RELEASED" | "DISPUTED" | "FROZEN";
 export type DisputeStatus = "OPEN" | "VOTING" | "RESOLVED";
 export type DisputeOutcome = "RELEASE_TO_AGENT" | "SPLIT" | "REFUND_PAYER" | "FREEZE";
+export type VoteValue = "approve" | "reject";
 
 export interface Job {
   id: string;
@@ -139,7 +140,7 @@ export interface Vote {
   id: string;
   disputeId: string;
   voter: string;
-  vote: "approve" | "reject";
+  vote: VoteValue;
   weight: number;
   createdAt: string;
 }
