@@ -10,6 +10,7 @@ import {
   type CreateJobPayload,
   type Job
 } from "@/apis/jobs";
+import { useWallet } from "@yt/hooks";
 
 type JobFormPageProps = {
   jobId?: string;
@@ -49,7 +50,7 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
   const [reviewWindowDays, setReviewWindowDays] = useState("7");
   const [payoutStrategy, setPayoutStrategy] =
     useState<CreateJobPayload["payoutStrategy"]>("WINNER_TAKE_ALL");
-  const [createdBy, setCreatedBy] = useState("0xGuest");
+  const { address } = useWallet();
 
   useEffect(() => {
     if (!jobId) return;
@@ -78,7 +79,6 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
         setEscrowEnabled(data.escrowEnabled);
         setReviewWindowDays(String(data.reviewWindowDays ?? 7));
         setPayoutStrategy(data.payoutStrategy);
-        setCreatedBy(data.createdBy);
       } catch (loadError) {
         const message = loadError instanceof Error ? loadError.message : "请求失败";
         setError(message);
@@ -98,6 +98,10 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
   const handleSubmit = async (status: CreateJobPayload["status"] = "OPEN") => {
     if (!title.trim()) {
       setError("请填写任务标题。");
+      return;
+    }
+    if (!address) {
+      setError("请先连接钱包。");
       return;
     }
 
@@ -135,7 +139,7 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
       reviewWindowDays: hasReviewWindowDays ? parsedReviewWindowDays : undefined,
       payoutStrategy,
       status,
-      createdBy: createdBy.trim() || "0xGuest"
+      createdBy: address
     } satisfies CreateJobPayload;
 
     setLoading(true);
@@ -428,9 +432,9 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
               </div>
               <Input
                 label="发布人地址"
-                placeholder="0x..."
-                value={createdBy}
-                onChange={(event) => setCreatedBy(event.target.value)}
+                placeholder="未连接钱包"
+                value={address ?? ""}
+                disabled
               />
             </CardContent>
           </Card>

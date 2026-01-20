@@ -10,6 +10,7 @@ import {
   formatRelativeTime,
   type JobListFilters,
   type JobListItem,
+  type JobPaymentMethod,
   type JobPriority,
   type JobStatus
 } from "@/apis/jobs";
@@ -39,7 +40,7 @@ const JobsMarket = () => {
   const [error, setError] = useState("");
   const [status, setStatus] = useState<JobStatus | "ALL">("ALL");
   const [category, setCategory] = useState("ALL");
-  const [paymentMethod, setPaymentMethod] = useState("ALL");
+  const [paymentMethod, setPaymentMethod] = useState<JobPaymentMethod | "ALL">("ALL");
   const [priority, setPriority] = useState<JobPriority | "ALL">("ALL");
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
@@ -144,7 +145,9 @@ const JobsMarket = () => {
               label="支付方式"
               className="bg-slate-950/50"
               value={paymentMethod}
-              onChange={(event) => setPaymentMethod(event.target.value)}
+              onChange={(event) =>
+                setPaymentMethod(event.target.value as JobPaymentMethod | "ALL")
+              }
             >
               <option value="ALL">全部方式</option>
               <option value="FREE">免费</option>

@@ -9,6 +9,7 @@ export { Switch } from "./components/Switch";
 export { Table, TBody, TD, TH, THead, TR } from "./components/Table";
 export { Tabs } from "./components/Tabs";
 export { Textarea } from "./components/Textarea";
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/Tooltip";
 export { Toast, ToastProvider, ToastTitle, ToastViewport } from "./components/Toast";
 export { default as Toaster } from "./components/Toaster";
 export { useToast } from "./hooks/useToast";
