@@ -1,0 +1,58 @@
+"""Wallet balances derived from on-chain events."""
+type Wallet @entity {
+  id: ID!
+  balance: BigInt!
+  lockedAmount: BigInt!
+  totalEarnings: BigInt!
+  totalSpent: BigInt!
+  updatedAt: BigInt!
+}
+
+"""Escrow record for a job payment."""
+type Escrow @entity {
+  id: ID!
+  jobId: Bytes!
+  payer: Bytes!
+  agent: Bytes!
+  amount: BigInt!
+  serviceFee: BigInt!
+  currency: String!
+  status: String!
+  releaseAt: BigInt!
+  createdAt: BigInt!
+  releasedAt: BigInt
+  frozen: Boolean!
+}
+
+"""Dispute lifecycle for an escrow."""
+type Dispute @entity {
+  id: ID!
+  jobId: Bytes!
+  escrowId: ID!
+  initiator: Bytes!
+  status: String!
+  votesFor: Int!
+  votesAgainst: Int!
+  totalVoters: Int!
+  createdAt: BigInt!
+  resolvedAt: BigInt
+  resolvedOutcome: String
+}
+
+"""Vote entries for dispute participation."""
+type Vote @entity {
+  id: ID!
+  disputeId: ID!
+  voter: Bytes!
+  support: Boolean!
+  cost: BigInt!
+  createdAt: BigInt!
+}
+
+"""Treasury accounting for fees and ETH in."""
+type Treasury @entity {
+  id: ID!
+  ethCollected: BigInt!
+  cbtFeesCollected: BigInt!
+  updatedAt: BigInt!
+}
