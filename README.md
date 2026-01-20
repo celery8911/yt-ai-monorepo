@@ -63,8 +63,15 @@ pnpm dev
 ## 🧑‍💻 开发指南
 
 1. 安装依赖：`pnpm install`
-2. 启动 Storybook：`pnpm --filter @yt/ui-interface dev`
-3. 构建所有包：`pnpm build`
-4. 查看任务清单：打开 `task.md`
+2. 添加依赖（必须在仓库根目录执行）：
+   - 给某个包添加依赖：`pnpm add <dep> -F <workspace-package>`  
+     示例：`pnpm add react -F @yt/ui`
+   - 给某个包添加开发依赖：`pnpm add <dep> -D -F <workspace-package>`  
+     示例：`pnpm add @types/react -D -F @yt/ui`
+   - 给根目录添加依赖：`pnpm add <dep> -w`  
+     示例：`pnpm add dotenv -w`
+3. 启动 Storybook：`pnpm --filter @yt/ui-interface dev`
+4. 构建所有包：`pnpm build`
+5. 查看任务清单：打开 `task.md`
 
 如需需求分析与任务拆解，请参考 `/analyze` 命令说明。

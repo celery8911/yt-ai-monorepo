@@ -12,7 +12,8 @@
 		"release": "turbo run build && changeset publish",
 		"release:local": "turbo run build && changeset publish --registry http://localhost:4873/ --no-git-checks",
 		"format": "biome format --write .",
-		"check": "biome check ."
+		"check": "biome check .",
+		"prepare": "husky install"
 	},
 	"keywords": [],
 	"private": true,
@@ -20,14 +21,20 @@
 		"type": "git",
 		"url": "https://github.com/celery8911/yt-ai-monorepo.git"
 	},
-	"packageManager": "pnpm@8.6.2",
+	"packageManager": "pnpm@10.28.0",
 	"author": "",
 	"license": "ISC",
 	"type": "commonjs",
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.11",
 		"@changesets/cli": "^2.29.8",
+		"husky": "^9.1.7",
+		"lint-staged": "^15.2.11",
 		"pino-pretty": "^10.3.1",
 		"turbo": "^2.7.2"
+	},
+	"lint-staged": {
+		"**/*.{js,jsx,ts,tsx}": "biome check --write",
+		"**/*.{json,md,yml,yaml}": "biome format --write"
 	}
 }
