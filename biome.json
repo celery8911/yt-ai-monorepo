@@ -8,10 +8,15 @@
 		"rules": {
 			"recommended": true,
 			"a11y": {
-				"noSvgWithoutTitle": "off"
+				"noSvgWithoutTitle": "off",
+				"noLabelWithoutControl": "off",
+				"useValidAnchor": "off"
 			},
 			"style": {
 				"useImportType": "off"
+			},
+			"performance": {
+				"noImgElement": "off"
 			}
 		}
 	},
@@ -30,7 +35,7 @@
 	},
 	"javascript": {
 		"parser": {
-			"decorators": true
+			"unsafeParameterDecoratorsEnabled": true
 		}
 	},
 	"files": {
@@ -39,7 +44,8 @@
 			"!**/node_modules",
 			"!**/dist",
 			"!**/build",
-			"!**/storybook-static"
+			"!**/storybook-static",
+			"!**/.next"
 		]
 	},
 	"overrides": [
