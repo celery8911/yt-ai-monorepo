@@ -4,9 +4,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge, Button, Card, CardContent, CardHeader } from "@yt/ui";
+import { useWallet } from "@yt/hooks";
 import { fetchDisputeList } from "@/apis/dao";
-
-const CURRENT_USER_ADDRESS = "0x42fe4309b38dbF93d52E43F313220Cac425B0DF3";
 
 const formatAmount = (amount?: number, currency?: string) => {
   if (amount === undefined) return "--";
@@ -29,9 +28,11 @@ const resolveStatusVariant = (status?: string) => {
 
 const DAO = () => {
   const [page] = useState(1);
+  const { address, isConnected } = useWallet();
   const { data, isLoading, error } = useQuery({
-    queryKey: ["dao-disputes", page],
-    queryFn: () => fetchDisputeList({ address: CURRENT_USER_ADDRESS, page, limit: 6 })
+    queryKey: ["dao-disputes", address, page],
+    queryFn: () => fetchDisputeList({ address: address ?? "", page, limit: 6 }),
+    enabled: Boolean(address)
   });
 
   const disputes = useMemo(() => data?.data ?? [], [data]);
@@ -92,6 +93,11 @@ const DAO = () => {
         {error ? (
           <Card className="border-rose-500/20 bg-rose-500/5">
             <CardContent className="p-6 text-sm text-rose-400">争议列表加载失败。</CardContent>
+          </Card>
+        ) : null}
+        {!isConnected ? (
+          <Card className="border-white/5 bg-slate-900/30">
+            <CardContent className="p-6 text-sm text-slate-500">请先连接钱包查看争议列表。</CardContent>
           </Card>
         ) : null}
         {!isLoading && !error && disputes.length === 0 ? (
