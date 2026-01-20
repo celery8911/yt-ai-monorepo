@@ -72,6 +72,9 @@ export class JobType {
   @Field({ nullable: true })
   selectedAgentId?: string;
 
+  @Field({ nullable: true })
+  matchError?: string;
+
   @Field()
   createdAt!: string;
 }

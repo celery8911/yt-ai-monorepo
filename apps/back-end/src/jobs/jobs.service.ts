@@ -37,6 +37,7 @@ export class JobsService {
       status: job.status as Job["status"],
       createdBy: job.createdBy,
       selectedAgentId: job.selectedAgentId ?? undefined,
+      matchError: job.matchError ?? undefined,
       createdAt: job.createdAt.toISOString()
     };
   }
@@ -55,6 +56,7 @@ export class JobsService {
       status,
       reviewWindowDays: payload.reviewWindowDays ?? 7,
       createdAt: nowIso(),
+      matchError: undefined,
       ...payload
     };
     if (this.useDatabase) {
@@ -82,12 +84,28 @@ export class JobsService {
           visibility: job.visibility,
           reviewWindowDays: job.reviewWindowDays,
           payoutStrategy: job.payoutStrategy,
-          selectedAgentId: job.selectedAgentId
+          selectedAgentId: job.selectedAgentId,
+          matchError: job.matchError ?? null
         }
       });
       return this.mapJob(created);
     }
     this.jobs.push(job);
+    return job;
+  }
+
+  async setMatchStatus(jobId: string, status: JobStatus, matchError?: string | null): Promise<Job | undefined> {
+    const job = await this.findById(jobId);
+    if (!job) return undefined;
+    if (this.useDatabase) {
+      const updated = await this.prisma.job.update({
+        where: { id: jobId },
+        data: { status, matchError: matchError ?? null }
+      });
+      return this.mapJob(updated);
+    }
+    job.status = status;
+    job.matchError = matchError ?? undefined;
     return job;
   }
 
@@ -251,6 +269,19 @@ export class JobsService {
     }
     job.status = status;
     return job;
+  }
+
+  async getStoredMatches(jobId: string): Promise<Array<{ agentId: string; matchScore: number | null }>> {
+    if (!this.useDatabase) return [];
+    const matches = await this.prisma.match.findMany({
+      where: { jobId },
+      orderBy: { matchScore: "desc" }
+    });
+    return matches.map((match) => ({ agentId: match.agentId, matchScore: match.matchScore }));
+  }
+
+  isDatabaseEnabled(): boolean {
+    return this.useDatabase;
   }
 
   async all(): Promise<Job[]> {

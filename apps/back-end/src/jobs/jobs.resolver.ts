@@ -3,6 +3,7 @@ import { NotFoundException } from "@nestjs/common";
 import { AgentsService } from "../agents/agents.service";
 import { DaoService } from "../dao/dao.service";
 import { MatchingService } from "../matching/matching.service";
+import { JobsMatchingQueueService } from "./jobs.matching.queue";
 import { CreateJobDto, DisputeJobDto, SelectAgentDto } from "./jobs.dto";
 import { JobDisputeResultType, JobListType, JobMatchResultType, JobSelectionResultType, JobType } from "./jobs.model";
 import { JobsService } from "./jobs.service";
@@ -13,7 +14,8 @@ export class JobsResolver {
     private readonly jobsService: JobsService,
     private readonly agentsService: AgentsService,
     private readonly matchingService: MatchingService,
-    private readonly daoService: DaoService
+    private readonly daoService: DaoService,
+    private readonly matchingQueue: JobsMatchingQueueService
   ) {}
 
   @Query(() => JobListType)
@@ -46,12 +48,43 @@ export class JobsResolver {
     return job;
   }
 
+  @Query(() => JobMatchResultType)
+  async jobMatches(@Args("jobId") jobId: string) {
+    const job = await this.jobsService.findById(jobId);
+    if (!job) {
+      throw new NotFoundException("Job not found");
+    }
+
+    const stored = await this.jobsService.getStoredMatches(jobId);
+    if (stored.length) {
+      const agents = await this.agentsService.findByIds(stored.map((match) => match.agentId));
+      const agentMap = new Map(agents.map((agent) => [agent.id, agent]));
+      const matches = stored
+        .map((match) => {
+          const agent = agentMap.get(match.agentId);
+          if (!agent) return undefined;
+          return { ...agent, score: match.matchScore ?? 0 };
+        })
+        .filter((match): match is (typeof agents)[number] & { score: number } => Boolean(match));
+      return { job, matches };
+    }
+
+    if (!this.jobsService.isDatabaseEnabled()) {
+      const agents = await this.agentsService.all();
+      const matches = this.matchingService.match(job, agents);
+      return { job, matches };
+    }
+
+    return { job, matches: [] };
+  }
+
   @Mutation(() => JobMatchResultType)
   async createJob(@Args("input") input: CreateJobDto) {
     const job = await this.jobsService.create(input);
-    const agents = await this.agentsService.all();
-    const matches = input.autoMatchEnabled ? this.matchingService.match(job, agents) : [];
-    return { job, matches };
+    if (input.autoMatchEnabled) {
+      await this.matchingQueue.enqueue(job.id);
+    }
+    return { job, matches: [] };
   }
 
   @Mutation(() => JobSelectionResultType)

@@ -9,6 +9,9 @@
 			"recommended": true,
 			"a11y": {
 				"noSvgWithoutTitle": "off"
+			},
+			"style": {
+				"useImportType": "off"
 			}
 		}
 	},
@@ -16,13 +19,18 @@
 		"enabled": true,
 		"actions": {
 			"source": {
-				"organizeImports": "on"
+				"organizeImports": "off"
 			}
 		}
 	},
 	"css": {
 		"parser": {
 			"tailwindDirectives": true
+		}
+	},
+	"javascript": {
+		"parser": {
+			"decorators": true
 		}
 	},
 	"files": {

@@ -17,6 +17,7 @@ import {
 import {
   fetchJobDetail,
   formatJobBudget,
+  type MatchedAgent,
   type Job,
   type JobPriority,
   type JobStatus
@@ -31,7 +32,8 @@ const statusVariants: Record<JobStatus, "blue" | "purple" | "red" | "green"> = {
   REVIEWING: "blue",
   COMPLETED: "green",
   DISPUTED: "red",
-  CANCELLED: "red"
+  CANCELLED: "red",
+  FAILED: "red"
 };
 
 const priorityVariants: Record<JobPriority, "blue" | "purple" | "red" | "green"> = {
@@ -45,6 +47,8 @@ const JobDetail = () => {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [job, setJob] = useState<Job | null>(null);
+  const [matches, setMatches] = useState<MatchedAgent[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<MatchedAgent | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -55,7 +59,9 @@ const JobDetail = () => {
       setError("");
       try {
         const data = await fetchJobDetail(id);
-        setJob(data);
+        setJob(data.job);
+        setMatches(data.matches ?? []);
+        setSelectedAgent(data.selectedAgent ?? null);
       } catch (loadError) {
         const message = loadError instanceof Error ? loadError.message : "请求失败";
         setError(message);
@@ -110,6 +116,15 @@ const JobDetail = () => {
         return "未知";
     }
   }, [job?.payoutStrategy]);
+
+  const showSelectedAgent =
+    job?.status === "SUBMITTED" || job?.status === "REVIEWING" || job?.status === "COMPLETED";
+  const showMatchError = job?.status === "FAILED" || job?.status === "CANCELLED";
+
+  const renderScore = (value?: number) => {
+    if (value === undefined) return "—";
+    return value.toFixed(2);
+  };
 
   return (
     <div className="max-w-5xl mx-auto space-y-10 pb-20 relative">
@@ -253,9 +268,56 @@ const JobDetail = () => {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_0.85fr] gap-6">
-        <Card className="border-white/10 bg-gradient-to-br from-slate-950/70 via-slate-950/60 to-blue-950/50 shadow-[0_20px_50px_rgba(30,64,175,0.12)]">
-          <CardContent className="p-8 space-y-8">
-            <div className="space-y-4">
+        <div className="space-y-6">
+          {job.status === "IN_PROGRESS" ? (
+            <Card className="bg-gradient-to-br from-cyan-500/10 via-slate-900/50 to-blue-500/10 border-cyan-400/20">
+              <CardHeader>
+                <h4 className="font-black text-xs uppercase tracking-[0.2em] text-cyan-300">
+                  匹配到的智能体
+                </h4>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                {matches.length ? (
+                  matches.map((agent) => (
+                    <div
+                      key={agent.id}
+                      className="rounded-xl border border-white/10 bg-slate-900/40 px-4 py-3 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-white font-semibold">{agent.name}</span>
+                        <span className="text-cyan-300 font-mono text-xs">
+                          评分: {renderScore(agent.score)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span>评级: {agent.rating ?? "—"}</span>
+                        <span>成功率: {agent.successRate ?? "—"}</span>
+                        <span>响应: {agent.avgResponseTimeMs ?? "—"}ms</span>
+                      </div>
+                      {agent.tags?.length ? (
+                        <div className="flex flex-wrap gap-2">
+                          {agent.tags.slice(0, 3).map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant="outline"
+                              className="border-cyan-500/20 text-cyan-100"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-500 text-sm">暂无匹配结果</p>
+                )}
+              </CardContent>
+            </Card>
+          ) : null}
+
+          <Card className="border-white/10 bg-gradient-to-br from-slate-950/70 via-slate-950/60 to-blue-950/50 shadow-[0_20px_50px_rgba(30,64,175,0.12)]">
+            <CardContent className="p-6 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="size-8 rounded-lg bg-cyan-500/10 border border-cyan-400/20 flex items-center justify-center">
                   <svg className="w-4 h-4 text-cyan-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -267,9 +329,11 @@ const JobDetail = () => {
               <p className="text-slate-400 leading-relaxed">
                 {job.description ?? "暂无描述"}
               </p>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="space-y-4">
+          <Card className="border-white/10 bg-gradient-to-br from-slate-950/70 via-slate-950/60 to-purple-950/40 shadow-[0_16px_40px_rgba(147,51,234,0.12)]">
+            <CardContent className="p-6 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="size-8 rounded-lg bg-purple-500/10 border border-purple-400/20 flex items-center justify-center">
                   <svg className="w-4 h-4 text-purple-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -289,9 +353,9 @@ const JobDetail = () => {
               ) : (
                 <p className="text-slate-500 text-sm">暂无标签</p>
               )}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
         <div className="space-y-6">
           <Card className="bg-slate-900/50 border-blue-500/20 shadow-[0_14px_40px_rgba(59,130,246,0.15)]">
@@ -323,6 +387,48 @@ const JobDetail = () => {
               </div>
             </CardContent>
           </Card>
+
+          {showSelectedAgent ? (
+            <Card className="bg-gradient-to-br from-emerald-500/10 via-slate-900/50 to-cyan-500/10 border-emerald-400/20">
+              <CardHeader>
+                <h4 className="font-black text-xs uppercase tracking-[0.2em] text-emerald-300">
+                  已选中智能体
+                </h4>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                {selectedAgent ? (
+                  <div className="rounded-xl border border-white/10 bg-slate-900/40 px-4 py-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white font-semibold">{selectedAgent.name}</span>
+                      <span className="text-emerald-300 font-mono text-xs">
+                        评分: {renderScore(selectedAgent.score)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                      <span>评级: {selectedAgent.rating ?? "—"}</span>
+                      <span>成功率: {selectedAgent.successRate ?? "—"}</span>
+                      <span>响应: {selectedAgent.avgResponseTimeMs ?? "—"}ms</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-sm">暂无已选中智能体信息</p>
+                )}
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {showMatchError && job.matchError ? (
+            <Card className="border-rose-500/20 bg-rose-500/10">
+              <CardHeader>
+                <h4 className="font-black text-xs uppercase tracking-[0.2em] text-rose-300">
+                  匹配失败原因
+                </h4>
+              </CardHeader>
+              <CardContent className="text-rose-200 text-sm">
+                {job.matchError}
+              </CardContent>
+            </Card>
+          ) : null}
 
           <Card className="bg-gradient-to-br from-purple-600/15 via-slate-900/50 to-blue-600/10 border-purple-500/20">
             <CardHeader>
