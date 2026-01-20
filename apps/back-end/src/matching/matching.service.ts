@@ -55,6 +55,34 @@ const priceFit = (job: Job, agent: Agent): number => {
 
 @Injectable()
 export class MatchingService {
+  explainNoMatch(job: Job, agents: Agent[]): string {
+    if (!agents.length) return "No agents available.";
+
+    const active = agents.filter((agent) => agent.isActive);
+    if (!active.length) return "No active agents.";
+
+    const visible = active.filter((agent) => {
+      if (agent.visibility === "private" && job.visibility === "public") return false;
+      return true;
+    });
+    if (!visible.length) return "No agents match visibility.";
+
+    const supportsPayment = visible.filter((agent) =>
+      agent.supportedPaymentMethods.includes(job.paymentMethod)
+    );
+    if (!supportsPayment.length) return "No agents support payment method.";
+
+    const skillOk = supportsPayment.filter((agent) =>
+      skillLevelMeets(agent.skillLevel, job.requiredSkillLevel)
+    );
+    if (!skillOk.length) return "No agents meet skill level.";
+
+    const priceOk = skillOk.filter((agent) => priceFit(job, agent) > 0);
+    if (!priceOk.length) return "No agents fit budget.";
+
+    return "No matches found.";
+  }
+
   hardFilter(job: Job, agents: Agent[]): Agent[] {
     return agents.filter((agent) => {
       if (!agent.isActive) return false;

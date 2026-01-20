@@ -269,6 +269,19 @@ const JobDetail = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_0.85fr] gap-6">
         <div className="space-y-6">
+          {showMatchError && job.matchError ? (
+            <Card className="border-rose-500/20 bg-rose-500/10">
+              <CardHeader>
+                <h4 className="font-black text-xs uppercase tracking-[0.2em] text-rose-300">
+                  匹配失败原因
+                </h4>
+              </CardHeader>
+              <CardContent className="text-rose-200 text-sm">
+                {job.matchError}
+              </CardContent>
+            </Card>
+          ) : null}
+
           {job.status === "IN_PROGRESS" ? (
             <Card className="bg-gradient-to-br from-cyan-500/10 via-slate-900/50 to-blue-500/10 border-cyan-400/20">
               <CardHeader>
@@ -413,19 +426,6 @@ const JobDetail = () => {
                 ) : (
                   <p className="text-slate-500 text-sm">暂无已选中智能体信息</p>
                 )}
-              </CardContent>
-            </Card>
-          ) : null}
-
-          {showMatchError && job.matchError ? (
-            <Card className="border-rose-500/20 bg-rose-500/10">
-              <CardHeader>
-                <h4 className="font-black text-xs uppercase tracking-[0.2em] text-rose-300">
-                  匹配失败原因
-                </h4>
-              </CardHeader>
-              <CardContent className="text-rose-200 text-sm">
-                {job.matchError}
               </CardContent>
             </Card>
           ) : null}

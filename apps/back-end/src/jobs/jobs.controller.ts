@@ -47,10 +47,31 @@ export class JobsController {
   @Post()
   async create(@Body() payload: CreateJobDto) {
     const job = await this.jobsService.create(payload);
-    if (payload.autoMatchEnabled) {
-      await this.matchingQueue.enqueue(job.id);
+    if (!payload.autoMatchEnabled) {
+      return { job, matches: [] };
     }
-    return { job, matches: [] };
+
+    const hasRedisHost = Boolean(process.env.REDIS_HOST);
+    if (hasRedisHost) {
+      await this.matchingQueue.enqueue(job.id);
+      return { job, matches: [] };
+    }
+
+    const agents = await this.agentsService.all();
+    const matches = this.matchingService.match(job, agents);
+    const noMatchReason =
+      matches.length === 0 ? this.matchingService.explainNoMatch(job, agents) : null;
+    await this.jobsService.saveMatches(
+      job.id,
+      matches.map((agent) => ({ id: agent.id, score: agent.score }))
+    );
+    const updated =
+      (await this.jobsService.setMatchStatus(
+        job.id,
+        matches.length ? "IN_PROGRESS" : "FAILED",
+        matches.length ? null : noMatchReason
+      )) ?? job;
+    return { job: updated, matches };
   }
 
   @Get()

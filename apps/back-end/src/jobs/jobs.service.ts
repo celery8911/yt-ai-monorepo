@@ -271,6 +271,24 @@ export class JobsService {
     return job;
   }
 
+  async saveMatches(
+    jobId: string,
+    matches: Array<{ id: string; score: number }>
+  ): Promise<void> {
+    if (!this.useDatabase) return;
+    await this.prisma.match.deleteMany({ where: { jobId } });
+    if (!matches.length) return;
+    await this.prisma.match.createMany({
+      data: matches.map((agent) => ({
+        id: generateId("match"),
+        jobId,
+        agentId: agent.id,
+        matchScore: agent.score,
+        status: "SUGGESTED"
+      }))
+    });
+  }
+
   async getStoredMatches(jobId: string): Promise<Array<{ agentId: string; matchScore: number | null }>> {
     if (!this.useDatabase) return [];
     const matches = await this.prisma.match.findMany({

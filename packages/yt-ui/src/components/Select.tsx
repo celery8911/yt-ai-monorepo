@@ -2,7 +2,7 @@ import type { SelectHTMLAttributes, ReactNode } from "react";
 import { cn } from "../utils/cn";
 
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
-  label?: string;
+  label?: ReactNode;
   children: ReactNode;
 }
 
