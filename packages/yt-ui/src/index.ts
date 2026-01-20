@@ -9,6 +9,9 @@ export { Switch } from "./components/Switch";
 export { Table, TBody, TD, TH, THead, TR } from "./components/Table";
 export { Tabs } from "./components/Tabs";
 export { Textarea } from "./components/Textarea";
+export { Toast, ToastProvider, ToastTitle, ToastViewport } from "./components/Toast";
+export { default as Toaster } from "./components/Toaster";
+export { useToast } from "./hooks/useToast";
 
 export type { BadgeProps } from "./components/Badge";
 export type { ButtonProps } from "./components/Button";
@@ -21,3 +24,4 @@ export type { SwitchProps } from "./components/Switch";
 export type { TableProps } from "./components/Table";
 export type { TabsProps, TabItem } from "./components/Tabs";
 export type { TextareaProps } from "./components/Textarea";
+export type { ToastVariant } from "./components/Toast";

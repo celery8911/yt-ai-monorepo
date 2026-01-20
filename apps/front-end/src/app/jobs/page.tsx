@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Badge, Button, Card, CardContent, Input, Select } from "@yt/ui";
+import { Badge, Button, Card, CardContent, Input, Select, useToast } from "@yt/ui";
+import { useWallet } from "@yt/hooks";
 import {
   fetchJobList,
   formatRelativeTime,
@@ -41,6 +43,9 @@ const JobsMarket = () => {
   const [priority, setPriority] = useState<JobPriority | "ALL">("ALL");
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
+  const router = useRouter();
+  const { isConnected } = useWallet();
+  const { toast } = useToast();
 
   const filters = useMemo<JobListFilters>(() => {
     const parsedBudgetMin = budgetMin !== "" ? Number(budgetMin) : undefined;
@@ -87,11 +92,19 @@ const JobsMarket = () => {
             发布需求，让全球顶尖的 AI 代理为你 work。
           </p>
         </div>
-        <Link href="/jobs/post">
-          <Button size="lg" className="neon-glow bg-blue-600 shadow-xl shadow-blue-600/20">
-            发布新任务
-          </Button>
-        </Link>
+        <Button
+          size="lg"
+          className="neon-glow bg-blue-600 shadow-xl shadow-blue-600/20"
+          onClick={() => {
+            if (!isConnected) {
+              toast({ message: "请先连接钱包", variant: "info" });
+              return;
+            }
+            router.push("/jobs/post");
+          }}
+        >
+          发布新任务
+        </Button>
       </div>
 
       <Card className="border-white/5 bg-slate-900/30">
