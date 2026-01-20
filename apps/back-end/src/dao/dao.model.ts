@@ -1,4 +1,5 @@
 import { Field, Float, ID, ObjectType } from "@nestjs/graphql";
+import type { DisputeOutcome, DisputeStatus, VoteValue } from "../common/types";
 
 @ObjectType()
 export class DisputeType {
@@ -18,7 +19,7 @@ export class DisputeType {
   reason?: string;
 
   @Field()
-  status!: string;
+  status!: DisputeStatus;
 
   @Field()
   votesFor!: number;
@@ -30,7 +31,7 @@ export class DisputeType {
   totalWeight!: number;
 
   @Field({ nullable: true })
-  resolvedOutcome?: string;
+  resolvedOutcome?: DisputeOutcome;
 
   @Field()
   createdAt!: string;
@@ -51,7 +52,7 @@ export class VoteType {
   voter!: string;
 
   @Field()
-  vote!: string;
+  vote!: VoteValue;
 
   @Field(() => Float)
   weight!: number;
