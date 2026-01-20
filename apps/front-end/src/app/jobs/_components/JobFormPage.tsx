@@ -36,7 +36,7 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
   const [paymentMethod, setPaymentMethod] = useState<CreateJobPayload["paymentMethod"]>("PER_TASK");
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
-  const [currency, setCurrency] = useState<CreateJobPayload["currency"]>("USD");
+  const [currency, setCurrency] = useState<CreateJobPayload["currency"]>("CBT");
   const [requiredSkillLevel, setRequiredSkillLevel] =
     useState<CreateJobPayload["requiredSkillLevel"]>("INTERMEDIATE");
   const [deliverables, setDeliverables] = useState("");
@@ -67,7 +67,7 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
         setPaymentMethod(data.paymentMethod);
         setBudgetMin(data.budgetMin !== undefined ? String(data.budgetMin) : "");
         setBudgetMax(data.budgetMax !== undefined ? String(data.budgetMax) : "");
-        setCurrency(data.currency ?? "USD");
+        setCurrency("CBT");
         setRequiredSkillLevel(data.requiredSkillLevel);
         setDeliverables(data.deliverables ?? "");
         setAcceptanceCriteria(data.acceptanceCriteria ?? "");
@@ -289,8 +289,7 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
                 onChange={(event) => setCurrency(event.target.value)}
                 disabled={paymentMethod === "FREE"}
               >
-                <option value="USD">USD</option>
-                <option value="TOKEN">TOKEN</option>
+                <option value="CBT">CBT</option>
               </Select>
             </CardContent>
           </Card>
