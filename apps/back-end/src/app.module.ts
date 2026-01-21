@@ -14,31 +14,31 @@ import { SupabaseModule } from "./supabase/supabase.module";
 import { WalletModule } from "./wallet/wallet.module";
 
 @Module({
-  imports: [
-    BullModule.forRoot({
-      redis: {
-        host: process.env.REDIS_HOST ?? "127.0.0.1",
-        port: Number(process.env.REDIS_PORT ?? 6379),
-        password: process.env.REDIS_PASSWORD || undefined,
-        db: process.env.REDIS_DB ? Number(process.env.REDIS_DB) : undefined
-      }
-    }),
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      driver: ApolloDriver,
-      autoSchemaFile: true,
-      sortSchema: true,
-      playground: true
-    }),
-    PrismaModule,
-    SupabaseModule,
-    JobsModule,
-    AgentsModule,
-    MatchingModule,
-    BidsModule,
-    WalletModule,
-    BillsModule,
-    DaoModule,
-    DashboardModule
-  ]
+	imports: [
+		BullModule.forRoot({
+			redis: {
+				host: process.env.REDIS_HOST ?? "127.0.0.1",
+				port: Number(process.env.REDIS_PORT ?? 6379),
+				password: process.env.REDIS_PASSWORD || undefined,
+				db: process.env.REDIS_DB ? Number(process.env.REDIS_DB) : undefined,
+			},
+		}),
+		GraphQLModule.forRoot<ApolloDriverConfig>({
+			driver: ApolloDriver,
+			autoSchemaFile: true,
+			sortSchema: true,
+			playground: true,
+		}),
+		PrismaModule,
+		SupabaseModule,
+		JobsModule,
+		AgentsModule,
+		MatchingModule,
+		BidsModule,
+		WalletModule,
+		BillsModule,
+		DaoModule,
+		DashboardModule,
+	],
 })
 export class AppModule {}
