@@ -5,10 +5,7 @@ import { http } from "viem";
 import type { Chain } from "viem/chains";
 import { mainnet, sepolia } from "viem/chains";
 
-export const defaultChains: readonly [Chain, ...Chain[]] = [
-	mainnet,
-	sepolia,
-];
+export const defaultChains: readonly [Chain, ...Chain[]] = [mainnet, sepolia];
 
 export type CreateWalletConfigOptions = {
 	appName: string;
@@ -23,7 +20,13 @@ export const createWalletConfig = ({
 }: CreateWalletConfigOptions) => {
 	const transports = chains.reduce(
 		(acc, chain) => {
-			acc[chain.id] = http();
+			// 使用 Sepolia RPC URL（如果有的话）
+			if (chain.id === sepolia.id && typeof window !== "undefined") {
+				const rpcUrl = process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL;
+				acc[chain.id] = http(rpcUrl);
+			} else {
+				acc[chain.id] = http();
+			}
 			return acc;
 		},
 		{} as Record<number, ReturnType<typeof http>>,
@@ -35,7 +38,7 @@ export const createWalletConfig = ({
 		return createConfig({
 			chains,
 			connectors: [injected()],
-			ssr: true,
+			ssr: false,
 			transports,
 		});
 	}
@@ -44,7 +47,7 @@ export const createWalletConfig = ({
 		appName,
 		projectId,
 		chains,
-		ssr: true,
+		ssr: false,
 		transports,
 	});
 };

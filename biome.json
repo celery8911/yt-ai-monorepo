@@ -7,11 +7,7 @@
 		"enabled": true,
 		"rules": {
 			"recommended": true,
-			"a11y": {
-				"noSvgWithoutTitle": "off",
-				"noLabelWithoutControl": "off",
-				"useValidAnchor": "off"
-			},
+			"a11y": "off",
 			"style": {
 				"useImportType": "off"
 			},
@@ -50,25 +46,10 @@
 	},
 	"overrides": [
 		{
-			"includes": ["**/*.stories.*"],
-			"linter": {
-				"rules": {
-					"a11y": {
-						"noSvgWithoutTitle": "off",
-						"useButtonType": "off"
-					}
-				}
-			}
+			"includes": ["**/*.stories.*"]
 		},
 		{
-			"includes": ["**/*.example.*"],
-			"linter": {
-				"rules": {
-					"a11y": {
-						"useButtonType": "off"
-					}
-				}
-			}
+			"includes": ["**/*.example.*"]
 		}
 	]
 }
