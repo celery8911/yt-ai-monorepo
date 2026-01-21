@@ -21,6 +21,23 @@ function getStagedFiles() {
 	return output ? output.split("\n").filter(Boolean) : [];
 }
 
+function hasDependencyChanges(file) {
+	try {
+		const diff = run(`git diff --cached -- ${file}`);
+		// Check if the diff includes dependency-related fields
+		const dependencyFields = [
+			"dependencies",
+			"devDependencies",
+			"peerDependencies",
+			"optionalDependencies",
+			"packageManager",
+		];
+		return dependencyFields.some((field) => diff.includes(`"${field}"`));
+	} catch {
+		return true; // If we can't check, assume there are dependency changes
+	}
+}
+
 function listAllFiles() {
 	const tracked = run("git ls-files");
 	const untracked = run("git ls-files --others --exclude-standard");
@@ -105,12 +122,17 @@ function main() {
 	);
 	const lockfileStaged = stagedFiles.includes("pnpm-lock.yaml");
 
-	if (changedPackageJson.length > 0 && !lockfileStaged) {
+	// Check if any package.json has dependency changes
+	const packageJsonWithDepChanges = changedPackageJson.filter((file) =>
+		hasDependencyChanges(file),
+	);
+
+	if (packageJsonWithDepChanges.length > 0 && !lockfileStaged) {
 		console.error("Dependency check failed:");
 		console.error(
-			"- Detected changes to package.json without pnpm-lock.yaml staged.",
+			"- Detected dependency changes in package.json without pnpm-lock.yaml staged.",
 		);
-		console.error(`  Modified: ${changedPackageJson.join(", ")}`);
+		console.error(`  Modified: ${packageJsonWithDepChanges.join(", ")}`);
 		process.exit(1);
 	}
 
