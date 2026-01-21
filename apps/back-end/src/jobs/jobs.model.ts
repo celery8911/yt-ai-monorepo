@@ -3,120 +3,123 @@ import { MatchedAgentType } from "../matching/matching.model";
 
 @ObjectType()
 export class JobType {
-  @Field(() => ID)
-  id!: string;
+	@Field(() => ID)
+	id!: string;
 
-  @Field()
-  title!: string;
+	@Field()
+	title!: string;
 
-  @Field({ nullable: true })
-  description?: string;
+	@Field({ nullable: true })
+	description?: string;
 
-  @Field({ nullable: true })
-  category?: string;
+	@Field({ nullable: true })
+	category?: string;
 
-  @Field(() => [String])
-  tags!: string[];
+	@Field(() => [String])
+	tags!: string[];
 
-  @Field()
-  paymentMethod!: string;
+	@Field()
+	paymentMethod!: string;
 
-  @Field(() => Float, { nullable: true })
-  budgetMin?: number;
+	@Field(() => Float, { nullable: true })
+	budgetMin?: number;
 
-  @Field(() => Float, { nullable: true })
-  budgetMax?: number;
+	@Field(() => Float, { nullable: true })
+	budgetMax?: number;
 
-  @Field({ nullable: true })
-  currency?: string;
+	@Field({ nullable: true })
+	currency?: string;
 
-  @Field()
-  requiredSkillLevel!: string;
+	@Field()
+	requiredSkillLevel!: string;
 
-  @Field({ nullable: true })
-  deliverables?: string;
+	@Field({ nullable: true })
+	deliverables?: string;
 
-  @Field({ nullable: true })
-  acceptanceCriteria?: string;
+	@Field({ nullable: true })
+	acceptanceCriteria?: string;
 
-  @Field({ nullable: true })
-  deadlineAt?: string;
+	@Field({ nullable: true })
+	deadlineAt?: string;
 
-  @Field()
-  priority!: string;
+	@Field()
+	priority!: string;
 
-  @Field()
-  autoMatchEnabled!: boolean;
+	@Field()
+	autoMatchEnabled!: boolean;
 
-  @Field()
-  biddingEnabled!: boolean;
+	@Field()
+	biddingEnabled!: boolean;
 
-  @Field()
-  escrowEnabled!: boolean;
+	@Field()
+	escrowEnabled!: boolean;
 
-  @Field()
-  visibility!: string;
+	@Field()
+	visibility!: string;
 
-  @Field(() => Int)
-  reviewWindowDays!: number;
+	@Field(() => Int)
+	reviewWindowDays!: number;
 
-  @Field()
-  payoutStrategy!: string;
+	@Field()
+	payoutStrategy!: string;
 
-  @Field()
-  status!: string;
+	@Field()
+	status!: string;
 
-  @Field()
-  createdBy!: string;
+	@Field()
+	createdBy!: string;
 
-  @Field({ nullable: true })
-  selectedAgentId?: string;
+	@Field({ nullable: true })
+	selectedAgentId?: string;
 
-  @Field()
-  createdAt!: string;
+	@Field({ nullable: true })
+	matchError?: string;
+
+	@Field()
+	createdAt!: string;
 }
 
 @ObjectType()
 export class JobListType {
-  @Field(() => [JobType])
-  data!: JobType[];
+	@Field(() => [JobType])
+	data!: JobType[];
 
-  @Field(() => Int)
-  page!: number;
+	@Field(() => Int)
+	page!: number;
 
-  @Field(() => Int)
-  limit!: number;
+	@Field(() => Int)
+	limit!: number;
 
-  @Field(() => Int)
-  total!: number;
+	@Field(() => Int)
+	total!: number;
 }
 
 @ObjectType()
 export class JobMatchResultType {
-  @Field(() => JobType)
-  job!: JobType;
+	@Field(() => JobType)
+	job!: JobType;
 
-  @Field(() => [MatchedAgentType])
-  matches!: MatchedAgentType[];
+	@Field(() => [MatchedAgentType])
+	matches!: MatchedAgentType[];
 }
 
 @ObjectType()
 export class JobSelectionResultType {
-  @Field(() => JobType)
-  job!: JobType;
+	@Field(() => JobType)
+	job!: JobType;
 
-  @Field({ nullable: true })
-  selectedAgentId?: string;
+	@Field({ nullable: true })
+	selectedAgentId?: string;
 
-  @Field(() => [MatchedAgentType])
-  matches!: MatchedAgentType[];
+	@Field(() => [MatchedAgentType])
+	matches!: MatchedAgentType[];
 }
 
 @ObjectType()
 export class JobDisputeResultType {
-  @Field(() => JobType)
-  job!: JobType;
+	@Field(() => JobType)
+	job!: JobType;
 
-  @Field()
-  disputeId!: string;
+	@Field()
+	disputeId!: string;
 }

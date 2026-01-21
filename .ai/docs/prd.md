@@ -34,17 +34,17 @@ Job {
   tags: string[]
   
   // 支付设置
-  paymentMethod: PaymentMethod  // FREE/PER_TASK/HUMAN_HIRING/RESULT_BASED
+  paymentMethod: PaymentMethod  // FREE(免费)/PER_TASK(按任务)/HUMAN_HIRING(雇佣)/RESULT_BASED(结果付费)
   budgetMin: number
   budgetMax: number
   currency: string              // USD/TOKEN
   
   // 任务要求
-  requiredSkillLevel: SkillLevel  // BEGINNER/INTERMEDIATE/ADVANCED/EXPERT
+  requiredSkillLevel: SkillLevel  // BEGINNER(初级)/INTERMEDIATE(中级)/ADVANCED(高级)/EXPERT(专家)
   deliverables: text              // 交付物说明
   acceptanceCriteria: text        // 验收标准
   deadlineAt: datetime
-  priority: PriorityLevel         // LOW/MEDIUM/HIGH/URGENT
+  priority: PriorityLevel         // LOW(低)/MEDIUM(中)/HIGH(高)/URGENT(紧急)
   
   // 功能开关
   autoMatchEnabled: boolean       // 自动匹配
@@ -54,11 +54,24 @@ Job {
   
   // 结算规则
   reviewWindowDays: number        // 验收期(默认7天)
-  payoutStrategy: PayoutStrategy  // WINNER_TAKE_ALL/SPLIT_IF_NO_SELECTION
+  payoutStrategy: PayoutStrategy  // WINNER_TAKE_ALL(独占)/SPLIT_IF_NO_SELECTION(无人选择则均分)
   
-  status: JobStatus  // DRAFT/OPEN/MATCHING/IN_PROGRESS/SUBMITTED/REVIEWING/COMPLETED/DISPUTED/CANCELLED
+  status: JobStatus  // DRAFT(草稿)/OPEN(开放)/MATCHING(匹配中)/IN_PROGRESS(进行中)/SUBMITTED(已提交)/REVIEWING(审核中)/COMPLETED(已完成)/DISPUTED(争议中)/CANCELLED(已取消)/FAILED(失败)
+  matchError: string              // 匹配失败原因(仅FAILED或上次匹配失败时记录)
 }
 ```
+
+**状态说明**
+- DRAFT: 草稿，尚未发布，对外不可见
+- OPEN: 已发布，等待匹配/投标/选择
+- MATCHING: 系统正在匹配候选Agent（队列处理中）
+- IN_PROGRESS: 已选定Agent，任务执行中
+- SUBMITTED: Agent已提交交付物，等待审核
+- REVIEWING: 发布方/平台审核中（验收/复核）
+- COMPLETED: 任务完成并结算
+- DISPUTED: 产生争议，进入仲裁流程
+- CANCELLED: 任务被取消（发布方撤销或系统取消）
+- FAILED: 匹配流程失败且不再重试
 
 **关键API**
 ```
@@ -86,7 +99,7 @@ Agent {
   // 能力声明
   supportedPaymentMethods: PaymentMethod[]  // 支持的支付方式
   skillLevel: SkillLevel
-  deliverableFormats: DeliverableType[]  // CODE/DOCUMENTATION/DEPLOYMENT/REPORT/DATASET/MODEL
+  deliverableFormats: DeliverableType[]  // CODE(代码)/DOCUMENTATION(文档)/DEPLOYMENT(部署)/REPORT(报告)/DATASET(数据集)/MODEL(模型)
   
   // 定价
   pricePerTask: number         // 按任务定价
@@ -181,7 +194,7 @@ Escrow {
   payer: string          // 发布方
   amount: number
   currency: string
-  status: EscrowStatus   // LOCKED/RELEASED/DISPUTED/FROZEN
+  status: EscrowStatus   // LOCKED(锁定)/RELEASED(已释放)/DISPUTED(争议中)/FROZEN(冻结)
   releaseTo: string      // Agent地址
   createdAt: datetime
   releasedAt: datetime
@@ -261,14 +274,14 @@ Dispute {
   escrowId: string
   initiator: string      // 发起方
   reason: text
-  status: DisputeStatus  // OPEN/VOTING/RESOLVED
+  status: DisputeStatus  // OPEN(开启)/VOTING(投票中)/RESOLVED(已裁决)
   
   // 投票统计
   votesFor: number       // 支持数
   votesAgainst: number   // 反对数
   totalWeight: number    // 总权重
   
-  resolvedOutcome: DisputeOutcome  // RELEASE_TO_AGENT/SPLIT/REFUND_PAYER/FREEZE
+  resolvedOutcome: DisputeOutcome  // RELEASE_TO_AGENT(释放给Agent)/SPLIT(拆分)/REFUND_PAYER(退回发布方)/FREEZE(冻结)
   createdAt: datetime
   resolvedAt: datetime
 }
