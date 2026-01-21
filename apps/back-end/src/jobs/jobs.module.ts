@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { BullModule } from "@nestjs/bull";
 import { AgentsModule } from "../agents/agents.module";
 import { DaoModule } from "../dao/dao.module";
@@ -12,20 +12,20 @@ import { JobsResolver } from "./jobs.resolver";
 import { JobsService } from "./jobs.service";
 
 @Module({
-	imports: [
-		AgentsModule,
-		MatchingModule,
-		DaoModule,
-		PrismaModule,
-		BullModule.registerQueue({ name: MATCHING_QUEUE_NAME }),
-	],
-	controllers: [JobsController],
-	providers: [
-		JobsService,
-		JobsResolver,
-		JobsMatchingQueueService,
-		JobsMatchingProcessor,
-	],
-	exports: [JobsService],
+  imports: [
+    AgentsModule,
+    MatchingModule, forwardRef(() =>
+      DaoModule),
+    PrismaModule,
+    BullModule.registerQueue({ name: MATCHING_QUEUE_NAME }),
+  ],
+  controllers: [JobsController],
+  providers: [
+    JobsService,
+    JobsResolver,
+    JobsMatchingQueueService,
+    JobsMatchingProcessor,
+  ],
+  exports: [JobsService],
 })
-export class JobsModule {}
+export class JobsModule { }
