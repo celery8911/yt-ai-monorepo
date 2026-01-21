@@ -62,9 +62,22 @@ pnpm dev
 
 ## 🧑‍💻 开发指南
 
-1. 安装依赖：`pnpm install`
-2. 启动 Storybook：`pnpm --filter @yt/ui-interface dev`
-3. 构建所有包：`pnpm build`
-4. 查看任务清单：打开 `task.md`
+1. 启用 Corepack（如未启用过）：
+   - `corepack enable`
+2. 准备并激活指定 pnpm 版本：
+   - `corepack prepare pnpm@10.28.0 --activate`
+   - 验证：`pnpm -v`（必须输出 `10.28.0`）
+   - 若提示权限问题，可在上述命令前加 `sudo`
+3. 安装依赖（必须在仓库根目录执行）：`pnpm install`
+4. 添加依赖（必须在仓库根目录执行）：
+   - 给某个包添加依赖：`pnpm add <dep> -F <workspace-package>`  
+     示例：`pnpm add react -F @yt/ui`
+   - 给某个包添加开发依赖：`pnpm add <dep> -D -F <workspace-package>`  
+     示例：`pnpm add @types/react -D -F @yt/ui`
+   - 给根目录添加依赖：`pnpm add <dep> -w`  
+     示例：`pnpm add dotenv -w`
+5. 启动 Storybook：`pnpm --filter @yt/ui-interface dev`
+6. 构建所有包：`pnpm build`
+7. 查看任务清单：打开 `task.md`
 
 如需需求分析与任务拆解，请参考 `/analyze` 命令说明。

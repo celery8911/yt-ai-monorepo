@@ -1,4 +1,8 @@
-export type PaymentMethod = "FREE" | "PER_TASK" | "HUMAN_HIRING" | "RESULT_BASED";
+export type PaymentMethod =
+  | "FREE"
+  | "PER_TASK"
+  | "HUMAN_HIRING"
+  | "RESULT_BASED";
 export type SkillLevel = "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "EXPERT";
 export type PriorityLevel = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 export type PayoutStrategy = "WINNER_TAKE_ALL" | "SPLIT_IF_NO_SELECTION";
@@ -11,7 +15,8 @@ export type JobStatus =
   | "REVIEWING"
   | "COMPLETED"
   | "DISPUTED"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "FAILED";
 
 export type DeliverableType =
   | "CODE"
@@ -23,7 +28,11 @@ export type DeliverableType =
 
 export type EscrowStatus = "LOCKED" | "RELEASED" | "DISPUTED" | "FROZEN";
 export type DisputeStatus = "OPEN" | "VOTING" | "RESOLVED";
-export type DisputeOutcome = "RELEASE_TO_AGENT" | "SPLIT" | "REFUND_PAYER" | "FREEZE";
+export type DisputeOutcome =
+  | "RELEASE_TO_AGENT"
+  | "SPLIT"
+  | "REFUND_PAYER"
+  | "FREEZE";
 export type VoteValue = "approve" | "reject";
 
 export interface Job {
@@ -50,6 +59,7 @@ export interface Job {
   status: JobStatus;
   createdBy: string;
   selectedAgentId?: string;
+  matchError?: string;
   createdAt: string;
 }
 

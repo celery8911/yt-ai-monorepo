@@ -42,8 +42,8 @@
  */
 // 导出地址工具函数和类型
 export {
-  type FormatAddressOptions,
-  formatAddress,
+	type FormatAddressOptions,
+	formatAddress,
 } from "./address/formatAddress";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
