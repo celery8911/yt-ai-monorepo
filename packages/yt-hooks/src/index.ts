@@ -9,3 +9,10 @@ export { useImmer } from "./hooks/useImmer";
 export { createWalletConfig, defaultChains } from "./hooks/wallet/config";
 export { WalletProvider } from "./hooks/wallet/provider";
 export { useWallet } from "./hooks/wallet/useWallet";
+export {
+	useChainId,
+	useReadContract,
+	useSwitchChain,
+	useWriteContract,
+	useWaitForTransactionReceipt,
+} from "wagmi";
