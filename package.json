@@ -34,7 +34,7 @@
 		"turbo": "^2.7.2"
 	},
 	"lint-staged": {
-		"**/*.{js,jsx,ts,tsx}": "biome check --write",
-		"**/*.{json,md,yml,yaml}": "biome format --write"
+		"**/*.{js,jsx,ts,tsx}": "biome check --write --no-errors-on-unmatched",
+		"**/*.{json,md,yml,yaml}": "biome format --write --no-errors-on-unmatched --files-ignore-unknown=true"
 	}
 }

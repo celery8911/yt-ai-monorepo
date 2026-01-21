@@ -14,4 +14,5 @@
 - 禁止在子包目录执行 `pnpm install/add/remove/update`，所有依赖操作必须在仓库根目录完成
 - 添加依赖统一用 `pnpm add <dep> -F <pkg>`，需要开发依赖请加 `-D`
 - 禁止使用 `npm` 或 `yarn` 操作依赖，避免生成冲突的锁文件
+- 统一使用仓库指定的 pnpm 版本（参见 README 中的 Corepack 步骤），避免锁文件格式不一致
 - `pnpm-lock.yaml` 为全局锁文件，改动必须可追溯且与提交保持一致
