@@ -86,6 +86,9 @@ importers:
       '@nestjs/schematics':
         specifier: ^10.1.2
         version: 10.2.3(chokidar@3.6.0)(typescript@5.7.3)
+      '@types/minimatch':
+        specifier: ^6.0.0
+        version: 6.0.0
       '@types/node':
         specifier: ^20.14.12
         version: 20.19.30
