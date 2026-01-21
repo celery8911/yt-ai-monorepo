@@ -3,9 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { formatAddress } from "@yt/libs";
-import { useWallet } from "@yt/hooks";
+import { CHAIN_IDS, formatAddress } from "@yt/libs";
+import { useChainId, useSwitchChain, useWallet } from "@yt/hooks";
 import { Button } from "@yt/ui";
+import { useEffect, useState } from "react";
+import { mainnet, sepolia } from "viem/chains";
 
 const navItems = [
 	{ label: "智能体", path: "/market" },
@@ -20,6 +22,22 @@ const Header = () => {
 	const pathname = usePathname();
 	const { address, isConnected, connect, disconnect, isConnecting } =
 		useWallet();
+	const chainId = useChainId();
+	const { switchChainAsync, isPending: isSwitching } = useSwitchChain();
+	const [mounted, setMounted] = useState(false);
+
+	useEffect(() => {
+		setMounted(true);
+	}, []);
+
+	const showWallet = mounted && isConnected && address;
+	const isSepolia = chainId === CHAIN_IDS.sepolia;
+	const chainLabel =
+		chainId === sepolia.id
+			? "Sepolia"
+			: chainId === mainnet.id
+				? "Ethereum"
+				: "Unknown";
 
 	return (
 		<header className="sticky top-0 z-50 glass border-b border-white/5">
@@ -87,8 +105,21 @@ const Header = () => {
 							/>
 						</div>
 					</Link>
-					{isConnected && address ? (
+					{showWallet ? (
 						<div className="flex items-center gap-2">
+							<Button
+								variant="outline"
+								onClick={() => {
+									if (!isSepolia) {
+										void switchChainAsync({ chainId: CHAIN_IDS.sepolia });
+									}
+								}}
+								disabled={isSwitching || isSepolia}
+							>
+								{isSwitching
+									? "切换中..."
+									: `网络: ${chainLabel}${isSepolia ? "" : " (点此切换)"}`}
+							</Button>
 							<Button className="bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20 px-6">
 								{formatAddress(address)}
 							</Button>
@@ -107,9 +138,9 @@ const Header = () => {
 							onClick={() => {
 								void connect().catch(() => {});
 							}}
-							disabled={isConnecting}
+							disabled={!mounted || isConnecting}
 						>
-							{isConnecting ? "连接中..." : "连接钱包"}
+							{isConnecting && mounted ? "连接中..." : "连接钱包"}
 						</Button>
 					)}
 				</div>
