@@ -360,8 +360,8 @@ export class DaoService {
 				dispute: resolvedDispute
 					? {
 							...this.mapDispute(resolvedDispute),
-							buyer: job?.createdBy,
-							seller: job?.selectedAgentId,
+							buyer: job?.createdBy ?? undefined,
+							seller: job?.selectedAgentId ?? undefined,
 						}
 					: undefined,
 				votes: votes.map((vote) => this.mapVote(vote)),
