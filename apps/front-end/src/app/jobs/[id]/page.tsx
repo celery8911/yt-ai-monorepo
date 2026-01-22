@@ -241,6 +241,11 @@ const JobDetail = () => {
 		return 0n;
 	};
 
+	const retryAgent =
+		escrowRequest &&
+		(matches.find((agent) => agent.id === escrowRequest.agentId) ??
+			(selectedAgent?.id === escrowRequest.agentId ? selectedAgent : null));
+
 	useEffect(() => {
 		if (!escrowRequest || !isApproveSuccess) return;
 
@@ -267,12 +272,12 @@ const JobDetail = () => {
 					matches.find((agent) => agent.id === escrowRequest.agentId) ??
 					selectedAgent;
 				setSelectedAgent(matched ?? null);
+				setEscrowRequest(null);
+				setSubscribingAgentId(null);
 			} catch (selectError) {
 				const message =
 					selectError instanceof Error ? selectError.message : "选择智能体失败";
 				toast({ message, variant: "error" });
-			} finally {
-				setEscrowRequest(null);
 				setSubscribingAgentId(null);
 			}
 		};
@@ -293,25 +298,52 @@ const JobDetail = () => {
 	const handleSubscribe = async (agent: MatchedAgent) => {
 		if (!job) return;
 
-		if (!agent.owner) {
-			toast({ message: "Agent 地址缺失，无法托管支付。", variant: "error" });
-			return;
-		}
-
-		const priceLabel = formatAgentPrice(agent, job.paymentMethod);
-		const amount = parsePriceToCbt(priceLabel);
-		if (!amount) {
-			toast({
-				message: "订阅费用非 CBT 计价或格式不正确。",
-				variant: "error",
-			});
-			return;
-		}
-
 		try {
 			setSubscribingAgentId(agent.id);
 			if (!isConnected) {
 				await connect();
+			}
+
+			if (
+				escrowRequest &&
+				isEscrowSuccess &&
+				escrowRequest.agentId === agent.id
+			) {
+				const response = await selectJobAgent(job.id, agent.id);
+				setJob(response.job);
+				const matched =
+					matches.find((item) => item.id === agent.id) ?? selectedAgent;
+				setSelectedAgent(matched ?? null);
+				setEscrowRequest(null);
+				setSubscribingAgentId(null);
+				return;
+			}
+
+			if (job.paymentMethod === "FREE") {
+				const response = await selectJobAgent(job.id, agent.id);
+				setJob(response.job);
+				const matched =
+					matches.find((item) => item.id === agent.id) ?? selectedAgent;
+				setSelectedAgent(matched ?? null);
+				setSubscribingAgentId(null);
+				return;
+			}
+
+			if (!agent.owner) {
+				toast({ message: "Agent 地址缺失，无法托管支付。", variant: "error" });
+				setSubscribingAgentId(null);
+				return;
+			}
+
+			const priceLabel = formatAgentPrice(agent, job.paymentMethod);
+			const amount = parsePriceToCbt(priceLabel);
+			if (!amount) {
+				toast({
+					message: "订阅费用非 CBT 计价或格式不正确。",
+					variant: "error",
+				});
+				setSubscribingAgentId(null);
+				return;
 			}
 
 			if (chainId !== CHAIN_IDS.sepolia) {
@@ -513,6 +545,28 @@ const JobDetail = () => {
 
 					<div className="grid grid-cols-1 lg:grid-cols-[1.35fr_0.85fr] gap-6">
 						<div className="space-y-6">
+							{escrowRequest && isEscrowSuccess && (
+								<div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+									<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+										<span>
+											托管已完成，但选择智能体还未确认，可点击重试完成选择。
+										</span>
+										<Button
+											variant="outline"
+											size="sm"
+											disabled={
+												!retryAgent || subscribingAgentId === retryAgent.id
+											}
+											onClick={() =>
+												retryAgent && void handleSubscribe(retryAgent)
+											}
+											className="border-amber-400/50 text-amber-100 hover:bg-amber-400/10"
+										>
+											重试选择
+										</Button>
+									</div>
+								</div>
+							)}
 							<JobMatchSection
 								isOwner={isOwner}
 								showMatchError={showMatchError}
