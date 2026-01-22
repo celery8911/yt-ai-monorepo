@@ -1,5 +1,6 @@
-import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import type { Dispute as PrismaDispute, Vote as PrismaVote } from "@prisma/client"; import { Dispute, Vote } from "../common/types";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import type { Dispute as PrismaDispute, Vote as PrismaVote } from "@prisma/client";
+import { Dispute, Vote } from "../common/types";
 import { generateId, nowIso, toNumber } from "../common/utils";
 import { PrismaService } from "../prisma/prisma.service";
 import { WalletService } from "../wallet/wallet.service";
@@ -9,6 +10,8 @@ import { InitiateDisputeDto, VoteDto } from "./dao.dto";
 export class DaoService {
   private readonly disputes: Dispute[] = [];
   private readonly votes: Vote[] = [];
+  private readonly defaultVotingPeriodHours = 48;
+  private readonly defaultMinVoters = 3;
 
   // ✅ 不要在构造时固定住 env 判断（避免模块启动顺序导致永远走错分支）
   private get useDatabase() {
@@ -54,23 +57,107 @@ export class DaoService {
     };
   }
 
+  private get votingPeriodMs() {
+    const hours = Number(process.env.DAO_VOTING_PERIOD_HOURS ?? this.defaultVotingPeriodHours);
+    if (!Number.isFinite(hours) || hours <= 0) {
+      return this.defaultVotingPeriodHours * 60 * 60 * 1000;
+    }
+    return hours * 60 * 60 * 1000;
+  }
+
+  private get minVoters() {
+    const minVoters = Number(process.env.DAO_MIN_VOTERS ?? this.defaultMinVoters);
+    if (!Number.isFinite(minVoters) || minVoters <= 0) {
+      return this.defaultMinVoters;
+    }
+    return Math.floor(minVoters);
+  }
+
+  private isDisputeExpired(dispute: PrismaDispute) {
+    const createdAt = dispute.createdAt?.getTime();
+    if (!createdAt) return false;
+    return Date.now() > createdAt + this.votingPeriodMs;
+  }
+
+  private async resolveDisputeIfNeeded(dispute: PrismaDispute): Promise<PrismaDispute> {
+    if (dispute.status === "RESOLVED") return dispute;
+    if (!this.isDisputeExpired(dispute)) return dispute;
+
+    const job = await this.prisma.job.findUnique({
+      where: { id: dispute.jobId },
+      select: {
+        id: true,
+        createdBy: true,
+        selectedAgentId: true
+      }
+    });
+    if (!job) throw new NotFoundException("Job not found");
+
+    const totalVoters = dispute.votesFor + dispute.votesAgainst;
+    const employerWins =
+      totalVoters < this.minVoters ||
+      dispute.votesFor === dispute.votesAgainst ||
+      dispute.votesFor > dispute.votesAgainst;
+
+    const escrow = await this.prisma.escrow.findUnique({ where: { id: dispute.escrowId } });
+    if (!escrow) throw new NotFoundException("Escrow not found");
+
+    const winnerAddress = employerWins ? job.createdBy : job.selectedAgentId;
+    if (!winnerAddress) {
+      throw new BadRequestException("Winner address not available");
+    }
+
+    if (escrow.status !== "RELEASED") {
+      await this.prisma.escrow.update({
+        where: { id: escrow.id },
+        data: { releaseTo: winnerAddress }
+      });
+      await this.walletService.release(escrow.id);
+    }
+
+    const resolved = await this.prisma.dispute.update({
+      where: { id: dispute.id },
+      data: {
+        status: "RESOLVED",
+        resolvedOutcome: employerWins ? "REFUND_PAYER" : "RELEASE_TO_AGENT",
+        resolvedAt: new Date()
+      }
+    });
+
+    return resolved;
+  }
+
   async initiate(payload: InitiateDisputeDto): Promise<Dispute> {
     const initiator = this.normalizeAddress(payload.initiator);
+    const jobId = payload.jobId?.trim();
+    const inputEscrowId = payload.escrowId?.trim();
+
+    if (!jobId) {
+      throw new BadRequestException("Job id is required");
+    }
 
     if (this.useDatabase) {
-      const job = await this.prisma.job.findUnique({ where: { id: payload.jobId } });
+      const job = await this.prisma.job.findUnique({ where: { id: jobId } });
       if (!job) throw new NotFoundException("Job not found");
 
-      const escrowId = payload.escrowId ?? job.escrowId ?? "";
-      if (escrowId) {
-        const escrow = await this.prisma.escrow.findUnique({ where: { id: escrowId } });
-        if (!escrow) throw new NotFoundException("Escrow not found");
+      const escrowId = job.escrowId ?? "";
+      if (!escrowId) {
+        throw new BadRequestException("Job has no escrow id");
+      }
+      if (inputEscrowId && escrowId !== inputEscrowId) {
+        throw new BadRequestException("Escrow id does not match job");
+      }
+
+      const escrow = await this.prisma.escrow.findUnique({ where: { id: escrowId } });
+      if (!escrow) throw new NotFoundException("Escrow not found");
+      if (escrow.jobId !== jobId) {
+        throw new BadRequestException("Escrow does not belong to job");
       }
 
       const created = await this.prisma.dispute.create({
         data: {
           id: generateId("dispute"),
-          jobId: payload.jobId,
+          jobId,
           escrowId,
           initiator,
           reason: payload.reason,
@@ -82,7 +169,7 @@ export class DaoService {
       // 所以创建 dispute 后把 job.disputeId 写回去，避免 DAO 列表查不到
       try {
         await this.prisma.job.update({
-          where: { id: payload.jobId },
+          where: { id: jobId },
           data: { disputeId: created.id }
         });
       } catch {
@@ -92,10 +179,14 @@ export class DaoService {
       return this.mapDispute(created);
     }
 
+    if (!inputEscrowId) {
+      throw new BadRequestException("Escrow id is required");
+    }
+
     const dispute: Dispute = {
       id: generateId("dispute"),
-      jobId: payload.jobId,
-      escrowId: payload.escrowId ?? "",
+      jobId,
+      escrowId: inputEscrowId,
       initiator,
       reason: payload.reason,
       status: "OPEN",
@@ -111,12 +202,31 @@ export class DaoService {
   async vote(payload: VoteDto): Promise<Dispute | undefined> {
     const voter = this.normalizeAddress(payload.voter);
 
-    const wallet = await this.walletService.balance(voter);
-    const weight = wallet.balance;
-
     if (this.useDatabase) {
       const dispute = await this.prisma.dispute.findUnique({ where: { id: payload.disputeId } });
       if (!dispute) return undefined;
+
+      const resolvedDispute = await this.resolveDisputeIfNeeded(dispute);
+      if (resolvedDispute.status === "RESOLVED") {
+        throw new BadRequestException("Voting is closed");
+      }
+
+      const job = await this.prisma.job.findUnique({
+        where: { id: resolvedDispute.jobId },
+        select: { createdBy: true, selectedAgentId: true }
+      });
+      if (!job) throw new NotFoundException("Job not found");
+
+      const normalizedVoter = this.normalizeAddress(voter);
+      if (
+        normalizedVoter === this.normalizeAddress(job.createdBy) ||
+        normalizedVoter === this.normalizeAddress(job.selectedAgentId)
+      ) {
+        throw new BadRequestException("Buyer or seller cannot vote");
+      }
+      if (normalizedVoter === this.normalizeAddress(resolvedDispute.initiator)) {
+        throw new BadRequestException("Initiator cannot vote");
+      }
 
       const existing = await this.prisma.vote.findFirst({
         where: { disputeId: payload.disputeId, voter }
@@ -130,7 +240,7 @@ export class DaoService {
             disputeId: payload.disputeId,
             voter,
             vote: payload.vote,
-            weight
+            weight: 1
           }
         });
 
@@ -142,7 +252,7 @@ export class DaoService {
           data: {
             votesFor: { increment: deltaFor },
             votesAgainst: { increment: deltaAgainst },
-            totalWeight: { increment: weight },
+            totalWeight: { increment: 1 },
             status: "VOTING"
           }
         });
@@ -153,6 +263,25 @@ export class DaoService {
 
     const dispute = this.disputes.find((item) => item.id === payload.disputeId);
     if (!dispute) return undefined;
+    if (dispute.status === "RESOLVED") {
+      throw new BadRequestException("Voting is closed");
+    }
+    const normalizedVoter = this.normalizeAddress(voter);
+    if (normalizedVoter === this.normalizeAddress(dispute.initiator)) {
+      throw new BadRequestException("Initiator cannot vote");
+    }
+    const createdAt = new Date(dispute.createdAt).getTime();
+    if (Number.isFinite(createdAt) && Date.now() > createdAt + this.votingPeriodMs) {
+      const totalVoters = dispute.votesFor + dispute.votesAgainst;
+      const employerWins =
+        totalVoters < this.minVoters ||
+        dispute.votesFor === dispute.votesAgainst ||
+        dispute.votesFor > dispute.votesAgainst;
+      dispute.status = "RESOLVED";
+      dispute.resolvedOutcome = employerWins ? "REFUND_PAYER" : "RELEASE_TO_AGENT";
+      dispute.resolvedAt = nowIso();
+      throw new BadRequestException("Voting is closed");
+    }
 
     const duplicateVote = this.votes.find(
       (item) => item.disputeId === payload.disputeId && item.voter === voter
@@ -164,7 +293,7 @@ export class DaoService {
       disputeId: payload.disputeId,
       voter,
       vote: payload.vote,
-      weight,
+      weight: 1,
       createdAt: nowIso()
     };
 
@@ -173,19 +302,32 @@ export class DaoService {
     if (payload.vote === "approve") dispute.votesFor += 1;
     else dispute.votesAgainst += 1;
 
-    dispute.totalWeight += weight;
+    dispute.totalWeight += 1;
     dispute.status = "VOTING";
     return dispute;
   }
 
-  async getDetail(id: string): Promise<{ dispute?: Dispute; votes: Vote[] }> {
+  async getDetail(id: string): Promise<{ dispute?: (Dispute & { buyer?: string; seller?: string }); votes: Vote[] }> {
     if (this.useDatabase) {
       const [dispute, votes] = await this.prisma.$transaction([
         this.prisma.dispute.findUnique({ where: { id } }),
         this.prisma.vote.findMany({ where: { disputeId: id } })
       ]);
+      const resolvedDispute = dispute ? await this.resolveDisputeIfNeeded(dispute) : undefined;
+      const job = resolvedDispute
+        ? await this.prisma.job.findUnique({
+          where: { id: resolvedDispute.jobId },
+          select: { createdBy: true, selectedAgentId: true }
+        })
+        : undefined;
       return {
-        dispute: dispute ? this.mapDispute(dispute) : undefined,
+        dispute: resolvedDispute
+          ? {
+            ...this.mapDispute(resolvedDispute),
+            buyer: job?.createdBy,
+            seller: job?.selectedAgentId
+          }
+          : undefined,
         votes: votes.map((vote) => this.mapVote(vote))
       };
     }
@@ -256,7 +398,9 @@ export class DaoService {
         jobs.map(j => [j.disputeId!, j])
       );
 
-      const data = disputes.map(d => {
+      const resolvedDisputes = await Promise.all(disputes.map((item) => this.resolveDisputeIfNeeded(item)));
+
+      const data = resolvedDisputes.map(d => {
         const job = jobByDisputeId.get(d.id)!;
 
         const role =

@@ -2,15 +2,28 @@
 
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useWallet } from "@yt/hooks";
 import { Button, Card, CardContent, CardHeader, Input, Textarea } from "@yt/ui";
 import { initiateDispute } from "@/apis/dao";
 
-const CURRENT_USER_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1";
 const MAX_REASON_LENGTH = 500;
+
+const resolveSubmitError = (submitError: unknown): string => {
+  if (submitError && typeof submitError === "object") {
+    const response = (submitError as { response?: { data?: { message?: unknown } } }).response;
+    const message = response?.data?.message;
+    if (typeof message === "string" && message.trim()) return message;
+    if (Array.isArray(message) && message.length > 0) {
+      return message.filter((item) => typeof item === "string").join("、");
+    }
+  }
+  return submitError instanceof Error ? submitError.message : "提交失败";
+};
 
 const CreateProposal = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { address, isConnected } = useWallet();
   const [jobId, setJobId] = useState(searchParams.get("jobId") ?? "");
   const [escrowId, setEscrowId] = useState(searchParams.get("escrowId") ?? "");
   const [reason, setReason] = useState("");
@@ -29,6 +42,10 @@ const CreateProposal = () => {
       setError("请填写争议原因。");
       return;
     }
+    if (!isConnected || !address) {
+      setError("请先连接钱包。");
+      return;
+    }
     if (reason.length > MAX_REASON_LENGTH) {
       setError(`争议原因不能超过 ${MAX_REASON_LENGTH} 字。`);
       return;
@@ -38,13 +55,12 @@ const CreateProposal = () => {
       const dispute = await initiateDispute({
         jobId: jobId.trim(),
         escrowId: escrowId.trim() || undefined,
-        initiator: CURRENT_USER_ADDRESS,
+        initiator: address,
         reason: reason.trim()
       });
       router.push(`/dao/${dispute.id}`);
     } catch (submitError) {
-      const message = submitError instanceof Error ? submitError.message : "提交失败";
-      setError(message);
+      setError(resolveSubmitError(submitError));
     } finally {
       setSubmitting(false);
     }

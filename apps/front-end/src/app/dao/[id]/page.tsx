@@ -4,9 +4,8 @@ import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Badge, Button, Card, CardContent, CardHeader } from "@yt/ui";
+import { useWallet } from "@yt/hooks";
 import { fetchDisputeDetail, voteDispute } from "@/apis/dao";
-
-const CURRENT_USER_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1";
 
 const resolveStatusVariant = (status?: string) => {
   if (status === "OPEN" || status === "VOTING") return "yellow";
@@ -24,6 +23,7 @@ const formatDateTime = (value?: string) => {
 const DisputeDetail = () => {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { address, isConnected } = useWallet();
   const [voteError, setVoteError] = useState("");
   const [isVoting, setIsVoting] = useState(false);
   const { data, isLoading, error, refetch } = useQuery({
@@ -34,11 +34,28 @@ const DisputeDetail = () => {
 
   const dispute = data?.dispute;
   const votes = data?.votes ?? [];
+  const normalizedAddress = (address ?? "").toLowerCase();
+  const isInitiator =
+    Boolean(dispute?.initiator) &&
+    normalizedAddress === dispute?.initiator?.toLowerCase();
+  const isBuyer =
+    Boolean(dispute?.buyer) && normalizedAddress === dispute?.buyer?.toLowerCase();
+  const isSeller =
+    Boolean(dispute?.seller) && normalizedAddress === dispute?.seller?.toLowerCase();
+  const hasVoted = votes.some(
+    (vote) => normalizedAddress && vote.voter.toLowerCase() === normalizedAddress
+  );
   const totalVotes = (dispute?.votesFor ?? 0) + (dispute?.votesAgainst ?? 0);
   const percentFor = totalVotes > 0 ? Math.round((dispute!.votesFor / totalVotes) * 100) : 0;
   const percentAgainst = totalVotes > 0 ? Math.max(0, 100 - percentFor) : 0;
 
-  const canVote = dispute?.status !== "RESOLVED";
+  const canVote =
+    Boolean(isConnected) &&
+    !isInitiator &&
+    !isBuyer &&
+    !isSeller &&
+    !hasVoted &&
+    dispute?.status !== "RESOLVED";
   const voteHint = useMemo(() => {
     if (!dispute) return "--";
     if (dispute.status === "RESOLVED") return "已完成裁决";
@@ -46,11 +63,11 @@ const DisputeDetail = () => {
   }, [dispute]);
 
   const handleVote = async (value: "approve" | "reject") => {
-    if (!id) return;
+    if (!id || !address) return;
     setVoteError("");
     setIsVoting(true);
     try {
-      await voteDispute({ disputeId: String(id), voter: CURRENT_USER_ADDRESS, vote: value });
+      await voteDispute({ disputeId: String(id), voter: address, vote: value });
       await refetch();
     } catch (err) {
       setVoteError(err instanceof Error ? err.message : "投票失败");
@@ -175,6 +192,18 @@ const DisputeDetail = () => {
             </Card>
 
             {voteError ? <p className="text-xs text-rose-400">{voteError}</p> : null}
+            {!isConnected ? (
+              <p className="text-xs text-slate-500">请先连接钱包再参与投票。</p>
+            ) : null}
+            {isInitiator ? (
+              <p className="text-xs text-slate-500">发起人不能参与投票。</p>
+            ) : null}
+            {isBuyer || isSeller ? (
+              <p className="text-xs text-slate-500">甲方或乙方不能参与投票。</p>
+            ) : null}
+            {hasVoted ? (
+              <p className="text-xs text-slate-500">你已投票，无法重复投票。</p>
+            ) : null}
             <div className="flex flex-col gap-3">
               <Button
                 className="w-full py-4 bg-blue-600 hover:bg-blue-500"

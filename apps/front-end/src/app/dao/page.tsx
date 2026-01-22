@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge, Button, Card, CardContent, CardHeader } from "@yt/ui";
 import { useWallet } from "@yt/hooks";
@@ -28,11 +28,18 @@ const resolveStatusVariant = (status?: string) => {
 
 const DAO = () => {
   const [page] = useState(1);
-  const { address, isConnected } = useWallet();
+  const { address: walletAddress, isConnected: walletConnected } = useWallet();
+  const [hydrated, setHydrated] = useState(false);
+  const address = hydrated ? walletAddress : undefined;
+  const isConnected = hydrated ? walletConnected : false;
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
   const { data, isLoading, error } = useQuery({
     queryKey: ["dao-disputes", address, page],
     queryFn: () => fetchDisputeList({ address: address ?? "", page, limit: 6 }),
-    enabled: Boolean(address)
+    enabled: hydrated && Boolean(address)
   });
 
   const disputes = useMemo(() => data?.data ?? [], [data]);
@@ -95,7 +102,11 @@ const DAO = () => {
             <CardContent className="p-6 text-sm text-rose-400">争议列表加载失败。</CardContent>
           </Card>
         ) : null}
-        {!isConnected ? (
+        {!hydrated ? (
+          <Card className="border-white/5 bg-slate-900/30">
+            <CardContent className="p-6 text-sm text-slate-500">钱包状态加载中...</CardContent>
+          </Card>
+        ) : !isConnected ? (
           <Card className="border-white/5 bg-slate-900/30">
             <CardContent className="p-6 text-sm text-slate-500">请先连接钱包查看争议列表。</CardContent>
           </Card>
