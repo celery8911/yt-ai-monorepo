@@ -242,6 +242,7 @@ export class JobsService {
 					where,
 					skip: (page - 1) * limit,
 					take: limit,
+					orderBy: { createdAt: "desc" },
 				}),
 				this.prisma.job.count({ where }),
 			]);
@@ -261,8 +262,12 @@ export class JobsService {
 			if (filters.priority && job.priority !== filters.priority) return false;
 			return true;
 		});
+		const sorted = [...filtered].sort(
+			(a, b) =>
+				new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+		);
 		const start = (page - 1) * limit;
-		const data = filtered.slice(start, start + limit);
+		const data = sorted.slice(start, start + limit);
 		return {
 			data,
 			page,
@@ -286,12 +291,12 @@ export class JobsService {
 			if (this.useDatabase) {
 				const updated = await this.prisma.job.update({
 					where: { id: jobId },
-					data: { selectedAgentId: agentId, status: "IN_PROGRESS" },
+					data: { selectedAgentId: agentId, status: "REVIEWING" },
 				});
 				return this.mapJob(updated);
 			}
 			job.selectedAgentId = agentId;
-			job.status = "IN_PROGRESS";
+			job.status = "REVIEWING";
 		}
 		return job;
 	}

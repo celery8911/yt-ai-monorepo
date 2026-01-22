@@ -59,6 +59,11 @@ export type MatchedAgent = {
 	avgResponseTimeMs?: number;
 	tags?: string[];
 	score?: number;
+	pricePerTask?: number;
+	resultBasedMinPrice?: number;
+	minBid?: number;
+	currency?: string;
+	owner?: string;
 };
 
 export type JobDetailResponse = {

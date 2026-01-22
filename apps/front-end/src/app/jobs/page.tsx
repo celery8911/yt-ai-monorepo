@@ -22,6 +22,7 @@ import {
 	type JobPriority,
 	type JobStatus,
 } from "@/apis/jobs";
+import { Pagination } from "@/app/dashboard/components/Pagination";
 
 const priorityVariants: Record<
 	JobPriority,
@@ -46,6 +47,8 @@ const statusVariants: Record<JobStatus, "blue" | "purple" | "red" | "green"> = {
 	FAILED: "red",
 };
 
+const PAGE_SIZE = 10;
+
 const JobsMarket = () => {
 	const [jobs, setJobs] = useState<JobListItem[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -58,6 +61,8 @@ const JobsMarket = () => {
 	const [priority, setPriority] = useState<JobPriority | "ALL">("ALL");
 	const [budgetMin, setBudgetMin] = useState("");
 	const [budgetMax, setBudgetMax] = useState("");
+	const [page, setPage] = useState(1);
+	const [total, setTotal] = useState(0);
 	const router = useRouter();
 	const { isConnected } = useWallet();
 	const { toast } = useToast();
@@ -83,20 +88,22 @@ const JobsMarket = () => {
 		setLoading(true);
 		setError("");
 		try {
-			const response = await fetchJobList(filters);
-			const sorted = [...response.items].sort(
-				(a, b) =>
-					new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-			);
-			setJobs(sorted);
+			const response = await fetchJobList({
+				...filters,
+				page,
+				limit: PAGE_SIZE,
+			});
+			setJobs(response.items);
+			setTotal(response.total);
 		} catch (loadError) {
 			const message =
 				loadError instanceof Error ? loadError.message : "请求失败";
 			setError(message);
+			setTotal(0);
 		} finally {
 			setLoading(false);
 		}
-	}, [filters]);
+	}, [filters, page]);
 
 	useEffect(() => {
 		loadJobs();
@@ -133,9 +140,10 @@ const JobsMarket = () => {
 							label="任务状态"
 							className="bg-slate-950/50"
 							value={status}
-							onChange={(event) =>
-								setStatus(event.target.value as JobStatus | "ALL")
-							}
+							onChange={(event) => {
+								setStatus(event.target.value as JobStatus | "ALL");
+								setPage(1);
+							}}
 						>
 							<option value="ALL">全部状态</option>
 							<option value="DRAFT">草稿</option>
@@ -152,7 +160,10 @@ const JobsMarket = () => {
 							label="任务类型"
 							className="bg-slate-950/50"
 							value={category}
-							onChange={(event) => setCategory(event.target.value)}
+							onChange={(event) => {
+								setCategory(event.target.value);
+								setPage(1);
+							}}
 						>
 							<option value="ALL">全部类型</option>
 							<option value="数据分析">数据分析</option>
@@ -165,9 +176,12 @@ const JobsMarket = () => {
 							label="支付方式"
 							className="bg-slate-950/50"
 							value={paymentMethod}
-							onChange={(event) =>
-								setPaymentMethod(event.target.value as JobPaymentMethod | "ALL")
-							}
+							onChange={(event) => {
+								setPaymentMethod(
+									event.target.value as JobPaymentMethod | "ALL",
+								);
+								setPage(1);
+							}}
 						>
 							<option value="ALL">全部方式</option>
 							<option value="FREE">免费</option>
@@ -179,9 +193,10 @@ const JobsMarket = () => {
 							label="优先级"
 							className="bg-slate-950/50"
 							value={priority}
-							onChange={(event) =>
-								setPriority(event.target.value as JobPriority | "ALL")
-							}
+							onChange={(event) => {
+								setPriority(event.target.value as JobPriority | "ALL");
+								setPage(1);
+							}}
 						>
 							<option value="ALL">全部优先级</option>
 							<option value="LOW">低</option>
@@ -194,14 +209,20 @@ const JobsMarket = () => {
 								label="预算下限"
 								placeholder="100"
 								value={budgetMin}
-								onChange={(event) => setBudgetMin(event.target.value)}
+								onChange={(event) => {
+									setBudgetMin(event.target.value);
+									setPage(1);
+								}}
 								className="bg-slate-950/50"
 							/>
 							<Input
 								label="预算上限"
 								placeholder="500"
 								value={budgetMax}
-								onChange={(event) => setBudgetMax(event.target.value)}
+								onChange={(event) => {
+									setBudgetMax(event.target.value);
+									setPage(1);
+								}}
 								className="bg-slate-950/50"
 							/>
 						</div>
@@ -216,6 +237,7 @@ const JobsMarket = () => {
 								setPriority("ALL");
 								setBudgetMin("");
 								setBudgetMax("");
+								setPage(1);
 							}}
 						>
 							重置
@@ -316,6 +338,11 @@ const JobsMarket = () => {
 					))
 				)}
 			</div>
+			<Pagination
+				page={page}
+				totalPages={Math.ceil(total / PAGE_SIZE)}
+				onChange={(nextPage) => setPage(nextPage)}
+			/>
 		</div>
 	);
 };

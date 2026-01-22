@@ -381,23 +381,7 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 									type="date"
 									value={deadlineAt}
 									onChange={(event) => setDeadlineAt(event.target.value)}
-									iconPosition="right"
-									icon={
-										<svg
-											className="w-4 h-4 text-white pointer-events-none"
-											fill="none"
-											viewBox="0 0 24 24"
-											stroke="currentColor"
-										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M8 7V3m8 4V3m-9 8h10m-12 9h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z"
-											/>
-										</svg>
-									}
-									className="[&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:opacity-90 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+									className="[&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200"
 								/>
 								<Select
 									label={withRequiredMark("优先级")}
