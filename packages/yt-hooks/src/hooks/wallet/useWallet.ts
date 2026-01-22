@@ -1,6 +1,27 @@
-import { useAccount, useBalance, useConnect, useDisconnect } from "wagmi";
+import {
+	type UseAccountReturnType,
+	type UseBalanceReturnType,
+	type UseConnectReturnType,
+	type UseDisconnectReturnType,
+	useAccount,
+	useBalance,
+	useConnect,
+	useDisconnect,
+} from "wagmi";
 
-export const useWallet = () => {
+export type UseWalletReturn = {
+	address: UseAccountReturnType["address"];
+	isConnected: UseAccountReturnType["isConnected"];
+	status: UseAccountReturnType["status"];
+	balance: UseBalanceReturnType["data"];
+	connectors: UseConnectReturnType["connectors"];
+	connect: () => ReturnType<UseConnectReturnType["connectAsync"]>;
+	disconnect: () => ReturnType<UseDisconnectReturnType["disconnectAsync"]>;
+	isConnecting: UseConnectReturnType["isPending"];
+	error: UseConnectReturnType["error"];
+};
+
+export const useWallet = (): UseWalletReturn => {
 	const { address, isConnected, status } = useAccount();
 	const { connectors, connectAsync, error, isPending } = useConnect();
 	const { disconnectAsync } = useDisconnect();
@@ -19,9 +40,7 @@ export const useWallet = () => {
 		return connectAsync({ connector });
 	};
 
-	const disconnect = async () => {
-		await disconnectAsync();
-	};
+	const disconnect = () => disconnectAsync();
 
 	return {
 		address,
