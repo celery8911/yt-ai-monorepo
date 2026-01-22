@@ -66,32 +66,38 @@ const priceFit = (job: Job, agent: Agent): number => {
 @Injectable()
 export class MatchingService {
 	explainNoMatch(job: Job, agents: Agent[]): string {
-		if (!agents.length) return "No agents available.";
+		if (!agents.length) return "暂无可用智能体";
 
 		const active = agents.filter((agent) => agent.isActive);
-		if (!active.length) return "No active agents.";
+		if (!active.length) return "暂无可用的活跃智能体";
 
 		const visible = active.filter((agent) => {
 			if (agent.visibility === "private" && job.visibility === "public")
 				return false;
 			return true;
 		});
-		if (!visible.length) return "No agents match visibility.";
+		if (!visible.length) return "暂无符合可见性要求的智能体";
 
-		const supportsPayment = visible.filter((agent) =>
+		const currencyOk = visible.filter((agent) => {
+			if (!job.currency) return true;
+			return agent.currency === job.currency;
+		});
+		if (!currencyOk.length) return "暂无匹配币种的智能体";
+
+		const supportsPayment = currencyOk.filter((agent) =>
 			agent.supportedPaymentMethods.includes(job.paymentMethod),
 		);
-		if (!supportsPayment.length) return "No agents support payment method.";
+		if (!supportsPayment.length) return "暂无支持该支付方式的智能体";
 
 		const skillOk = supportsPayment.filter((agent) =>
 			skillLevelMeets(agent.skillLevel, job.requiredSkillLevel),
 		);
-		if (!skillOk.length) return "No agents meet skill level.";
+		if (!skillOk.length) return "暂无满足技能等级要求的智能体";
 
 		const priceOk = skillOk.filter((agent) => priceFit(job, agent) > 0);
-		if (!priceOk.length) return "No agents fit budget.";
+		if (!priceOk.length) return "暂无符合预算范围的智能体";
 
-		return "No matches found.";
+		return "暂未匹配到合适的智能体";
 	}
 
 	hardFilter(job: Job, agents: Agent[]): Agent[] {
@@ -99,6 +105,7 @@ export class MatchingService {
 			if (!agent.isActive) return false;
 			if (agent.visibility === "private" && job.visibility === "public")
 				return false;
+			if (job.currency && agent.currency !== job.currency) return false;
 			if (!agent.supportedPaymentMethods.includes(job.paymentMethod))
 				return false;
 			if (!skillLevelMeets(agent.skillLevel, job.requiredSkillLevel))

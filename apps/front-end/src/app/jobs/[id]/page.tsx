@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
 	Badge,
 	Button,
@@ -13,15 +13,28 @@ import {
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
+	useToast,
 } from "@yt/ui";
+import { useWallet } from "@yt/hooks";
+import { CBT_ABI, CHAIN_IDS, CONTRACTS, Escrow_ABI } from "@yt/libs";
 import {
 	fetchJobDetail,
 	formatJobBudget,
+	selectJobAgent,
 	type MatchedAgent,
 	type Job,
 	type JobPriority,
 	type JobStatus,
 } from "@/apis/jobs";
+import JobMatchSection from "@/app/jobs/_components/JobMatchSection";
+import {
+	useChainId,
+	useReadContract,
+	useSwitchChain,
+	useWaitForTransactionReceipt,
+	useWriteContract,
+} from "@yt/hooks";
+import { keccak256, parseUnits, stringToHex } from "viem";
 
 const statusVariants: Record<JobStatus, "blue" | "purple" | "red" | "green"> = {
 	DRAFT: "blue",
@@ -54,6 +67,40 @@ const JobDetail = () => {
 	const [selectedAgent, setSelectedAgent] = useState<MatchedAgent | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
+	const [subscribingAgentId, setSubscribingAgentId] = useState<string | null>(
+		null,
+	);
+	const [escrowRequest, setEscrowRequest] = useState<{
+		jobId: `0x${string}`;
+		agentAddress: `0x${string}`;
+		amount: bigint;
+		agentId: string;
+	} | null>(null);
+	const { address, isConnected, connect } = useWallet();
+	const { toast } = useToast();
+	const chainId = useChainId();
+	const { switchChainAsync, isPending: isSwitching } = useSwitchChain();
+	const {
+		writeContract: approve,
+		data: approveHash,
+		isPending: isApprovePending,
+		error: approveError,
+	} = useWriteContract();
+	const {
+		writeContract: createEscrow,
+		data: escrowHash,
+		isPending: isEscrowPending,
+		error: escrowError,
+	} = useWriteContract();
+	const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } =
+		useWaitForTransactionReceipt({ hash: approveHash });
+	const { isLoading: isEscrowConfirming, isSuccess: isEscrowSuccess } =
+		useWaitForTransactionReceipt({ hash: escrowHash });
+	const { data: serviceFeeBps } = useReadContract({
+		address: CONTRACTS.sepolia.Escrow,
+		abi: Escrow_ABI.abi,
+		functionName: "serviceFeeBps",
+	});
 
 	useEffect(() => {
 		if (!id) return;
@@ -127,10 +174,175 @@ const JobDetail = () => {
 		job?.status === "COMPLETED";
 	const showMatchError =
 		job?.status === "FAILED" || job?.status === "CANCELLED";
+	const showMatches = job?.status === "IN_PROGRESS";
+	const isOwner = Boolean(
+		address &&
+			job?.createdBy &&
+			address.toLowerCase() === job.createdBy.toLowerCase(),
+	);
 
 	const renderScore = (value?: number) => {
 		if (value === undefined) return "—";
 		return value.toFixed(2);
+	};
+
+	const formatAgentPrice = (
+		agent: MatchedAgent,
+		paymentMethod?: Job["paymentMethod"],
+	): string => {
+		let price: number | undefined;
+		if (paymentMethod === "RESULT_BASED") {
+			price = agent.resultBasedMinPrice;
+		} else if (paymentMethod === "HUMAN_HIRING") {
+			price = agent.minBid;
+		} else if (paymentMethod === "PER_TASK") {
+			price = agent.pricePerTask;
+		}
+		const fallback =
+			agent.pricePerTask ?? agent.resultBasedMinPrice ?? agent.minBid;
+		const resolved = price ?? fallback;
+		if (resolved === undefined) return "—";
+		return agent.currency ? `${resolved} ${agent.currency}` : `${resolved}`;
+	};
+
+	const parsePriceToCbt = (price?: string) => {
+		if (!price) return null;
+		const match = price.trim().match(/^(\d+(\.\d+)?)(?:\s*([A-Za-z]+))?$/);
+		if (!match) return null;
+		const value = match[1];
+		const currency = match[3]?.toUpperCase();
+		if (currency && currency !== "CBT") return null;
+		return parseUnits(value, 18);
+	};
+
+	const buildEscrowJobId = (jobId: string, agentId: string) =>
+		keccak256(stringToHex(`${jobId}-${agentId}`)) as `0x${string}`;
+
+	const formatSubscribeError = useCallback((message?: string) => {
+		if (!message) return "订阅失败，请稍后再试";
+		const normalized = message.toLowerCase();
+		if (
+			normalized.includes("user rejected") ||
+			normalized.includes("user denied") ||
+			normalized.includes("rejected") ||
+			normalized.includes("cancel")
+		) {
+			return "你已取消操作";
+		}
+		return "订阅失败，请稍后再试";
+	}, []);
+
+	const parseFeeBps = (value: unknown): bigint => {
+		if (typeof value === "bigint") return value;
+		if (typeof value === "number" && Number.isFinite(value)) {
+			return BigInt(value);
+		}
+		if (typeof value === "string" && value !== "") return BigInt(value);
+		return 0n;
+	};
+
+	useEffect(() => {
+		if (!escrowRequest || !isApproveSuccess) return;
+
+		createEscrow({
+			address: CONTRACTS.sepolia.Escrow,
+			abi: Escrow_ABI.abi,
+			functionName: "createEscrow",
+			args: [
+				escrowRequest.jobId,
+				escrowRequest.agentAddress,
+				escrowRequest.amount,
+			],
+		});
+	}, [createEscrow, escrowRequest, isApproveSuccess]);
+
+	useEffect(() => {
+		if (!job || !escrowRequest || !isEscrowSuccess) return;
+
+		const selectAgent = async () => {
+			try {
+				const response = await selectJobAgent(job.id, escrowRequest.agentId);
+				setJob(response.job);
+				const matched =
+					matches.find((agent) => agent.id === escrowRequest.agentId) ??
+					selectedAgent;
+				setSelectedAgent(matched ?? null);
+			} catch (selectError) {
+				const message =
+					selectError instanceof Error ? selectError.message : "选择智能体失败";
+				toast({ message, variant: "error" });
+			} finally {
+				setEscrowRequest(null);
+				setSubscribingAgentId(null);
+			}
+		};
+
+		selectAgent();
+	}, [escrowRequest, isEscrowSuccess, job, matches, selectedAgent, toast]);
+
+	useEffect(() => {
+		if (!approveError && !escrowError) return;
+		const message = formatSubscribeError(
+			approveError?.message ?? escrowError?.message,
+		);
+		toast({ message, variant: "error" });
+		setEscrowRequest(null);
+		setSubscribingAgentId(null);
+	}, [approveError, escrowError, formatSubscribeError, toast]);
+
+	const handleSubscribe = async (agent: MatchedAgent) => {
+		if (!job) return;
+
+		if (!agent.owner) {
+			toast({ message: "Agent 地址缺失，无法托管支付。", variant: "error" });
+			return;
+		}
+
+		const priceLabel = formatAgentPrice(agent, job.paymentMethod);
+		const amount = parsePriceToCbt(priceLabel);
+		if (!amount) {
+			toast({
+				message: "订阅费用非 CBT 计价或格式不正确。",
+				variant: "error",
+			});
+			return;
+		}
+
+		try {
+			setSubscribingAgentId(agent.id);
+			if (!isConnected) {
+				await connect();
+			}
+
+			if (chainId !== CHAIN_IDS.sepolia) {
+				await switchChainAsync({ chainId: CHAIN_IDS.sepolia });
+			}
+
+			const feeBps = parseFeeBps(serviceFeeBps);
+			const fee = (amount * feeBps) / 10_000n;
+			const approveAmount = amount + fee;
+
+			setEscrowRequest({
+				jobId: buildEscrowJobId(job.id, agent.id),
+				agentAddress: agent.owner as `0x${string}`,
+				amount,
+				agentId: agent.id,
+			});
+
+			approve({
+				address: CONTRACTS.sepolia.CBT,
+				abi: CBT_ABI.abi,
+				functionName: "approve",
+				args: [CONTRACTS.sepolia.Escrow, approveAmount],
+			});
+		} catch (subscribeErr) {
+			const message = formatSubscribeError(
+				subscribeErr instanceof Error ? subscribeErr.message : undefined,
+			);
+			toast({ message, variant: "error" });
+			setEscrowRequest(null);
+			setSubscribingAgentId(null);
+		}
 	};
 
 	return (
@@ -301,69 +513,25 @@ const JobDetail = () => {
 
 					<div className="grid grid-cols-1 lg:grid-cols-[1.35fr_0.85fr] gap-6">
 						<div className="space-y-6">
-							{showMatchError && job.matchError ? (
-								<Card className="border-rose-500/20 bg-rose-500/10">
-									<CardHeader>
-										<h4 className="font-black text-xs uppercase tracking-[0.2em] text-rose-300">
-											匹配失败原因
-										</h4>
-									</CardHeader>
-									<CardContent className="text-rose-200 text-sm">
-										{job.matchError}
-									</CardContent>
-								</Card>
-							) : null}
-
-							{job.status === "IN_PROGRESS" ? (
-								<Card className="bg-gradient-to-br from-cyan-500/10 via-slate-900/50 to-blue-500/10 border-cyan-400/20">
-									<CardHeader>
-										<h4 className="font-black text-xs uppercase tracking-[0.2em] text-cyan-300">
-											匹配到的智能体
-										</h4>
-									</CardHeader>
-									<CardContent className="space-y-4 text-sm">
-										{matches.length ? (
-											matches.map((agent) => (
-												<div
-													key={agent.id}
-													className="rounded-xl border border-white/10 bg-slate-900/40 px-4 py-3 space-y-2"
-												>
-													<div className="flex items-center justify-between">
-														<span className="text-white font-semibold">
-															{agent.name}
-														</span>
-														<span className="text-cyan-300 font-mono text-xs">
-															评分: {renderScore(agent.score)}
-														</span>
-													</div>
-													<div className="flex items-center justify-between text-xs text-slate-400">
-														<span>评级: {agent.rating ?? "—"}</span>
-														<span>成功率: {agent.successRate ?? "—"}</span>
-														<span>
-															响应: {agent.avgResponseTimeMs ?? "—"}ms
-														</span>
-													</div>
-													{agent.tags?.length ? (
-														<div className="flex flex-wrap gap-2">
-															{agent.tags.slice(0, 3).map((tag) => (
-																<Badge
-																	key={tag}
-																	variant="outline"
-																	className="border-cyan-500/20 text-cyan-100"
-																>
-																	{tag}
-																</Badge>
-															))}
-														</div>
-													) : null}
-												</div>
-											))
-										) : (
-											<p className="text-slate-500 text-sm">暂无匹配结果</p>
-										)}
-									</CardContent>
-								</Card>
-							) : null}
+							<JobMatchSection
+								isOwner={isOwner}
+								showMatchError={showMatchError}
+								matchError={job.matchError}
+								matches={matches}
+								selectedAgent={selectedAgent}
+								showSelectedAgent={showSelectedAgent}
+								showMatches={showMatches}
+								jobPaymentMethod={job.paymentMethod}
+								onSubscribe={handleSubscribe}
+								subscribingAgentId={subscribingAgentId}
+								isSwitching={isSwitching}
+								isApprovePending={isApprovePending}
+								isApproveConfirming={isApproveConfirming}
+								isEscrowPending={isEscrowPending}
+								isEscrowConfirming={isEscrowConfirming}
+								renderScore={renderScore}
+								formatAgentPrice={formatAgentPrice}
+							/>
 
 							<Card className="border-white/10 bg-gradient-to-br from-slate-950/70 via-slate-950/60 to-blue-950/50 shadow-[0_20px_50px_rgba(30,64,175,0.12)]">
 								<CardContent className="p-6 space-y-4">
@@ -470,43 +638,6 @@ const JobDetail = () => {
 									</div>
 								</CardContent>
 							</Card>
-
-							{showSelectedAgent ? (
-								<Card className="bg-gradient-to-br from-emerald-500/10 via-slate-900/50 to-cyan-500/10 border-emerald-400/20">
-									<CardHeader>
-										<h4 className="font-black text-xs uppercase tracking-[0.2em] text-emerald-300">
-											已选中智能体
-										</h4>
-									</CardHeader>
-									<CardContent className="space-y-4 text-sm">
-										{selectedAgent ? (
-											<div className="rounded-xl border border-white/10 bg-slate-900/40 px-4 py-3 space-y-2">
-												<div className="flex items-center justify-between">
-													<span className="text-white font-semibold">
-														{selectedAgent.name}
-													</span>
-													<span className="text-emerald-300 font-mono text-xs">
-														评分: {renderScore(selectedAgent.score)}
-													</span>
-												</div>
-												<div className="flex items-center justify-between text-xs text-slate-400">
-													<span>评级: {selectedAgent.rating ?? "—"}</span>
-													<span>
-														成功率: {selectedAgent.successRate ?? "—"}
-													</span>
-													<span>
-														响应: {selectedAgent.avgResponseTimeMs ?? "—"}ms
-													</span>
-												</div>
-											</div>
-										) : (
-											<p className="text-slate-500 text-sm">
-												暂无已选中智能体信息
-											</p>
-										)}
-									</CardContent>
-								</Card>
-							) : null}
 
 							<Card className="bg-gradient-to-br from-purple-600/15 via-slate-900/50 to-blue-600/10 border-purple-500/20">
 								<CardHeader>

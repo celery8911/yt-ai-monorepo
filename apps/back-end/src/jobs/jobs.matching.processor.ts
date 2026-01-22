@@ -37,7 +37,7 @@ export class JobsMatchingProcessor {
 			matches.map((agent) => ({ id: agent.id, score: agent.score })),
 		);
 
-		const nextStatus = matches.length ? "IN_PROGRESS" : "OPEN";
+		const nextStatus = matches.length ? "IN_PROGRESS" : "FAILED";
 		const matchError = matches.length ? null : noMatchReason;
 		await this.jobsService.setMatchStatus(target.id, nextStatus, matchError);
 	}
