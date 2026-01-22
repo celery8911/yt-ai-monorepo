@@ -14,9 +14,6 @@ importers:
       '@changesets/cli':
         specifier: ^2.29.8
         version: 2.29.8(@types/node@22.19.7)
-      '@types/minimatch':
-        specifier: ^6.0.0
-        version: 6.0.0
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -84,9 +81,6 @@ importers:
       '@nestjs/schematics':
         specifier: ^10.1.2
         version: 10.2.3(chokidar@3.6.0)(typescript@5.7.3)
-      '@types/minimatch':
-        specifier: ^6.0.0
-        version: 6.0.0
       '@types/node':
         specifier: ^20.14.12
         version: 20.19.30
@@ -112,9 +106,6 @@ importers:
       '@nomicfoundation/hardhat-toolbox':
         specifier: ^5.0.0
         version: 5.0.0(285de7b715e89503afc1d4bc7ae2c5f9)
-      '@types/minimatch':
-        specifier: ^6.0.0
-        version: 6.0.0
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
