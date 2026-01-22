@@ -38,7 +38,7 @@ export const createWalletConfig = ({
 		return createConfig({
 			chains,
 			connectors: [injected()],
-			ssr: false,
+			ssr: true,
 			transports,
 		});
 	}
@@ -47,7 +47,7 @@ export const createWalletConfig = ({
 		appName,
 		projectId,
 		chains,
-		ssr: false,
+		ssr: true,
 		transports,
 	});
 };
