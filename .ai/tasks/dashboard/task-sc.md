@@ -155,6 +155,47 @@
 
 ---
 
+## Phase 5: Queue-based Automation
+
+### [DONE] DASH-SC-008 新增队列式自动处理入口
+
+- **验收标准**：
+  - Escrow 增加 `releaseReady()`，无需传入 jobId 处理队列头部到期任务
+  - DisputeDAO 增加 `resolveReady()`，无需传入 jobId 处理队列头部到期争议
+  - 队列顺序基于创建时间，保证 FIFO 处理
+  - Keeper 权限控制保持一致
+- **影响文件**：
+  - `apps/contract/contracts/Escrow.sol`
+  - `apps/contract/contracts/DisputeDAO.sol`
+- **完成日期**：2026-01-20
+
+### [DONE] DASH-SC-009 更新测试与工具页
+
+- **验收标准**：
+  - 新增队列式处理的测试覆盖
+  - 更新 `escrow-test.html` 支持生成 bytes32 与队列函数调用
+  - 文档补充无参函数的 Upkeep 触发方式
+- **影响文件**：
+  - `apps/contract/test/escrow.test.ts`
+  - `apps/contract/tools/escrow-test.html`
+  - `apps/contract/README.md`
+- **完成日期**：2026-01-20
+
+### [DONE] DASH-SC-010 修复队列阻塞问题
+
+- **验收标准**：
+  - `releaseReady/resolveReady` 不再被队列头阻塞
+  - 可跳过未到期或冻结的任务，处理后续可执行项
+  - 增加对应测试覆盖
+- **影响文件**：
+  - `apps/contract/contracts/Escrow.sol`
+  - `apps/contract/contracts/DisputeDAO.sol`
+  - `apps/contract/test/escrow.test.ts`
+  - `apps/contract/README.md`
+- **完成日期**：2026-01-20
+
+---
+
 ## 版本历史
 
 - **2026-01-19**: 初始版本，新增 Dashboard 合约任务草案

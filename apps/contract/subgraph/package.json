@@ -1,0 +1,5 @@
+{
+	"devDependencies": {
+		"@graphprotocol/graph-ts": "^0.38.2"
+	}
+}

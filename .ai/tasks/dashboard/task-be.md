@@ -110,8 +110,109 @@
 
 ---
 
+## Phase 4: 合约自动化轮询（Backend Keeper）
+
+### [DONE] DASH-BE-008 接入 Subgraph 读链上到期任务
+
+- **验收标准**：
+  - 新增 Subgraph 查询客户端（仅用必要字段）
+  - 支持查询到期 Escrow（status=LOCKED 且 releaseAt <= now）
+  - 支持查询可结算 Dispute（status=OPEN 且 openedAt + votingPeriod <= now）
+  - 查询结果限定分页/批量大小，避免全量拉取
+- **依赖**：DASH-SC-010, Subgraph 部署可用
+- **影响文件**：
+  - `apps/back-end/src/keeper/subgraph.client.ts`
+  - `apps/back-end/src/keeper/queries.ts`
+- **完成日期**：2026-01-23
+
+### [DONE] DASH-BE-009 实现 Keeper 轮询任务
+
+- **验收标准**：
+  - 定时轮询间隔默认 2 分钟（可配置）
+  - 使用钱包地址作为 keeper 签名地址（配置项）
+  - 调用 `Escrow.releaseReady()` 与 `DisputeDAO.resolveReady()`
+  - 单轮最多处理 N 条（可配置）
+  - 失败自动重试，避免重复执行（幂等处理）
+- **依赖**：DASH-BE-008
+- **影响文件**：
+  - `apps/back-end/src/keeper/index.ts`
+  - `apps/back-end/src/keeper/scheduler.ts`
+  - `apps/back-end/src/keeper/runner.ts`
+- **完成日期**：2026-01-23
+
+### [DONE] DASH-BE-010 测试与本地验证模块
+
+- **验收标准**：
+  - 提供本地测试入口（dry-run 模式，仅打印将执行的 jobId）
+  - 提供集成测试脚本（可模拟调用 releaseReady/resolveReady）
+  - 关键配置项可通过 `.env` 覆盖（RPC、keeper 私钥、轮询间隔）
+  - 在 `.env.example` 中补充 keeper 配置项
+- **依赖**：DASH-BE-009
+- **影响文件**：
+  - `apps/back-end/src/keeper/__tests__/keeper.test.ts`
+  - `apps/back-end/src/keeper/cli.ts`
+- **完成日期**：2026-01-23
+
+### [DONE] DASH-BE-011 错误与日志可观测
+
+- **验收标准**：
+  - 轮询与交易失败实时打印到终端（包含 tx hash / revert reason）
+  - 每轮任务输出摘要（成功/失败数量、耗时）
+  - 支持日志级别配置（info/warn/error）
+- **依赖**：DASH-BE-009
+- **影响文件**：
+  - `apps/back-end/src/keeper/logger.ts`
+  - `apps/back-end/src/keeper/runner.ts`
+- **完成日期**：2026-01-23
+
+---
+
+## Phase 5: 性能与可靠性优化
+
+### [DONE] DASH-BE-012 批处理与退避策略
+
+- **验收标准**：
+  - 支持每轮批量处理（maxBatch 可配置）
+  - 失败任务指数退避（避免高频失败刷链）
+  - 支持自定义重试上限
+- **依赖**：DASH-BE-009
+- **影响文件**：
+  - `apps/back-end/src/keeper/runner.ts`
+  - `apps/back-end/src/keeper/scheduler.ts`
+  - `apps/back-end/src/keeper/state.ts`
+  - `apps/back-end/src/keeper/config.ts`
+  - `apps/back-end/.env.example`
+ - **完成日期**：2026-01-24
+
+### [DONE] DASH-BE-013 幂等与重复调用保护
+
+- **验收标准**：
+  - 记录已处理 jobId（短期缓存或持久化）
+  - 同一 jobId 在冷却窗口内不重复发起交易
+  - 出错后可重新放行
+- **依赖**：DASH-BE-009
+- **影响文件**：
+  - `apps/back-end/src/keeper/state.ts`
+  - `apps/back-end/src/keeper/runner.ts`
+ - **完成日期**：2026-01-24
+
+### [DONE] DASH-BE-014 成本与链上反馈优化
+
+- **验收标准**：
+  - 仅对“可执行”的 jobId 发交易（预估 gas + 静态模拟）
+  - 记录每笔交易 gas 使用与成本
+  - 输出失败原因到终端（revert reason）
+- **依赖**：DASH-BE-009, DASH-BE-011
+ - **影响文件**：
+  - `apps/back-end/src/keeper/runner.ts`
+ - **完成日期**：2026-01-24
+- **影响文件**：
+  - `apps/back-end/src/keeper/runner.ts`
+  - `apps/back-end/src/keeper/logger.ts`
+
+---
+
 ## 版本历史
 
 - **2026-01-19**: 初始版本，基于 PRD 3.7 拆解
 - **2026-01-19**: DASH-BE-001 ~ 006 完成，由 Codex Cloud 执行
-

@@ -45,6 +45,8 @@ contract Escrow is Ownable {
     uint256 public releaseDelay;
 
     mapping(bytes32 => EscrowInfo) private escrows;
+    bytes32[] private releaseQueue;
+    uint256 private releaseHead;
 
     event PaymentCreated(bytes32 indexed jobId, address payer, address agent, uint256 price, uint256 serviceFee);
     event AutoReleaseScheduled(bytes32 indexed jobId, uint256 releaseAt);
@@ -129,6 +131,7 @@ contract Escrow is Ownable {
             releaseAt: uint40(releaseAt),
             status: Status.LOCKED
         });
+        releaseQueue.push(jobId);
 
         emit PaymentCreated(jobId, msg.sender, agent, price, fee);
         emit AutoReleaseScheduled(jobId, releaseAt);
@@ -159,6 +162,36 @@ contract Escrow is Ownable {
             revert TooEarly();
         }
         _releaseToAgent(jobId, escrow);
+    }
+
+    function releaseReady() external {
+        if (msg.sender != keeper) {
+            revert Unauthorized();
+        }
+        for (uint256 i = releaseHead; i < releaseQueue.length; i++) {
+            bytes32 jobId = releaseQueue[i];
+            EscrowInfo storage escrow = escrows[jobId];
+            if (escrow.status == Status.RELEASED || escrow.status == Status.REFUNDED) {
+                if (i == releaseHead) {
+                    releaseHead += 1;
+                }
+                continue;
+            }
+            if (escrow.status != Status.LOCKED) {
+                if (i == releaseHead) {
+                    releaseHead += 1;
+                }
+                continue;
+            }
+            if (block.timestamp < escrow.releaseAt) {
+                continue;
+            }
+            _releaseToAgent(jobId, escrow);
+            if (i == releaseHead) {
+                releaseHead += 1;
+            }
+            return;
+        }
     }
 
     function freeze(bytes32 jobId) external {
