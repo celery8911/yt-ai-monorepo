@@ -1,5 +1,5 @@
 """Wallet balances derived from on-chain events."""
-type Wallet @entity {
+type Wallet @entity(immutable: false) {
   id: ID!
   balance: BigInt!
   lockedAmount: BigInt!
@@ -9,7 +9,7 @@ type Wallet @entity {
 }
 
 """Escrow record for a job payment."""
-type Escrow @entity {
+type Escrow @entity(immutable: false) {
   id: ID!
   jobId: Bytes!
   payer: Bytes!
@@ -21,11 +21,12 @@ type Escrow @entity {
   releaseAt: BigInt!
   createdAt: BigInt!
   releasedAt: BigInt
+  refundedAt: BigInt
   frozen: Boolean!
 }
 
 """Dispute lifecycle for an escrow."""
-type Dispute @entity {
+type Dispute @entity(immutable: false) {
   id: ID!
   jobId: Bytes!
   escrowId: ID!
@@ -40,7 +41,7 @@ type Dispute @entity {
 }
 
 """Vote entries for dispute participation."""
-type Vote @entity {
+type Vote @entity(immutable: false) {
   id: ID!
   disputeId: ID!
   voter: Bytes!
@@ -50,7 +51,7 @@ type Vote @entity {
 }
 
 """Treasury accounting for fees and ETH in."""
-type Treasury @entity {
+type Treasury @entity(immutable: false) {
   id: ID!
   ethCollected: BigInt!
   cbtFeesCollected: BigInt!
