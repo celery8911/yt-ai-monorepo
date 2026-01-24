@@ -59,6 +59,9 @@ apps/contract/coverage.json
 apps/contract/gas-report.txt
 apps/contract/typechain-types/
 
+# Contract tools (local HTML experiments)
+apps/contract/tools/*.html
+
 # Subgraph build outputs
 apps/contract/subgraph/build/
 apps/contract/subgraph/generated/
@@ -112,3 +115,14 @@ out/
 
 # Error logs
 error.log
+
+# Library build outputs (generated in src during local builds)
+packages/yt-libs/src/*.d.ts
+packages/yt-libs/src/*.map
+packages/yt-libs/src/*.cjs
+packages/yt-libs/src/*.cjs.map
+packages/yt-libs/src/*.esm.js
+packages/yt-libs/src/*.esm.js.map
+packages/yt-libs/src/*.umd.js
+packages/yt-libs/src/*.umd.js.map
+packages/yt-libs/src/*.ts.map

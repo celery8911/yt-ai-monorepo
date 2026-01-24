@@ -12,6 +12,8 @@ import { MatchingModule } from "./matching/matching.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { SupabaseModule } from "./supabase/supabase.module";
 import { WalletModule } from "./wallet/wallet.module";
+import { KeeperModule } from "./keeper/keeper.module";
+import { ChainStatusModule } from "./chain-status/chain-status.module";
 
 @Module({
 	imports: [
@@ -39,6 +41,8 @@ import { WalletModule } from "./wallet/wallet.module";
 		BillsModule,
 		DaoModule,
 		DashboardModule,
+		KeeperModule,
+		ChainStatusModule,
 	],
 })
 export class AppModule {}

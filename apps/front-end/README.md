@@ -31,6 +31,35 @@
 - 可以调用 `apps/back-end/` 中的 API 接口
 - 可以集成 `apps/contract/` 中的智能合约（通过 ABI）
 
+## 链上雇佣状态查询（推荐走后端聚合接口）
+
+为避免前端各自拼 Subgraph 查询，建议统一调用后端聚合接口：
+
+- `GET /api/chain-status/escrow/by-job?jobId=job-1`
+- `GET /api/chain-status/escrow/by-agent?agent=0x...&activeOnly=true`
+
+说明：
+- `jobId` 为业务字符串，后端会统一转换为 `bytes32`（`ethers.id(jobId)`）。
+- `activeOnly=true` 仅返回进行中的雇佣（LOCKED/DISPUTED/FROZEN）。
+- 响应包含 `jobIdBytes32` 与 `status`，可直接映射 UI 状态。
+
+如需直连 Subgraph，请先与合约负责人确认 schema 与查询模板，避免字段变更导致前端报错。
+
+### JobId 规则（前端输入）
+
+- 前端只传业务字符串 `jobId`（如 `job-1` 或数据库 ID）。
+- 后端统一转换为 `bytes32`（`ethers.id(jobId)`），前端不要自行计算。
+
+### 状态映射（UI 显示）
+
+| 状态 | 含义 | UI 建议 |
+| --- | --- | --- |
+| LOCKED | 已托管，待释放 | 进行中 |
+| RELEASED | 已支付给 agent | 已完成 |
+| REFUNDED | 退回雇主 | 已取消 |
+| DISPUTED | 争议中 | 争议中 |
+| FROZEN | 冻结中 | 冻结中 |
+
 ## 负责人
 
 Frontend Agent - 详见 [`.ai/agents/frontend-agent.md`](../../.ai/agents/frontend-agent.md)

@@ -68,6 +68,8 @@ contract DisputeDAO is Ownable {
     mapping(bytes32 => mapping(address => bool)) private hasVoted;
     mapping(bytes32 => mapping(address => bool)) private voteSide;
     mapping(bytes32 => mapping(address => bool)) private hasClaimed;
+    bytes32[] private disputeQueue;
+    uint256 private disputeHead;
 
     event DisputeOpened(bytes32 indexed jobId, address indexed initiator, uint8 reason);
     event VoteCast(bytes32 indexed jobId, address indexed voter, bool support, uint256 cost);
@@ -134,6 +136,7 @@ contract DisputeDAO is Ownable {
             employerWins: false,
             rewardPerWinner: 0
         });
+        disputeQueue.push(jobId);
 
         escrow.freeze(jobId);
 
@@ -170,6 +173,58 @@ contract DisputeDAO is Ownable {
         if (msg.sender != keeper) {
             revert Unauthorized();
         }
+        _resolve(jobId);
+    }
+
+    function resolveReady() external {
+        if (msg.sender != keeper) {
+            revert Unauthorized();
+        }
+        for (uint256 i = disputeHead; i < disputeQueue.length; i++) {
+            bytes32 jobId = disputeQueue[i];
+            Dispute storage dispute = disputes[jobId];
+            if (dispute.status != Status.OPEN) {
+                if (i == disputeHead) {
+                    disputeHead += 1;
+                }
+                continue;
+            }
+            if (block.timestamp <= dispute.openedAt + votingPeriod) {
+                continue;
+            }
+            _resolve(jobId);
+            if (i == disputeHead) {
+                disputeHead += 1;
+            }
+            return;
+        }
+    }
+
+    function claimReward(bytes32 jobId) external {
+        Dispute storage dispute = disputes[jobId];
+        if (dispute.status != Status.RESOLVED) {
+            revert InvalidStatus();
+        }
+        if (!hasVoted[jobId][msg.sender]) {
+            revert Unauthorized();
+        }
+        if (hasClaimed[jobId][msg.sender]) {
+            revert Unauthorized();
+        }
+        bool supportEmployer = voteSide[jobId][msg.sender];
+        if (supportEmployer != dispute.employerWins) {
+            revert NotWinner();
+        }
+        if (dispute.rewardPerWinner == 0) {
+            revert NoReward();
+        }
+
+        hasClaimed[jobId][msg.sender] = true;
+        cbt.safeTransfer(msg.sender, dispute.rewardPerWinner);
+        emit RewardDistributed(jobId, msg.sender, dispute.rewardPerWinner);
+    }
+
+    function _resolve(bytes32 jobId) private {
         Dispute storage dispute = disputes[jobId];
         if (dispute.status != Status.OPEN) {
             revert InvalidStatus();
@@ -208,29 +263,5 @@ contract DisputeDAO is Ownable {
         dispute.rewardPerWinner = rewardPerWinner;
 
         emit DisputeResolved(jobId, employerWins);
-    }
-
-    function claimReward(bytes32 jobId) external {
-        Dispute storage dispute = disputes[jobId];
-        if (dispute.status != Status.RESOLVED) {
-            revert InvalidStatus();
-        }
-        if (!hasVoted[jobId][msg.sender]) {
-            revert Unauthorized();
-        }
-        if (hasClaimed[jobId][msg.sender]) {
-            revert Unauthorized();
-        }
-        bool supportEmployer = voteSide[jobId][msg.sender];
-        if (supportEmployer != dispute.employerWins) {
-            revert NotWinner();
-        }
-        if (dispute.rewardPerWinner == 0) {
-            revert NoReward();
-        }
-
-        hasClaimed[jobId][msg.sender] = true;
-        cbt.safeTransfer(msg.sender, dispute.rewardPerWinner);
-        emit RewardDistributed(jobId, msg.sender, dispute.rewardPerWinner);
     }
 }
