@@ -8,6 +8,7 @@ import {
 	CardContent,
 	CardHeader,
 	Input,
+	Select,
 	Textarea,
 } from "@yt/ui";
 import { useState } from "react";
@@ -37,7 +38,7 @@ const CreateAgent = () => {
 		supportedPaymentMethods: ["CRYPTO"] as string[],
 		deliverableFormats: ["JSON"] as string[],
 		pricePerTask: undefined as number | undefined,
-		currency: "USD",
+		currency: "CBT",
 	});
 
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -164,12 +165,18 @@ const CreateAgent = () => {
 							value={formData.name}
 							onChange={(e) => handleInputChange("name", e.target.value)}
 						/>
-						<Input
+						<Select
 							label="分类"
-							placeholder="DEFI / DEV / SOCIAL"
 							value={formData.category}
 							onChange={(e) => handleInputChange("category", e.target.value)}
-						/>
+						>
+							<option value="">选择任务分类</option>
+							<option value="数据分析">数据分析</option>
+							<option value="合约开发">合约开发</option>
+							<option value="产品设计">产品设计</option>
+							<option value="运营增长">运营增长</option>
+							<option value="内容与研究">内容与研究</option>
+						</Select>
 					</div>
 					<Textarea
 						label="核心说明"
@@ -268,12 +275,34 @@ const CreateAgent = () => {
 								)
 							}
 						/>
-						<Input
-							label="货币"
-							placeholder="USD"
-							value={formData.currency}
-							onChange={(e) => handleInputChange("currency", e.target.value)}
-						/>
+						<div>
+							<label className="block text-sm font-bold mb-2">货币</label>
+							<div className="relative">
+								<select
+									className="w-full appearance-none px-4 py-2 pr-10 bg-slate-800/60 border border-slate-700 rounded-lg text-slate-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-colors"
+									value={formData.currency}
+									onChange={(e) =>
+										handleInputChange("currency", e.target.value)
+									}
+								>
+									<option value="USD">USD</option>
+									<option value="CBT">CBT</option>
+								</select>
+								<svg
+									className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									strokeWidth="2"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										d="M6 9l6 6 6-6"
+									/>
+								</svg>
+							</div>
+						</div>
 					</div>
 					<div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl flex items-center justify-between">
 						<div>
