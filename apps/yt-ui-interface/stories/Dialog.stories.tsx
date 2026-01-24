@@ -3,7 +3,7 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 展示 Radix Dialog 组件的各种使用场景
 
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryObj } from "@storybook/react";
 import { fn } from "@storybook/test";
 // 🧩 导入 Dialog 组件
 // 从 @yt/ui 包中导入组件
@@ -14,7 +14,7 @@ import { useState } from "react";
 // 📖 元数据配置
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const meta = {
+const meta: Meta<typeof Dialog> = {
 	title: "Components/Dialog",
 	component: Dialog,
 	parameters: {
@@ -97,7 +97,12 @@ export const WithForm: Story = {
 			>
 				<form className="space-y-4">
 					<Input id="username" label="用户名" placeholder="请输入用户名" />
-					<Input id="email" label="邮箱" type="email" placeholder="user@example.com" />
+					<Input
+						id="email"
+						label="邮箱"
+						type="email"
+						placeholder="user@example.com"
+					/>
 					<Select id="role" label="角色">
 						<option>管理员</option>
 						<option>编辑者</option>
@@ -148,7 +153,9 @@ export const Confirmation: Story = {
 							/>
 						</svg>
 						<div>
-							<h4 className="text-sm font-medium text-destructive mb-1">警告</h4>
+							<h4 className="text-sm font-medium text-destructive mb-1">
+								警告
+							</h4>
 							<p className="text-sm text-destructive/90">
 								删除账户后，所有数据将被永久清除，包括：
 							</p>
