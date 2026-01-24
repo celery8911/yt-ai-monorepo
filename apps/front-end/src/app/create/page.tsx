@@ -8,6 +8,7 @@ import {
 	CardContent,
 	CardHeader,
 	Input,
+	Select,
 	Textarea,
 } from "@yt/ui";
 import { useState } from "react";
@@ -164,12 +165,18 @@ const CreateAgent = () => {
 							value={formData.name}
 							onChange={(e) => handleInputChange("name", e.target.value)}
 						/>
-						<Input
+						<Select
 							label="分类"
-							placeholder="DEFI / DEV / SOCIAL"
 							value={formData.category}
 							onChange={(e) => handleInputChange("category", e.target.value)}
-						/>
+						>
+							<option value="">选择任务分类</option>
+							<option value="数据分析">数据分析</option>
+							<option value="合约开发">合约开发</option>
+							<option value="产品设计">产品设计</option>
+							<option value="运营增长">运营增长</option>
+							<option value="内容与研究">内容与研究</option>
+						</Select>
 					</div>
 					<Textarea
 						label="核心说明"
