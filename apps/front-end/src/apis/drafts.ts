@@ -68,7 +68,7 @@ export const createJobDraft = async (
 	for (const path of paths) {
 		for (const data of bodyVariants) {
 			try {
-				const response = await request<{ result?: JobDraftResponse }>(
+				const response = await request<unknown>(
 					{
 						method: "POST",
 						url: path,
@@ -77,7 +77,13 @@ export const createJobDraft = async (
 					{ baseURL },
 				);
 
-				return response.result ?? response;
+				if (response && typeof response === "object" && "result" in response) {
+					return (
+						(response as { result?: JobDraftResponse }).result ??
+						(response as unknown as JobDraftResponse)
+					);
+				}
+				return response as unknown as JobDraftResponse;
 			} catch (error) {
 				lastError = error;
 				if (isNotFoundError(error)) {
