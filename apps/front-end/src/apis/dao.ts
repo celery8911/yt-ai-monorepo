@@ -16,6 +16,8 @@ export type Dispute = {
 	resolvedOutcome?: string;
 	createdAt: string;
 	resolvedAt?: string;
+	buyer?: string;
+	seller?: string;
 };
 
 export type Vote = {
