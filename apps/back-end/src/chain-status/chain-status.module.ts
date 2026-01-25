@@ -5,5 +5,6 @@ import { ChainStatusService } from "./chain-status.service";
 @Module({
 	controllers: [ChainStatusController],
 	providers: [ChainStatusService],
+	exports: [ChainStatusService],
 })
 export class ChainStatusModule {}

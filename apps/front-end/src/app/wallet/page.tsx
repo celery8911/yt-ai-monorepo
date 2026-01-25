@@ -19,6 +19,8 @@ import {
 import { useUserStore } from "@/store/useUserStore";
 import { useCBT } from "@/hooks/contracts/useCBT";
 import { formatUnits } from "viem";
+import { fetchAgentList } from "@/apis/agent";
+import { fetchEngagementsByUser } from "@/apis/chain-status";
 
 const Wallet = () => {
 	const {
@@ -34,6 +36,21 @@ const Wallet = () => {
 	const [showBuyCBT, setShowBuyCBT] = useState(false);
 	const [ethAmount, setEthAmount] = useState("");
 	const [mounted, setMounted] = useState(false);
+	const [transactions, setTransactions] = useState<
+		Array<{
+			id: string;
+			agentName: string;
+			agentId: string;
+			jobId?: string;
+			status: string;
+			amount: string;
+			date: string;
+		}>
+	>([]);
+	const [transactionsLoading, setTransactionsLoading] = useState(false);
+	const [transactionsError, setTransactionsError] = useState<string | null>(
+		null,
+	);
 
 	// 使用 CBT Hook
 	const {
@@ -69,32 +86,55 @@ const Wallet = () => {
 		}
 	}, [isBuySuccess, refetchBalance]);
 
-	const transactions = [
-		{
-			id: 1,
-			type: "INCOME",
-			amount: "+0.5 ETH",
-			desc: "智能代理佣金: CyberTrade",
-			status: "COMPLETED",
-			date: "2024.03.12",
-		},
-		{
-			id: 2,
-			type: "EXPENSE",
-			amount: "-0.1 ETH",
-			desc: "发布任务保证金",
-			status: "COMPLETED",
-			date: "2024.03.11",
-		},
-		{
-			id: 3,
-			type: "LOCKED",
-			amount: "1.2 ETH",
-			desc: "托管合约中",
-			status: "PENDING",
-			date: "2024.03.10",
-		},
-	];
+	useEffect(() => {
+		const loadTransactions = async () => {
+			if (!address) {
+				setTransactions([]);
+				return;
+			}
+			setTransactionsLoading(true);
+			setTransactionsError(null);
+			try {
+				const [{ engagements }, agentList] = await Promise.all([
+					fetchEngagementsByUser(address, { first: 20 }),
+					fetchAgentList(),
+				]);
+				const agentNameById = new Map(
+					agentList.items.map((agent) => [agent.id, agent.name]),
+				);
+				const mapped = engagements.map((engagement) => {
+					const agentName =
+						agentNameById.get(engagement.agentId) ?? engagement.agentId;
+					const totalPaid = BigInt(engagement.totalPaid);
+					const dateLabel = new Date(
+						Number(engagement.startTime) * 1000,
+					).toLocaleDateString();
+					const jobId =
+						engagement.jobId && engagement.jobId !== ""
+							? engagement.jobId
+							: undefined;
+					return {
+						id: engagement.id,
+						agentName,
+						agentId: engagement.agentId,
+						jobId,
+						status: engagement.status,
+						amount: `${formatUnits(totalPaid, 18)} CBT`,
+						date: dateLabel,
+					};
+				});
+				setTransactions(mapped);
+			} catch (err) {
+				setTransactionsError(
+					err instanceof Error ? err.message : "加载交易记录失败",
+				);
+			} finally {
+				setTransactionsLoading(false);
+			}
+		};
+
+		void loadTransactions();
+	}, [address]);
 
 	const handleBuyCBT = async () => {
 		if (!ethAmount || Number.parseFloat(ethAmount) <= 0) {
@@ -336,7 +376,8 @@ const Wallet = () => {
 						<THead>
 							<TR>
 								<TH>时间</TH>
-								<TH>说明</TH>
+								<TH>Agent</TH>
+								<TH>关联任务</TH>
 								<TH>状态</TH>
 								<TH className="text-right">金额</TH>
 							</TR>
@@ -345,19 +386,28 @@ const Wallet = () => {
 							{transactions.map((tx) => (
 								<TR key={tx.id}>
 									<TD className="text-slate-500 font-mono">{tx.date}</TD>
-									<TD className="font-bold">{tx.desc}</TD>
+									<TD className="font-bold">{tx.agentName}</TD>
+									<TD className="text-slate-400">
+										{tx.jobId ? tx.jobId : "--"}
+									</TD>
 									<TD>
 										<Badge
-											variant={tx.status === "COMPLETED" ? "blue" : "yellow"}
+											variant={
+												tx.status === "COMPLETED"
+													? "green"
+													: tx.status === "CANCELLED"
+														? "outline"
+														: "blue"
+											}
 										>
 											{tx.status}
 										</Badge>
 									</TD>
 									<TD
 										className={`text-right font-black ${
-											tx.type === "INCOME"
+											tx.status === "COMPLETED"
 												? "text-emerald-400"
-												: tx.type === "EXPENSE"
+												: tx.status === "CANCELLED"
 													? "text-rose-400"
 													: "text-blue-400"
 										}`}
@@ -366,8 +416,27 @@ const Wallet = () => {
 									</TD>
 								</TR>
 							))}
+							{transactions.length === 0 && !transactionsLoading && (
+								<TR>
+									<TD colSpan={4} className="text-center text-slate-500">
+										暂无交易记录
+									</TD>
+								</TR>
+							)}
+							{transactionsLoading && (
+								<TR>
+									<TD colSpan={4} className="text-center text-slate-500">
+										加载中...
+									</TD>
+								</TR>
+							)}
 						</TBody>
 					</Table>
+					{transactionsError && (
+						<p className="text-xs text-rose-400 px-6 pb-6">
+							{transactionsError}
+						</p>
+					)}
 				</CardContent>
 			</Card>
 		</div>

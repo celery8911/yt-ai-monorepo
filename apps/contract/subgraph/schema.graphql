@@ -57,3 +57,32 @@ type Treasury @entity(immutable: false) {
   cbtFeesCollected: BigInt!
   updatedAt: BigInt!
 }
+
+"""Engagement (agent hiring record)"""
+type Engagement @entity(immutable: false) {
+  id: ID!
+  engagementId: BigInt!
+  user: Bytes!
+  agentId: String!
+  agentOwner: Bytes!
+  jobId: String
+  purchaseType: String!
+  totalPaid: BigInt!
+  startTime: BigInt!
+  endTime: BigInt
+  status: String!
+  transactions: [Transaction!]! @derivedFrom(field: "engagement")
+}
+
+"""Transaction history"""
+type Transaction @entity(immutable: true) {
+  id: ID!
+  type: String!
+  engagement: Engagement
+  from: Bytes!
+  to: Bytes
+  amount: BigInt!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: Bytes!
+}

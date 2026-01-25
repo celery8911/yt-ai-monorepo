@@ -96,6 +96,136 @@ const ACTIVE_STATUSES = ["LOCKED", "DISPUTED", "FROZEN"] as const;
 
 type ActiveStatus = (typeof ACTIVE_STATUSES)[number];
 
+const engagementByIdQuery = `
+  query EngagementById($id: ID!) {
+    engagement(id: $id) {
+      id
+      engagementId
+      user
+      agentId
+      agentOwner
+      jobId
+      purchaseType
+      totalPaid
+      startTime
+      endTime
+      status
+      transactions {
+        id
+        type
+        from
+        to
+        amount
+        timestamp
+        blockNumber
+        transactionHash
+      }
+    }
+  }
+`;
+
+const engagementsByUserQuery = `
+  query EngagementsByUser($user: Bytes!, $first: Int!, $skip: Int!) {
+    engagements(
+      where: { user: $user }
+      first: $first
+      skip: $skip
+      orderBy: startTime
+      orderDirection: desc
+    ) {
+      id
+      engagementId
+      user
+      agentId
+      agentOwner
+      jobId
+      purchaseType
+      totalPaid
+      startTime
+      endTime
+      status
+    }
+  }
+`;
+
+const engagementsByAgentIdQuery = `
+  query EngagementsByAgentId($agentId: String!, $first: Int!, $skip: Int!) {
+    engagements(
+      where: { agentId: $agentId }
+      first: $first
+      skip: $skip
+      orderBy: startTime
+      orderDirection: desc
+    ) {
+      id
+      engagementId
+      user
+      agentId
+      agentOwner
+      jobId
+      purchaseType
+      totalPaid
+      startTime
+      endTime
+      status
+    }
+  }
+`;
+
+const engagementsByOwnerQuery = `
+  query EngagementsByOwner($agentOwner: Bytes!, $first: Int!, $skip: Int!) {
+    engagements(
+      where: { agentOwner: $agentOwner }
+      first: $first
+      skip: $skip
+      orderBy: startTime
+      orderDirection: desc
+    ) {
+      id
+      engagementId
+      user
+      agentId
+      agentOwner
+      jobId
+      purchaseType
+      totalPaid
+      startTime
+      endTime
+      status
+    }
+  }
+`;
+
+type TransactionRecord = {
+	id: string;
+	type: string;
+	from: string;
+	to: string | null;
+	amount: string;
+	timestamp: string;
+	blockNumber: string;
+	transactionHash: string;
+};
+
+type EngagementRecord = {
+	id: string;
+	engagementId: string;
+	user: string;
+	agentId: string;
+	agentOwner: string;
+	jobId: string | null;
+	purchaseType: string;
+	totalPaid: string;
+	startTime: string;
+	endTime: string | null;
+	status: string;
+	transactions?: TransactionRecord[];
+};
+
+type EngagementByIdResponse = { engagement: EngagementRecord | null };
+
+type EngagementsByUserResponse = { engagements: EngagementRecord[] };
+
 @Injectable()
 export class ChainStatusService {
 	private readonly subgraphUrl = process.env.SUBGRAPH_URL || "";
@@ -115,7 +245,7 @@ export class ChainStatusService {
 	}
 
 	private normalizeAddress(address: string): string {
-		return ethers.getAddress(address);
+		return ethers.getAddress(address).toLowerCase();
 	}
 
 	private isActiveStatus(status?: string): status is ActiveStatus {
@@ -175,6 +305,92 @@ export class ChainStatusService {
 			isEmployed: activeEscrows.length > 0,
 			activeCount: activeEscrows.length,
 			escrows,
+		};
+	}
+
+	async getEngagementById(engagementId: string) {
+		const data = await querySubgraph<{ id: string }, EngagementByIdResponse>(
+			this.ensureSubgraphUrl(),
+			{
+				query: engagementByIdQuery,
+				variables: { id: engagementId },
+			},
+		);
+
+		return data.engagement;
+	}
+
+	async getEngagementsByUser(
+		userAddress: string,
+		options: { first?: number; skip?: number } = {},
+	) {
+		const { first = 20, skip = 0 } = options;
+		const normalizedUser = this.normalizeAddress(userAddress);
+
+		const data = await querySubgraph<
+			{ user: string; first: number; skip: number },
+			EngagementsByUserResponse
+		>(this.ensureSubgraphUrl(), {
+			query: engagementsByUserQuery,
+			variables: {
+				user: normalizedUser,
+				first,
+				skip,
+			},
+		});
+
+		return {
+			user: normalizedUser,
+			engagements: data.engagements ?? [],
+		};
+	}
+
+	async getEngagementsByAgentId(
+		agentId: string,
+		options: { first?: number; skip?: number } = {},
+	) {
+		const { first = 20, skip = 0 } = options;
+
+		const data = await querySubgraph<
+			{ agentId: string; first: number; skip: number },
+			EngagementsByUserResponse
+		>(this.ensureSubgraphUrl(), {
+			query: engagementsByAgentIdQuery,
+			variables: {
+				agentId,
+				first,
+				skip,
+			},
+		});
+
+		return {
+			agentId,
+			engagements: data.engagements ?? [],
+		};
+	}
+
+	async getEngagementsByOwner(
+		ownerAddress: string,
+		options: { first?: number; skip?: number } = {},
+	) {
+		const { first = 20, skip = 0 } = options;
+		const normalizedOwner = this.normalizeAddress(ownerAddress);
+
+		const data = await querySubgraph<
+			{ agentOwner: string; first: number; skip: number },
+			EngagementsByUserResponse
+		>(this.ensureSubgraphUrl(), {
+			query: engagementsByOwnerQuery,
+			variables: {
+				agentOwner: normalizedOwner,
+				first,
+				skip,
+			},
+		});
+
+		return {
+			agentOwner: normalizedOwner,
+			engagements: data.engagements ?? [],
 		};
 	}
 }
