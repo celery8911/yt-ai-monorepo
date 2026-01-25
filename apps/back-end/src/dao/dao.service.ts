@@ -4,6 +4,7 @@ import {
 	Injectable,
 	NotFoundException,
 } from "@nestjs/common";
+import { Contract, JsonRpcProvider, Wallet, ethers } from "ethers";
 import type {
 	Dispute as PrismaDispute,
 	Vote as PrismaVote,
@@ -20,10 +21,18 @@ export class DaoService {
 	private readonly votes: Vote[] = [];
 	private readonly defaultVotingPeriodHours = 48;
 	private readonly defaultMinVoters = 3;
+	private readonly daoAbi = [
+		"function openDispute(bytes32 jobId, uint8 reason)",
+		"function vote(bytes32 jobId, bool supportEmployer)",
+	] as const;
 
 	// ✅ 不要在构造时固定住 env 判断（避免模块启动顺序导致永远走错分支）
 	private get useDatabase() {
 		return Boolean(process.env.DATABASE_URL);
+	}
+
+	private get useChain() {
+		return (process.env.DAO_CHAIN_ENABLED || "").toLowerCase() === "true";
 	}
 
 	constructor(
@@ -33,6 +42,86 @@ export class DaoService {
 
 	private normalizeAddress(address?: string | null) {
 		return (address ?? "").trim();
+	}
+
+	private normalizeAddressForChain(address: string) {
+		try {
+			return ethers.getAddress(address);
+		} catch {
+			throw new BadRequestException("Invalid address");
+		}
+	}
+
+	private normalizeJobId(jobId: string) {
+		if (ethers.isHexString(jobId, 32)) {
+			return jobId.toLowerCase();
+		}
+		return ethers.id(jobId);
+	}
+
+	private parseReason(reason?: string) {
+		if (!reason) return 0;
+		const value = Number(reason);
+		if (!Number.isFinite(value) || value < 0) return 0;
+		if (value > 255) return 255;
+		return Math.floor(value);
+	}
+
+	private getDaoContract() {
+		const rpcUrl = process.env.RPC_URL || "";
+		const daoAddress = process.env.DAO_ADDRESS || "";
+		const privateKey = process.env.DAO_SIGNER_PRIVATE_KEY || "";
+		if (!rpcUrl || !daoAddress || !privateKey) {
+			throw new BadRequestException(
+				"DAO chain config missing (RPC_URL, DAO_ADDRESS, DAO_SIGNER_PRIVATE_KEY)",
+			);
+		}
+		const provider = new JsonRpcProvider(rpcUrl);
+		const signer = new Wallet(privateKey, provider);
+		const contract = new Contract(daoAddress, this.daoAbi, signer);
+		return { contract, signer };
+	}
+
+	private async openDisputeOnChain(
+		jobId: string,
+		reason?: string,
+		initiator?: string,
+	) {
+		const { contract, signer } = this.getDaoContract();
+		const signerAddress = await signer.getAddress();
+		if (initiator) {
+			const normalizedInitiator = this.normalizeAddressForChain(initiator);
+			if (normalizedInitiator !== signerAddress) {
+				throw new BadRequestException(
+					"Initiator must match DAO signer when DAO_CHAIN_ENABLED is true",
+				);
+			}
+		}
+		const jobIdBytes32 = this.normalizeJobId(jobId);
+		const reasonCode = this.parseReason(reason);
+		const tx = await contract.openDispute(jobIdBytes32, reasonCode);
+		await tx.wait();
+	}
+
+	private async voteOnChain(
+		jobId: string,
+		vote: VoteDto["vote"],
+		voter?: string,
+	) {
+		const { contract, signer } = this.getDaoContract();
+		const signerAddress = await signer.getAddress();
+		if (voter) {
+			const normalizedVoter = this.normalizeAddressForChain(voter);
+			if (normalizedVoter !== signerAddress) {
+				throw new BadRequestException(
+					"Voter must match DAO signer when DAO_CHAIN_ENABLED is true",
+				);
+			}
+		}
+		const jobIdBytes32 = this.normalizeJobId(jobId);
+		const supportEmployer = vote === "approve";
+		const tx = await contract.vote(jobIdBytes32, supportEmployer);
+		await tx.wait();
 	}
 
 	private mapDispute(dispute: PrismaDispute): Dispute {
@@ -96,6 +185,7 @@ export class DaoService {
 	private async resolveDisputeIfNeeded(
 		dispute: PrismaDispute,
 	): Promise<PrismaDispute> {
+		if (this.useChain) return dispute;
 		if (dispute.status === "RESOLVED") return dispute;
 		if (!this.isDisputeExpired(dispute)) return dispute;
 
@@ -174,6 +264,10 @@ export class DaoService {
 				throw new BadRequestException("Escrow does not belong to job");
 			}
 
+			if (this.useChain) {
+				await this.openDisputeOnChain(jobId, payload.reason, initiator);
+			}
+
 			const created = await this.prisma.dispute.create({
 				data: {
 					id: generateId("dispute"),
@@ -201,6 +295,10 @@ export class DaoService {
 
 		if (!inputEscrowId) {
 			throw new BadRequestException("Escrow id is required");
+		}
+
+		if (this.useChain) {
+			await this.openDisputeOnChain(jobId, payload.reason, initiator);
 		}
 
 		const dispute: Dispute = {
@@ -257,6 +355,10 @@ export class DaoService {
 			});
 			if (existing) throw new ConflictException("Already voted");
 
+			if (this.useChain) {
+				await this.voteOnChain(resolvedDispute.jobId, payload.vote, voter);
+			}
+
 			const updated = await this.prisma.$transaction(async (tx) => {
 				await tx.vote.create({
 					data: {
@@ -289,6 +391,9 @@ export class DaoService {
 		if (!dispute) return undefined;
 		if (dispute.status === "RESOLVED") {
 			throw new BadRequestException("Voting is closed");
+		}
+		if (this.useChain) {
+			await this.voteOnChain(dispute.jobId, payload.vote, voter);
 		}
 		const normalizedVoter = this.normalizeAddress(voter);
 		if (normalizedVoter === this.normalizeAddress(dispute.initiator)) {
