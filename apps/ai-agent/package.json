@@ -1,13 +1,18 @@
 {
-	"name": "@yt/agents",
+	"name": "@yt-ai/ai-agent",
 	"version": "1.0.0",
-	"private": true,
-	"type": "module",
+	"main": "index.js",
 	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
 		"dev": "mastra dev",
 		"build": "mastra build",
 		"start": "mastra start"
 	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"description": "",
+	"type": "module",
 	"engines": {
 		"node": ">=20.9.0"
 	},

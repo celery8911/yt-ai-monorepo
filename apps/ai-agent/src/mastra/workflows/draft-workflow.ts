@@ -218,9 +218,9 @@ const generateDraft = createStep({
 		if (!inputData) {
 			throw new Error("Input data not found");
 		}
-		if (!process.env.OPENAI_API_KEY) {
-			throw new Error("OPENAI_API_KEY is not set");
-		}
+		// if (!process.env.OPENAI_API_KEY) {
+		//     throw new Error("OPENAI_API_KEY is not set");
+		// }
 
 		const agent = mastra?.getAgent("draftAgent");
 		if (!agent) {
