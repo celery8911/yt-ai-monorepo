@@ -28,7 +28,7 @@ export const weatherAgent = new Agent({
       Use the weatherWorkflowTool to fetch current weather data.
 `,
 	// 使用的 AI 模型
-	model: "iflowcn/glm-4.6",
+	model: process.env.MODEL_NAME || "iflowcn/glm-4.6",
 	// Agent 可使用的工具集合
 	tools: { weatherWorkflowTool },
 	// 评分器配置，用于评估 Agent 性能

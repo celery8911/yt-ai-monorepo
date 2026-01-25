@@ -10,7 +10,7 @@ Return JSON only. No markdown, no code fences.
 If a value is unknown, keep it empty and add it to missing[].
 Always add confidence scores (0-1) for any field you set.
 `,
-	model: "iflowcn/glm-4.6",
+	model: process.env.MODEL_NAME || "iflowcn/glm-4.6",
 	tools: {},
 	memory: new Memory({
 		storage: new LibSQLStore({
