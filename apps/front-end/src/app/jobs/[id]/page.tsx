@@ -564,8 +564,8 @@ const JobDetail = () => {
 									</CardHeader>
 									<CardContent className="space-y-3 text-sm">
 										<p className="text-slate-400">
-											点击按钮后触发前端动画演示，使用后端已确定的 5 选 3
-											结果并并行调用智能体。
+											点击按钮后触发前端动画演示，从候选智能体中随机抽取 3
+											个并并行调用智能体。
 										</p>
 										<Button
 											variant="outline"

@@ -60,10 +60,11 @@ export const buildMatchSelection = <T>(
 	const selectedCount = options?.selectedCount ?? 3;
 	const capped = items.slice(0, maxCandidates);
 	if (!capped.length) return { candidates: [], selected: [] };
-	const min = Math.min(minCandidates, capped.length);
-	const max = Math.min(maxCandidates, capped.length);
-	const count = pickRandomCount(min, max, `${seed}:count`);
-	const candidates = pickRandomItems(capped, count, `${seed}:candidates`);
+	const count =
+		capped.length >= minCandidates
+			? Math.min(maxCandidates, capped.length)
+			: capped.length;
+	const candidates = capped.slice(0, count);
 	const selected = pickRandomItems(
 		candidates,
 		selectedCount,

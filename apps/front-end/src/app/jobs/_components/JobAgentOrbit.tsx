@@ -22,6 +22,7 @@ type JobAgentOrbitProps = {
 };
 
 const MAX_CANDIDATES = 8;
+const MIN_CANDIDATES = 5;
 const SELECT_COUNT = 3;
 
 const shuffleList = <T,>(items: T[]): T[] => {
@@ -94,7 +95,7 @@ const JobAgentOrbit = ({
 	onSubscribe,
 	subscribingAgentId,
 }: JobAgentOrbitProps) => {
-	const candidates = useMemo(() => matches.slice(0, MAX_CANDIDATES), [matches]);
+	const [candidates, setCandidates] = useState<MatchedAgent[]>([]);
 	const [selectedAgents, setSelectedAgents] = useState<MatchedAgent[]>([]);
 	const [agentStates, setAgentStates] = useState<Record<string, AgentRunState>>(
 		{},
@@ -119,6 +120,13 @@ const JobAgentOrbit = ({
 	}, [agentStates]);
 
 	useEffect(() => {
+		const candidateCount =
+			matches.length >= MIN_CANDIDATES
+				? Math.min(matches.length, MAX_CANDIDATES)
+				: matches.length;
+		const pickedCandidates = shuffleList(matches).slice(0, candidateCount);
+		setCandidates(pickedCandidates);
+
 		if (startSignal === 0) {
 			setSelectedAgents([]);
 			setAgentStates({});
@@ -131,7 +139,14 @@ const JobAgentOrbit = ({
 			invokeRunIdRef.current = 0;
 			return;
 		}
-		if (candidates.length < SELECT_COUNT) {
+		if (matches.length < MIN_CANDIDATES) {
+			setSelectedAgents([]);
+			setAgentStates({});
+			setCompletedOrder([]);
+			setPhase("idle");
+			return;
+		}
+		if (pickedCandidates.length < SELECT_COUNT) {
 			setSelectedAgents([]);
 			setAgentStates({});
 			setCompletedOrder([]);
@@ -139,20 +154,14 @@ const JobAgentOrbit = ({
 			return;
 		}
 
-		const serverSelected = candidates.filter(
-			(agent) => agent.matchStatus === "SELECTED",
-		);
-		const picked =
-			serverSelected.length === SELECT_COUNT
-				? serverSelected
-				: shuffleList(candidates).slice(0, SELECT_COUNT);
+		const picked = shuffleList(pickedCandidates).slice(0, SELECT_COUNT);
 		setSelectedAgents(picked);
 		setAgentStates(
 			Object.fromEntries(picked.map((agent) => [agent.id, { status: "idle" }])),
 		);
 		setCompletedOrder([]);
 		setPhase("shuffling");
-	}, [candidates, startSignal]);
+	}, [matches, startSignal]);
 
 	useEffect(() => {
 		if (!selectedAgents.length || startSignal === 0 || invokeSignal === 0)
@@ -472,7 +481,22 @@ const JobAgentOrbit = ({
 		setPhase("orbiting");
 	};
 
-	if (candidates.length < SELECT_COUNT) {
+	if (isActive && matches.length < MIN_CANDIDATES) {
+		return (
+			<Card className="border-amber-400/20 bg-amber-500/10">
+				<CardHeader>
+					<h4 className="font-black text-xs uppercase tracking-[0.2em] text-amber-300">
+						智能体候选不足
+					</h4>
+				</CardHeader>
+				<CardContent className="text-amber-100 text-sm">
+					候选智能体不足 {MIN_CANDIDATES} 个，暂无法进入洗牌与并行调用流程。
+				</CardContent>
+			</Card>
+		);
+	}
+
+	if (isActive && candidates.length < SELECT_COUNT) {
 		return (
 			<Card className="border-amber-400/20 bg-amber-500/10">
 				<CardHeader>
@@ -524,7 +548,7 @@ const JobAgentOrbit = ({
 							<div
 								key={agent.id}
 								className={`rounded-lg border px-3 py-2 transition-colors ${
-									agent.matchStatus === "SELECTED"
+									selectedIds.has(agent.id)
 										? "border-emerald-400/60 bg-emerald-500/10"
 										: "border-white/10 bg-slate-950/60"
 								}`}
@@ -575,6 +599,12 @@ const JobAgentOrbit = ({
 					{candidates.map((agent) => {
 						const state = agentStates[agent.id];
 						const isSelected = selectedIds.has(agent.id);
+						const statusText = isSelected
+							? statusLabel(state?.status)
+							: "未入选";
+						const statusVariant = isSelected
+							? statusBadgeVariant(state?.status)
+							: "outline";
 						const canSubscribe = isSelected && state?.status === "done";
 						return (
 							<div
@@ -586,16 +616,10 @@ const JobAgentOrbit = ({
 										{agent.name}
 									</span>
 									<div className="flex items-center gap-2">
-										<Badge
-											variant={
-												agent.matchStatus === "SELECTED" ? "green" : "outline"
-											}
-										>
-											{agent.matchStatus === "SELECTED" ? "已选中" : "候选"}
+										<Badge variant={isSelected ? "green" : "outline"}>
+											{isSelected ? "已选中" : "候选"}
 										</Badge>
-										<Badge variant={statusBadgeVariant(state?.status)}>
-											{statusLabel(state?.status)}
-										</Badge>
+										<Badge variant={statusVariant}>{statusText}</Badge>
 									</div>
 								</div>
 								<p className="mt-2 text-xs text-slate-400">
