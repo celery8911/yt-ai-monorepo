@@ -12,6 +12,7 @@ export { useWallet } from "./hooks/wallet/useWallet";
 export {
 	useChainId,
 	useReadContract,
+	useReadContracts,
 	useSwitchChain,
 	useWriteContract,
 	useWaitForTransactionReceipt,
