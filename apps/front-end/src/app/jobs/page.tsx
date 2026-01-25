@@ -47,6 +47,47 @@ const statusVariants: Record<JobStatus, "blue" | "purple" | "red" | "green"> = {
 	FAILED: "red",
 };
 
+const statusOptions: Array<{ value: JobStatus | "ALL"; label: string }> = [
+	{ value: "ALL", label: "全部状态" },
+	{ value: "DRAFT", label: "草稿" },
+	{ value: "OPEN", label: "开放" },
+	{ value: "MATCHING", label: "匹配中" },
+	{ value: "IN_PROGRESS", label: "进行中" },
+	{ value: "SUBMITTED", label: "已提交" },
+	{ value: "REVIEWING", label: "验收中" },
+	{ value: "COMPLETED", label: "已完成" },
+	{ value: "DISPUTED", label: "争议中" },
+	{ value: "CANCELLED", label: "已取消" },
+];
+
+const categoryOptions: Array<{ value: string; label: string }> = [
+	{ value: "ALL", label: "全部类型" },
+	{ value: "数据分析", label: "数据分析" },
+	{ value: "合约开发", label: "合约开发" },
+	{ value: "产品设计", label: "产品设计" },
+	{ value: "运营增长", label: "运营增长" },
+	{ value: "内容与研究", label: "内容与研究" },
+];
+
+const paymentOptions: Array<{
+	value: JobPaymentMethod | "ALL";
+	label: string;
+}> = [
+	{ value: "ALL", label: "全部方式" },
+	{ value: "FREE", label: "免费" },
+	{ value: "PER_TASK", label: "按任务支付" },
+	{ value: "HUMAN_HIRING", label: "人工雇佣" },
+	{ value: "RESULT_BASED", label: "结果付费" },
+];
+
+const priorityOptions: Array<{ value: JobPriority | "ALL"; label: string }> = [
+	{ value: "ALL", label: "全部优先级" },
+	{ value: "LOW", label: "低" },
+	{ value: "MEDIUM", label: "中" },
+	{ value: "HIGH", label: "高" },
+	{ value: "URGENT", label: "紧急" },
+];
+
 const PAGE_SIZE = 10;
 
 const JobsMarket = () => {
@@ -159,16 +200,11 @@ const JobsMarket = () => {
 								setPage(1);
 							}}
 						>
-							<option value="ALL">全部状态</option>
-							<option value="DRAFT">草稿</option>
-							<option value="OPEN">开放</option>
-							<option value="MATCHING">匹配中</option>
-							<option value="IN_PROGRESS">进行中</option>
-							<option value="SUBMITTED">已提交</option>
-							<option value="REVIEWING">验收中</option>
-							<option value="COMPLETED">已完成</option>
-							<option value="DISPUTED">争议中</option>
-							<option value="CANCELLED">已取消</option>
+							{statusOptions.map((option) => (
+								<option key={option.value} value={option.value}>
+									{option.label}
+								</option>
+							))}
 						</Select>
 						<Select
 							label="任务类型"
@@ -179,12 +215,11 @@ const JobsMarket = () => {
 								setPage(1);
 							}}
 						>
-							<option value="ALL">全部类型</option>
-							<option value="数据分析">数据分析</option>
-							<option value="合约开发">合约开发</option>
-							<option value="产品设计">产品设计</option>
-							<option value="运营增长">运营增长</option>
-							<option value="内容与研究">内容与研究</option>
+							{categoryOptions.map((option) => (
+								<option key={option.value} value={option.value}>
+									{option.label}
+								</option>
+							))}
 						</Select>
 						<Select
 							label="支付方式"
@@ -197,11 +232,11 @@ const JobsMarket = () => {
 								setPage(1);
 							}}
 						>
-							<option value="ALL">全部方式</option>
-							<option value="FREE">免费</option>
-							<option value="PER_TASK">按任务支付</option>
-							<option value="HUMAN_HIRING">人工雇佣</option>
-							<option value="RESULT_BASED">结果付费</option>
+							{paymentOptions.map((option) => (
+								<option key={option.value} value={option.value}>
+									{option.label}
+								</option>
+							))}
 						</Select>
 						<Select
 							label="优先级"
@@ -212,11 +247,11 @@ const JobsMarket = () => {
 								setPage(1);
 							}}
 						>
-							<option value="ALL">全部优先级</option>
-							<option value="LOW">低</option>
-							<option value="MEDIUM">中</option>
-							<option value="HIGH">高</option>
-							<option value="URGENT">紧急</option>
+							{priorityOptions.map((option) => (
+								<option key={option.value} value={option.value}>
+									{option.label}
+								</option>
+							))}
 						</Select>
 						<div className="grid grid-cols-2 gap-3">
 							<Input
