@@ -21,10 +21,13 @@ import {
 	type Job,
 } from "@/apis/jobs";
 import { useWallet } from "@yt/hooks";
+import { createJobDraft } from "@/apis/drafts";
 
 type JobFormPageProps = {
 	jobId?: string;
 };
+
+type JobDraftFields = Awaited<ReturnType<typeof createJobDraft>>["fields"];
 
 const formatDateInput = (value?: string): string => {
 	if (!value) return "";
@@ -62,6 +65,11 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 	const [reviewWindowDays, setReviewWindowDays] = useState("7");
 	const [payoutStrategy, setPayoutStrategy] =
 		useState<CreateJobPayload["payoutStrategy"]>("WINNER_TAKE_ALL");
+	const [draftInput, setDraftInput] = useState("");
+	const [draftMissing, setDraftMissing] = useState<string[]>([]);
+	const [draftNotes, setDraftNotes] = useState<string[]>([]);
+	const [draftLoading, setDraftLoading] = useState(false);
+	const [draftGenerated, setDraftGenerated] = useState(false);
 	const { address } = useWallet();
 	const { toast } = useToast();
 
@@ -119,6 +127,173 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 		[isEditing, job?.status],
 	);
 
+	const requiredMissing = useMemo(() => {
+		const list: { key: string; label: string; missing: boolean }[] = [
+			{ key: "fields.title", label: "任务标题", missing: !title.trim() },
+			{ key: "fields.category", label: "分类", missing: !category.trim() },
+			{
+				key: "fields.tags",
+				label: "标签",
+				missing:
+					tags
+						.split(",")
+						.map((tag) => tag.trim())
+						.filter(Boolean).length === 0,
+			},
+			{
+				key: "fields.requiredSkillLevel",
+				label: "技能等级",
+				missing: !requiredSkillLevel,
+			},
+			{
+				key: "fields.priority",
+				label: "优先级",
+				missing: !priority,
+			},
+			{
+				key: "fields.biddingEnabled",
+				label: "开启竞价",
+				missing: typeof biddingEnabled !== "boolean",
+			},
+			{
+				key: "fields.escrowEnabled",
+				label: "资金托管",
+				missing: typeof escrowEnabled !== "boolean",
+			},
+			{
+				key: "fields.createdBy",
+				label: "发布人地址",
+				missing: !address,
+			},
+		];
+		return list.filter((item) => item.missing).map((item) => item.key);
+	}, [
+		address,
+		biddingEnabled,
+		escrowEnabled,
+		priority,
+		requiredSkillLevel,
+		tags,
+		title,
+		category,
+	]);
+
+	const missingLabelMap = useMemo(
+		() =>
+			new Map<string, string>([
+				["fields.title", "任务标题"],
+				["fields.category", "分类"],
+				["fields.tags", "标签"],
+				["fields.requiredSkillLevel", "技能等级"],
+				["fields.priority", "优先级"],
+				["fields.biddingEnabled", "开启竞价"],
+				["fields.escrowEnabled", "资金托管"],
+				["fields.createdBy", "发布人地址"],
+				["fields.description", "详细说明"],
+				["fields.deadlineAt", "截止日期"],
+				["fields.deliverables", "交付物说明"],
+				["fields.acceptanceCriteria", "验收标准"],
+				["fields.reviewWindowDays", "验收期"],
+				["fields.status", "发布状态"],
+			]),
+		[],
+	);
+
+	const displayMissingFields = useMemo(() => {
+		const merged = new Set<string>([...draftMissing, ...requiredMissing]);
+		return Array.from(merged);
+	}, [draftMissing, requiredMissing]);
+
+	const applyDraftFields = (fields: JobDraftFields = {}) => {
+		if (typeof fields.title === "string" && fields.title.trim()) {
+			setTitle(fields.title);
+		}
+		if (typeof fields.description === "string" && fields.description.trim()) {
+			setDescription(fields.description);
+		}
+		if (typeof fields.category === "string" && fields.category.trim()) {
+			setCategory(fields.category);
+		}
+		if (Array.isArray(fields.tags) && fields.tags.length > 0) {
+			setTags(fields.tags.join(", "));
+		}
+		if (fields.paymentMethod) {
+			setPaymentMethod(fields.paymentMethod);
+		}
+		if (typeof fields.budgetMin === "number") {
+			setBudgetMin(String(fields.budgetMin));
+		}
+		if (typeof fields.budgetMax === "number") {
+			setBudgetMax(String(fields.budgetMax));
+		}
+		if (typeof fields.currency === "string" && fields.currency.trim()) {
+			setCurrency(fields.currency);
+		}
+		if (fields.requiredSkillLevel) {
+			setRequiredSkillLevel(fields.requiredSkillLevel);
+		}
+		if (typeof fields.deliverables === "string" && fields.deliverables.trim()) {
+			setDeliverables(fields.deliverables);
+		}
+		if (
+			typeof fields.acceptanceCriteria === "string" &&
+			fields.acceptanceCriteria.trim()
+		) {
+			setAcceptanceCriteria(fields.acceptanceCriteria);
+		}
+		if (typeof fields.deadlineAt === "string" && fields.deadlineAt.trim()) {
+			setDeadlineAt(formatDateInput(fields.deadlineAt));
+		}
+		if (fields.priority) {
+			setPriority(fields.priority);
+		}
+		if (typeof fields.autoMatchEnabled === "boolean") {
+			setAutoMatchEnabled(fields.autoMatchEnabled);
+		}
+		if (typeof fields.biddingEnabled === "boolean") {
+			setBiddingEnabled(fields.biddingEnabled);
+		}
+		if (typeof fields.escrowEnabled === "boolean") {
+			setEscrowEnabled(fields.escrowEnabled);
+		}
+		if (fields.visibility) {
+			setVisibility(fields.visibility);
+		}
+		if (typeof fields.reviewWindowDays === "number") {
+			setReviewWindowDays(String(fields.reviewWindowDays));
+		}
+		if (fields.payoutStrategy) {
+			setPayoutStrategy(fields.payoutStrategy);
+		}
+	};
+
+	const handleGenerateDraft = async () => {
+		if (!draftInput.trim()) {
+			toast({ message: "请先输入需求描述。", variant: "error" });
+			return;
+		}
+
+		setDraftLoading(true);
+		try {
+			const draft = await createJobDraft({
+				text: draftInput.trim(),
+				draftType: "job",
+				createdBy: address,
+			});
+			applyDraftFields(draft.fields ?? {});
+			setDraftMissing(draft.missing ?? []);
+			setDraftNotes(draft.notes ?? []);
+			setDraftGenerated(true);
+			toast({ message: "草案已生成，请补全缺失项。", variant: "success" });
+		} catch (draftError) {
+			const message =
+				draftError instanceof Error ? draftError.message : "草案生成失败";
+			toast({ message, variant: "error" });
+		} finally {
+			setDraftLoading(false);
+		}
+	};
+
 	const handleSubmit = async (status: CreateJobPayload["status"] = "OPEN") => {
 		const trimmedTitle = title.trim();
 		const tagsList = tags
@@ -149,14 +324,6 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 			}
 			if (!deadlineAt) {
 				toast({ message: "请选择截止日期。", variant: "error" });
-				return;
-			}
-			if (!deliverables.trim()) {
-				toast({ message: "请填写交付物说明。", variant: "error" });
-				return;
-			}
-			if (!acceptanceCriteria.trim()) {
-				toast({ message: "请填写验收标准。", variant: "error" });
 				return;
 			}
 		}
@@ -199,11 +366,9 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 			autoMatchEnabled,
 			biddingEnabled,
 			escrowEnabled,
-			visibility,
-			reviewWindowDays: hasReviewWindowDays
-				? parsedReviewWindowDays
-				: undefined,
-			payoutStrategy,
+			visibility: "public",
+			reviewWindowDays: 7,
+			payoutStrategy: "WINNER_TAKE_ALL",
 			status,
 			createdBy: address,
 		} satisfies CreateJobPayload;
@@ -286,29 +451,76 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 
 			{!canEditDraft ? null : (
 				<>
+					{!isEditing ? (
+						<Card className="border-blue-500/30 bg-blue-500/5">
+							<CardHeader>
+								<h3 className="font-black text-sm uppercase">智能生成草案</h3>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								<Textarea
+									label="需求描述"
+									placeholder="用自然语言描述你的需求，例如：我想要一份某代币的链上持仓分析报告，包含Top地址分布与可视化图表。"
+									value={draftInput}
+									onChange={(event) => setDraftInput(event.target.value)}
+								/>
+								<div className="flex items-center justify-between">
+									<p className="text-xs text-slate-400">
+										系统会自动生成草案字段并标记缺失项。
+									</p>
+									<Button onClick={handleGenerateDraft} disabled={draftLoading}>
+										{draftLoading ? "生成中..." : "生成草案"}
+									</Button>
+								</div>
+								{draftGenerated && displayMissingFields.length > 0 ? (
+									<div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-amber-200">
+										<div className="font-bold mb-2">待补全字段</div>
+										<div className="flex flex-wrap gap-2 text-xs">
+											{displayMissingFields.map((field) => (
+												<span
+													key={field}
+													className="rounded-full border border-amber-400/40 px-3 py-1"
+												>
+													{missingLabelMap.get(field) ?? field}
+												</span>
+											))}
+										</div>
+									</div>
+								) : null}
+								{draftNotes.length > 0 ? (
+									<div className="rounded-lg border border-slate-500/30 bg-slate-900/30 p-4 text-xs text-slate-300 space-y-1">
+										{draftNotes.map((note) => (
+											<div key={note}>- {note}</div>
+										))}
+									</div>
+								) : null}
+							</CardContent>
+						</Card>
+					) : null}
 					<Card>
 						<CardHeader>
 							<h3 className="font-black text-sm uppercase">基本需求</h3>
 						</CardHeader>
 						<CardContent className="space-y-6">
-							<Input
-								label={withRequiredMark("任务标题")}
-								placeholder="例如: 自动分析某代币的链上持仓分布"
-								value={title}
-								onChange={(event) => setTitle(event.target.value)}
-							/>
-							<Select
-								label={withRequiredMark("分类")}
-								value={category}
-								onChange={(event) => setCategory(event.target.value)}
-							>
-								<option value="">选择任务分类</option>
-								<option value="数据分析">数据分析</option>
-								<option value="合约开发">合约开发</option>
-								<option value="产品设计">产品设计</option>
-								<option value="运营增长">运营增长</option>
-								<option value="内容与研究">内容与研究</option>
-							</Select>
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+								<Input
+									label={withRequiredMark("任务标题")}
+									placeholder="例如: 自动分析某代币的链上持仓分布"
+									value={title}
+									onChange={(event) => setTitle(event.target.value)}
+								/>
+								<Select
+									label={withRequiredMark("分类")}
+									value={category}
+									onChange={(event) => setCategory(event.target.value)}
+								>
+									<option value="">选择任务分类</option>
+									<option value="数据分析">数据分析</option>
+									<option value="合约开发">合约开发</option>
+									<option value="产品设计">产品设计</option>
+									<option value="运营增长">运营增长</option>
+									<option value="内容与研究">内容与研究</option>
+								</Select>
+							</div>
 							<Input
 								label={withRequiredMark("标签 (逗号分隔)")}
 								placeholder="onchain, defi, report"
@@ -413,18 +625,6 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 								<option value="ADVANCED">高级</option>
 								<option value="EXPERT">专家</option>
 							</Select>
-							<Textarea
-								label={withRequiredMark("交付物说明")}
-								placeholder="列出需要交付的内容，例如代码仓库、部署文档、测试报告等..."
-								value={deliverables}
-								onChange={(event) => setDeliverables(event.target.value)}
-							/>
-							<Textarea
-								label={withRequiredMark("验收标准")}
-								placeholder="描述验收方式与标准，例如功能清单、性能指标、验收流程等..."
-								value={acceptanceCriteria}
-								onChange={(event) => setAcceptanceCriteria(event.target.value)}
-							/>
 						</CardContent>
 					</Card>
 
@@ -433,38 +633,6 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 							<h3 className="font-black text-sm uppercase">高级选项</h3>
 						</CardHeader>
 						<CardContent className="space-y-6">
-							<Select
-								label={withRequiredMark("任务可见性")}
-								value={visibility}
-								onChange={(event) =>
-									setVisibility(
-										event.target.value as CreateJobPayload["visibility"],
-									)
-								}
-							>
-								<option value="public">公开</option>
-								<option value="private">私密</option>
-							</Select>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-								<Input
-									label={withRequiredMark("验收期 (天)")}
-									placeholder="7"
-									value={reviewWindowDays}
-									onChange={(event) => setReviewWindowDays(event.target.value)}
-								/>
-								<Select
-									label={withRequiredMark("结算策略")}
-									value={payoutStrategy}
-									onChange={(event) =>
-										setPayoutStrategy(
-											event.target.value as CreateJobPayload["payoutStrategy"],
-										)
-									}
-								>
-									<option value="WINNER_TAKE_ALL">优胜者获得全部</option>
-									<option value="SPLIT_IF_NO_SELECTION">未选中则拆分</option>
-								</Select>
-							</div>
 							<div className="space-y-4">
 								<div className="flex items-center justify-between">
 									<div>
@@ -477,27 +645,6 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 										checked={autoMatchEnabled}
 										onChange={setAutoMatchEnabled}
 									/>
-								</div>
-								<div className="flex items-center justify-between">
-									<div>
-										<h4 className="text-sm font-bold">开启竞价</h4>
-										<p className="text-[10px] text-slate-500 uppercase">
-											允许智能体提交投标方案
-										</p>
-									</div>
-									<Switch
-										checked={biddingEnabled}
-										onChange={setBiddingEnabled}
-									/>
-								</div>
-								<div className="flex items-center justify-between">
-									<div>
-										<h4 className="text-sm font-bold">资金托管</h4>
-										<p className="text-[10px] text-slate-500 uppercase">
-											由平台托管资金并按验收释放
-										</p>
-									</div>
-									<Switch checked={escrowEnabled} onChange={setEscrowEnabled} />
 								</div>
 							</div>
 							<Input

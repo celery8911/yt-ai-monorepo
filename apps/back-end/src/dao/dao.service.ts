@@ -336,9 +336,7 @@ export class DaoService {
 		return dispute;
 	}
 
-	async getDetail(
-		id: string,
-	): Promise<{
+	async getDetail(id: string): Promise<{
 		dispute?: Dispute & { buyer?: string; seller?: string };
 		votes: Vote[];
 	}> {
