@@ -57,13 +57,13 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 	const [deadlineAt, setDeadlineAt] = useState("");
 	const [priority, setPriority] =
 		useState<CreateJobPayload["priority"]>("MEDIUM");
-	const [visibility, setVisibility] =
+	const [_visibility, setVisibility] =
 		useState<CreateJobPayload["visibility"]>("public");
 	const [autoMatchEnabled, setAutoMatchEnabled] = useState(true);
 	const [biddingEnabled, setBiddingEnabled] = useState(true);
 	const [escrowEnabled, setEscrowEnabled] = useState(true);
 	const [reviewWindowDays, setReviewWindowDays] = useState("7");
-	const [payoutStrategy, setPayoutStrategy] =
+	const [_payoutStrategy, setPayoutStrategy] =
 		useState<CreateJobPayload["payoutStrategy"]>("WINNER_TAKE_ALL");
 	const [draftInput, setDraftInput] = useState("");
 	const [draftMissing, setDraftMissing] = useState<string[]>([]);
@@ -146,6 +146,11 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 				missing: !requiredSkillLevel,
 			},
 			{
+				key: "fields.deadlineAt",
+				label: "截止日期",
+				missing: !deadlineAt,
+			},
+			{
 				key: "fields.priority",
 				label: "优先级",
 				missing: !priority,
@@ -170,6 +175,7 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 	}, [
 		address,
 		biddingEnabled,
+		deadlineAt,
 		escrowEnabled,
 		priority,
 		requiredSkillLevel,
@@ -184,8 +190,6 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 				["fields.title", "任务标题"],
 				["fields.category", "分类"],
 				["fields.tags", "标签"],
-				["fields.requiredSkillLevel", "技能等级"],
-				["fields.priority", "优先级"],
 				["fields.biddingEnabled", "开启竞价"],
 				["fields.escrowEnabled", "资金托管"],
 				["fields.createdBy", "发布人地址"],
@@ -201,7 +205,14 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 
 	const displayMissingFields = useMemo(() => {
 		const merged = new Set<string>([...draftMissing, ...requiredMissing]);
-		return Array.from(merged);
+		const excludeFields = new Set<string>([
+			"fields.paymentMethod",
+			"fields.currency",
+			"fields.requiredSkillLevel",
+			"fields.priority",
+			"fields.autoMatchEnabled",
+		]);
+		return Array.from(merged).filter((field) => !excludeFields.has(field));
 	}, [draftMissing, requiredMissing]);
 
 	const applyDraftFields = (fields: JobDraftFields = {}) => {
@@ -247,9 +258,7 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 		if (fields.priority) {
 			setPriority(fields.priority);
 		}
-		if (typeof fields.autoMatchEnabled === "boolean") {
-			setAutoMatchEnabled(fields.autoMatchEnabled);
-		}
+		// autoMatchEnabled is user-controlled; ignore draft suggestion
 		if (typeof fields.biddingEnabled === "boolean") {
 			setBiddingEnabled(fields.biddingEnabled);
 		}
@@ -281,8 +290,14 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 				createdBy: address,
 			});
 			applyDraftFields(draft.fields ?? {});
-			setDraftMissing(draft.missing ?? []);
-			setDraftNotes(draft.notes ?? []);
+			const filteredMissing = (draft.missing ?? []).filter(
+				(field) => field !== "fields.autoMatchEnabled",
+			);
+			setDraftMissing(filteredMissing);
+			const filteredNotes = (draft.notes ?? []).filter(
+				(note) => !note.includes("autoMatchEnabled"),
+			);
+			setDraftNotes(filteredNotes);
 			setDraftGenerated(true);
 			toast({ message: "草案已生成，请补全缺失项。", variant: "success" });
 		} catch (draftError) {

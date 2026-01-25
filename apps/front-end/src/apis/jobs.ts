@@ -59,11 +59,20 @@ export type MatchedAgent = {
 	avgResponseTimeMs?: number;
 	tags?: string[];
 	score?: number;
+	matchStatus?: "CANDIDATE" | "SELECTED";
 	pricePerTask?: number;
 	resultBasedMinPrice?: number;
 	minBid?: number;
 	currency?: string;
 	owner?: string;
+};
+
+export type AgentInvokeResponse = {
+	agentId: string;
+	status: "ok" | "error";
+	result?: unknown;
+	error?: string;
+	durationMs?: number;
 };
 
 export type JobDetailResponse = {
@@ -152,6 +161,11 @@ type JobListResponse = {
 type CreateJobResponse = {
 	job: Job;
 	matches: Array<{ id: string; name?: string; score?: number }>;
+};
+
+type RunMatchResponse = {
+	job: Job;
+	matches: MatchedAgent[];
 };
 
 const formatCurrency = (amount: number, currency?: string): string =>
@@ -268,5 +282,26 @@ export const createJobDispute = async (
 		url: `/jobs/${jobId}/dispute`,
 		method: "POST",
 		data: payload,
+	});
+};
+
+export const invokeJobAgent = async (
+	jobId: string,
+	agentId: string,
+	payload?: { input?: string; context?: Record<string, unknown> },
+): Promise<AgentInvokeResponse> => {
+	return request<AgentInvokeResponse>({
+		url: `/jobs/${jobId}/agents/${agentId}/invoke`,
+		method: "POST",
+		data: payload ?? {},
+	});
+};
+
+export const runJobMatching = async (
+	jobId: string,
+): Promise<RunMatchResponse> => {
+	return request<RunMatchResponse>({
+		url: `/jobs/${jobId}/match/run`,
+		method: "POST",
 	});
 };

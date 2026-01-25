@@ -5,6 +5,7 @@ import { DaoService } from "../dao/dao.service";
 import { MatchingService } from "../matching/matching.service";
 import { JobsMatchingQueueService } from "./jobs.matching.queue";
 import { CreateJobDto, DisputeJobDto, SelectAgentDto } from "./jobs.dto";
+import { buildMatchSelection } from "./jobs.matching.utils";
 import {
 	JobDisputeResultType,
 	JobListType,
@@ -71,18 +72,30 @@ export class JobsResolver {
 				.map((match) => {
 					const agent = agentMap.get(match.agentId);
 					if (!agent) return undefined;
-					return { ...agent, score: match.matchScore ?? 0 };
+					return {
+						...agent,
+						score: match.matchScore ?? 0,
+						matchStatus: match.status ?? undefined,
+					};
 				})
-				.filter((match): match is (typeof agents)[number] & { score: number } =>
-					Boolean(match),
-				);
+				.filter(Boolean) as Array<
+				(typeof agents)[number] & { score: number; matchStatus?: string }
+			>;
 			return { job, matches };
 		}
 
 		if (!this.jobsService.isDatabaseEnabled()) {
 			const agents = await this.agentsService.all();
 			const matches = this.matchingService.match(job, agents);
-			return { job, matches };
+			const { candidates, selected } = buildMatchSelection(matches, job.id);
+			const selectedIds = new Set(selected.map((agent) => agent.id));
+			return {
+				job,
+				matches: candidates.map((agent) => ({
+					...agent,
+					matchStatus: selectedIds.has(agent.id) ? "SELECTED" : "CANDIDATE",
+				})),
+			};
 		}
 
 		return { job, matches: [] };
@@ -103,13 +116,19 @@ export class JobsResolver {
 
 		const agents = await this.agentsService.all();
 		const matches = this.matchingService.match(job, agents);
+		const { candidates, selected } = buildMatchSelection(matches, job.id);
+		const selectedIds = new Set(selected.map((agent) => agent.id));
 		const noMatchReason =
 			matches.length === 0
 				? this.matchingService.explainNoMatch(job, agents)
 				: null;
 		await this.jobsService.saveMatches(
 			job.id,
-			matches.map((agent) => ({ id: agent.id, score: agent.score })),
+			candidates.map((agent) => ({
+				id: agent.id,
+				score: agent.score,
+				status: selectedIds.has(agent.id) ? "SELECTED" : "CANDIDATE",
+			})),
 		);
 		const updated =
 			(await this.jobsService.setMatchStatus(
@@ -117,7 +136,13 @@ export class JobsResolver {
 				matches.length ? "IN_PROGRESS" : "FAILED",
 				matches.length ? null : noMatchReason,
 			)) ?? job;
-		return { job: updated, matches };
+		return {
+			job: updated,
+			matches: candidates.map((agent) => ({
+				...agent,
+				matchStatus: selectedIds.has(agent.id) ? "SELECTED" : "CANDIDATE",
+			})),
+		};
 	}
 
 	@Mutation(() => JobSelectionResultType)

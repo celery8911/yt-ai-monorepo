@@ -158,6 +158,6 @@ export class MatchingService {
 
 	match(job: Job, agents: Agent[]): Array<Agent & { score: number }> {
 		const filtered = this.hardFilter(job, agents);
-		return this.score(job, filtered).slice(0, 3);
+		return this.score(job, filtered).slice(0, 8);
 	}
 }
