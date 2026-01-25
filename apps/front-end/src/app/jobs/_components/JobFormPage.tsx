@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
 	Button,
@@ -190,8 +190,15 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 				["fields.title", "任务标题"],
 				["fields.category", "分类"],
 				["fields.tags", "标签"],
+				["fields.paymentMethod", "支付方式"],
+				["fields.currency", "币种"],
+				["fields.requiredSkillLevel", "技能等级"],
+				["fields.priority", "优先级"],
+				["fields.autoMatchEnabled", "自动匹配"],
 				["fields.biddingEnabled", "开启竞价"],
 				["fields.escrowEnabled", "资金托管"],
+				["fields.visibility", "可见性"],
+				["fields.payoutStrategy", "结算策略"],
 				["fields.createdBy", "发布人地址"],
 				["fields.description", "详细说明"],
 				["fields.deadlineAt", "截止日期"],
@@ -199,8 +206,52 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 				["fields.acceptanceCriteria", "验收标准"],
 				["fields.reviewWindowDays", "验收期"],
 				["fields.status", "发布状态"],
+				["fields.budgetMin", "最低预算"],
+				["fields.budgetMax", "最高预算"],
 			]),
 		[],
+	);
+
+	const normalizeMissingField = useCallback(
+		(field: string): string | null => {
+			const trimmed = field.trim();
+			if (!trimmed) return null;
+			if (trimmed.startsWith("fields.")) {
+				return missingLabelMap.has(trimmed) ? trimmed : null;
+			}
+			const aliases = new Map<string, string>([
+				["title", "fields.title"],
+				["任务标题", "fields.title"],
+				["category", "fields.category"],
+				["分类", "fields.category"],
+				["tags", "fields.tags"],
+				["标签", "fields.tags"],
+				["paymentMethod", "fields.paymentMethod"],
+				["requiredSkillLevel", "fields.requiredSkillLevel"],
+				["priority", "fields.priority"],
+				["autoMatchEnabled", "fields.autoMatchEnabled"],
+				["biddingEnabled", "fields.biddingEnabled"],
+				["escrowEnabled", "fields.escrowEnabled"],
+				["visibility", "fields.visibility"],
+				["payoutStrategy", "fields.payoutStrategy"],
+				["createdBy", "fields.createdBy"],
+				["description", "fields.description"],
+				["deadlineAt", "fields.deadlineAt"],
+				["截止日期", "fields.deadlineAt"],
+				["deliverables", "fields.deliverables"],
+				["acceptanceCriteria", "fields.acceptanceCriteria"],
+				["reviewWindowDays", "fields.reviewWindowDays"],
+				["status", "fields.status"],
+				["budgetMin", "fields.budgetMin"],
+				["budgetMax", "fields.budgetMax"],
+				["currency", "fields.currency"],
+			]);
+			const aliased = aliases.get(trimmed);
+			if (aliased && missingLabelMap.has(aliased)) return aliased;
+			const fallbackKey = `fields.${trimmed}`;
+			return missingLabelMap.has(fallbackKey) ? fallbackKey : null;
+		},
+		[missingLabelMap],
 	);
 
 	const displayMissingFields = useMemo(() => {
@@ -212,8 +263,12 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 			"fields.priority",
 			"fields.autoMatchEnabled",
 		]);
-		return Array.from(merged).filter((field) => !excludeFields.has(field));
-	}, [draftMissing, requiredMissing]);
+		const normalized = Array.from(merged)
+			.map((field) => normalizeMissingField(field))
+			.filter((field): field is string => Boolean(field))
+			.filter((field) => !excludeFields.has(field));
+		return Array.from(new Set(normalized));
+	}, [draftMissing, normalizeMissingField, requiredMissing]);
 
 	const applyDraftFields = (fields: JobDraftFields = {}) => {
 		if (typeof fields.title === "string" && fields.title.trim()) {

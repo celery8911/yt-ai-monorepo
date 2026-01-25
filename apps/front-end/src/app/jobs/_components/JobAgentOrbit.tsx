@@ -60,6 +60,23 @@ const statusLabel = (status?: AgentRunState["status"]) => {
 	}
 };
 
+const shortName = (value: string, limit = 8): string =>
+	value.length > limit ? `${value.slice(0, Math.max(0, limit - 1))}…` : value;
+
+const getOrbitLayout = () => ({
+	width: 600,
+	height: 320,
+	centerX: 300,
+	centerY: 140,
+	radius: 110,
+	rackY: 52,
+	rackSpacing: 120,
+	resultY: 250,
+	resultSpacing: 130,
+	cardWidth: 110,
+	cardHeight: 42,
+});
+
 const truncateText = (value: string, limit = 240): string => {
 	if (value.length <= limit) return value;
 	return `${value.slice(0, Math.max(0, limit - 1))}…`;
@@ -114,6 +131,8 @@ const JobAgentOrbit = ({
 	const baseAnglesRef = useRef<Record<string, number>>({});
 	const invokeInputRef = useRef("");
 	const invokeRunIdRef = useRef(0);
+	const orbitStartTimeRef = useRef<number | null>(null);
+	const orbitStopTimeoutRef = useRef<number | null>(null);
 
 	useEffect(() => {
 		stateRef.current = agentStates;
@@ -124,7 +143,7 @@ const JobAgentOrbit = ({
 			matches.length >= MIN_CANDIDATES
 				? Math.min(matches.length, MAX_CANDIDATES)
 				: matches.length;
-		const pickedCandidates = shuffleList(matches).slice(0, candidateCount);
+		const pickedCandidates = matches.slice(0, candidateCount);
 		setCandidates(pickedCandidates);
 
 		if (startSignal === 0) {
@@ -153,8 +172,10 @@ const JobAgentOrbit = ({
 			setPhase("idle");
 			return;
 		}
-
-		const picked = shuffleList(pickedCandidates).slice(0, SELECT_COUNT);
+		const serverSelected = pickedCandidates.filter(
+			(agent) => agent.matchStatus === "SELECTED",
+		);
+		const picked = serverSelected.slice(0, SELECT_COUNT);
 		setSelectedAgents(picked);
 		setAgentStates(
 			Object.fromEntries(picked.map((agent) => [agent.id, { status: "idle" }])),
@@ -220,9 +241,25 @@ const JobAgentOrbit = ({
 	useEffect(() => {
 		if (!selectedAgents.length) return;
 		if (completedOrder.length === selectedAgents.length) {
-			timerRef.current?.stop();
-			setPhase("completed");
-			onComplete?.();
+			const orbitStart = orbitStartTimeRef.current;
+			const orbitSpeed = 0.00055;
+			const minOrbitMs = Math.max(5000, (2 * Math.PI) / orbitSpeed);
+			const elapsed = orbitStart ? performance.now() - orbitStart : minOrbitMs;
+			const remaining = Math.max(0, minOrbitMs - elapsed);
+			if (orbitStopTimeoutRef.current) {
+				window.clearTimeout(orbitStopTimeoutRef.current);
+			}
+			orbitStopTimeoutRef.current = window.setTimeout(() => {
+				timerRef.current?.stop();
+				setPhase("completed");
+				const svg = svgRef.current ? d3.select(svgRef.current) : null;
+				svg
+					?.select("ellipse.invoke-orbit")
+					.transition()
+					.duration(400)
+					.style("opacity", 0);
+				onComplete?.();
+			}, remaining);
 		}
 	}, [completedOrder, onComplete, selectedAgents]);
 
@@ -243,17 +280,7 @@ const JobAgentOrbit = ({
 			return undefined;
 		}
 
-		const layout = {
-			width: 520,
-			height: 280,
-			centerX: 260,
-			centerY: 120,
-			radius: 78,
-			rackY: 40,
-			rackSpacing: 90,
-			resultY: 228,
-			resultSpacing: 90,
-		};
+		const layout = getOrbitLayout();
 
 		const svg = d3.select(svgRef.current);
 		svg.selectAll("*").remove();
@@ -267,6 +294,18 @@ const JobAgentOrbit = ({
 			.attr("fill", "none")
 			.attr("stroke", "rgba(56,189,248,0.35)")
 			.attr("strokeDasharray", "6 6");
+
+		svg
+			.append("ellipse")
+			.attr("class", "invoke-orbit")
+			.attr("cx", layout.centerX)
+			.attr("cy", layout.centerY)
+			.attr("rx", layout.radius)
+			.attr("ry", layout.radius * 0.7)
+			.attr("fill", "none")
+			.attr("stroke", "rgba(56,189,248,0.35)")
+			.attr("strokeDasharray", "5 8")
+			.style("opacity", 0);
 
 		svg
 			.append("circle")
@@ -298,6 +337,7 @@ const JobAgentOrbit = ({
 
 		nodes
 			.append("circle")
+			.attr("class", "node-dot")
 			.attr("r", 14)
 			.attr("fill", "rgba(56,189,248,0.9)")
 			.attr("stroke", "rgba(14,116,144,0.8)")
@@ -305,12 +345,39 @@ const JobAgentOrbit = ({
 
 		nodes
 			.append("text")
+			.attr("class", "node-dot-label")
 			.attr("textAnchor", "middle")
 			.attr("dy", 4)
 			.attr("fill", "#0f172a")
 			.attr("fontSize", "9px")
 			.attr("fontWeight", "700")
 			.text((datum: MatchedAgent) => datum.name.slice(0, 2));
+
+		nodes
+			.append("rect")
+			.attr("class", "node-card")
+			.attr("x", -layout.cardWidth / 2)
+			.attr("y", -layout.cardHeight / 2)
+			.attr("width", layout.cardWidth)
+			.attr("height", layout.cardHeight)
+			.attr("rx", 8)
+			.attr("ry", 8)
+			.attr("fill", "rgba(15,23,42,0.9)")
+			.attr("stroke", "rgba(56,189,248,0.65)")
+			.attr("strokeWidth", 1.5)
+			.style("opacity", 0);
+
+		nodes
+			.append("text")
+			.attr("class", "node-card-label")
+			.attr("textAnchor", "middle")
+			.attr("dominantBaseline", "middle")
+			.attr("dy", 0)
+			.attr("fill", "#e2e8f0")
+			.attr("fontSize", "7.5px")
+			.attr("fontWeight", "600")
+			.style("opacity", 0)
+			.text((datum: MatchedAgent) => shortName(datum.name, 10));
 
 		const rackWidth = (candidates.length - 1) * layout.rackSpacing;
 		const rackStartX = layout.centerX - rackWidth / 2;
@@ -375,23 +442,6 @@ const JobAgentOrbit = ({
 
 		const orbitStartTimeout = window.setTimeout(() => {
 			setPhase("ready");
-			if (invokeSignal === 0) return;
-			setPhase("orbiting");
-			const orbitNodes = nodesGroup
-				.selectAll<SVGGElement, MatchedAgent>("g.agent-node")
-				.filter((datum: MatchedAgent) => selectedIds.has(datum.id));
-
-			timerRef.current = d3.timer((elapsed: number) => {
-				orbitNodes.each(function (this: SVGGElement, datum: MatchedAgent) {
-					const currentState = stateRef.current[datum.id];
-					if (currentState?.status !== "running") return;
-					const baseAngle = baseAnglesRef.current[datum.id] ?? 0;
-					const angle = baseAngle + elapsed * 0.002;
-					const x = layout.centerX + Math.cos(angle) * layout.radius;
-					const y = layout.centerY + Math.sin(angle) * layout.radius;
-					d3.select(this).attr("transform", `translate(${x},${y})`);
-				});
-			});
 		}, selectionDelay + 460);
 		timeoutsRef.current.push(orbitStartTimeout);
 
@@ -403,17 +453,102 @@ const JobAgentOrbit = ({
 			timerRef.current?.stop();
 			timerRef.current = null;
 		};
-	}, [candidates, invokeSignal, selectedAgents, startSignal]);
+	}, [candidates, selectedAgents, startSignal]);
+
+	useEffect(() => {
+		if (
+			startSignal === 0 ||
+			invokeSignal === 0 ||
+			!svgRef.current ||
+			!selectedAgents.length
+		) {
+			return;
+		}
+
+		setPhase("orbiting");
+		orbitStartTimeRef.current = performance.now();
+		const svg = d3.select(svgRef.current);
+		svg.select("ellipse.invoke-orbit").style("opacity", 1);
+
+		svg
+			.selectAll<SVGGElement, MatchedAgent>("g.agent-node")
+			.select(".node-dot")
+			.transition()
+			.duration(260)
+			.style("opacity", 0);
+		svg
+			.selectAll<SVGGElement, MatchedAgent>("g.agent-node")
+			.select(".node-dot-label")
+			.transition()
+			.duration(260)
+			.style("opacity", 0);
+		svg
+			.selectAll<SVGGElement, MatchedAgent>("g.agent-node")
+			.select(".node-card")
+			.transition()
+			.duration(260)
+			.style("opacity", 1);
+		svg
+			.selectAll<SVGGElement, MatchedAgent>("g.agent-node")
+			.select(".node-card-label")
+			.transition()
+			.duration(260)
+			.style("opacity", 1);
+
+		const layout = getOrbitLayout();
+		const orbitNodes = svg
+			.selectAll<SVGGElement, MatchedAgent>("g.agent-node")
+			.filter((datum: MatchedAgent) =>
+				selectedAgents.some((agent) => agent.id === datum.id),
+			);
+
+		timerRef.current?.stop();
+		timerRef.current = d3.timer((elapsed: number) => {
+			orbitNodes.each(function (this: SVGGElement, datum: MatchedAgent) {
+				const currentState = stateRef.current[datum.id];
+				if (currentState?.status !== "running") return;
+				const baseAngle = baseAnglesRef.current[datum.id] ?? 0;
+				const angle = baseAngle + elapsed * 0.00055;
+				const x = layout.centerX + Math.cos(angle) * layout.radius;
+				const y = layout.centerY + Math.sin(angle) * layout.radius * 0.7;
+				const depth = (Math.sin(angle) + 1) / 2;
+				const scale = 0.85 + depth * 0.3;
+				const opacity = 0.6 + depth * 0.4;
+				d3.select(this)
+					.attr("transform", `translate(${x},${y}) scale(${scale})`)
+					.style("opacity", opacity);
+			});
+		});
+
+		return () => {
+			if (orbitStopTimeoutRef.current) {
+				window.clearTimeout(orbitStopTimeoutRef.current);
+				orbitStopTimeoutRef.current = null;
+			}
+			timerRef.current?.stop();
+			timerRef.current = null;
+		};
+	}, [invokeSignal, selectedAgents, startSignal]);
 
 	useEffect(() => {
 		if (!svgRef.current) return;
 		const svg = d3.select(svgRef.current);
 		svg
 			.selectAll<SVGGElement, MatchedAgent>("g.agent-node")
-			.select("circle")
+			.select(".node-card")
 			.attr("fill", (datum: MatchedAgent) => {
 				const status = agentStates[datum.id]?.status;
-				if (status === "idle") return "rgba(148,163,184,0.9)";
+				if (status === "idle") return "rgba(30,41,59,0.9)";
+				if (status === "done") return "rgba(16,185,129,0.3)";
+				if (status === "error") return "rgba(248,113,113,0.25)";
+				return "rgba(15,23,42,0.9)";
+			});
+		svg
+			.selectAll<SVGGElement, MatchedAgent>("g.agent-node")
+			.select(".node-dot")
+			.attr("fill", (datum: MatchedAgent) => {
+				const status = agentStates[datum.id]?.status;
+				if (status === "idle") return "rgba(56,189,248,0.9)";
 				if (status === "done") return "rgba(34,197,94,0.9)";
 				if (status === "error") return "rgba(248,113,113,0.9)";
 				return "rgba(56,189,248,0.9)";
@@ -421,33 +556,32 @@ const JobAgentOrbit = ({
 	}, [agentStates]);
 
 	useEffect(() => {
-		if (!svgRef.current || !selectedAgents.length) return;
+		if (!svgRef.current || !selectedAgents.length || phase !== "completed")
+			return;
 
-		const layout = {
-			centerX: 260,
-			resultY: 228,
-			resultSpacing: 90,
-		};
-		const resultWidth = (selectedAgents.length - 1) * layout.resultSpacing;
+		const layout = getOrbitLayout();
+		const spacing = Math.max(layout.cardWidth + 16, layout.resultSpacing);
+		const resultWidth = (selectedAgents.length - 1) * spacing;
 		const resultStartX = layout.centerX - resultWidth / 2;
-		const selectedIds = new Set(selectedAgents.map((agent) => agent.id));
 		const svg = d3.select(svgRef.current);
 
 		svg
 			.selectAll<SVGGElement, MatchedAgent>("g.agent-node")
-			.filter((datum: MatchedAgent) => selectedIds.has(datum.id))
+			.filter((datum: MatchedAgent) =>
+				selectedAgents.some((agent) => agent.id === datum.id),
+			)
 			.each(function (this: SVGGElement, datum: MatchedAgent) {
-				const state = agentStates[datum.id];
-				if (!state || state.status === "running") return;
 				const index = completedOrder.indexOf(datum.id);
 				if (index < 0) return;
-				const targetX = resultStartX + index * layout.resultSpacing;
+				const targetX = resultStartX + index * spacing;
 				d3.select(this)
 					.transition()
-					.duration(500)
-					.attr("transform", `translate(${targetX},${layout.resultY})`);
+					.duration(700)
+					.ease(d3.easeCubicOut)
+					.attr("transform", `translate(${targetX},${layout.resultY}) scale(1)`)
+					.style("opacity", 1);
 			});
-	}, [agentStates, completedOrder, selectedAgents]);
+	}, [completedOrder, phase, selectedAgents]);
 
 	useMemo(() => {
 		const selectedIds = selectedAgents.map((agent) => agent.id);
@@ -462,10 +596,10 @@ const JobAgentOrbit = ({
 
 	const isActive = startSignal > 0;
 	const isReadyForInput = phase === "ready" && invokeSignal === 0;
-	const selectedIds = useMemo(
-		() => new Set(selectedAgents.map((agent) => agent.id)),
-		[selectedAgents],
-	);
+	// const selectedIds = useMemo(
+	// 	() => new Set(selectedAgents.map((agent) => agent.id)),
+	// 	[selectedAgents],
+	// );
 
 	const handleInvoke = () => {
 		const trimmed = invokeInput.trim();
@@ -539,35 +673,8 @@ const JobAgentOrbit = ({
 						点击上方按钮开始洗牌与智能体调用。
 					</div>
 				) : null}
-				<div className="rounded-xl border border-white/10 bg-slate-900/40 px-4 py-3">
-					<p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-						洗牌候选智能体（{candidates.length} 个）
-					</p>
-					<div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-						{candidates.map((agent) => (
-							<div
-								key={agent.id}
-								className={`rounded-lg border px-3 py-2 transition-colors ${
-									selectedIds.has(agent.id)
-										? "border-emerald-400/60 bg-emerald-500/10"
-										: "border-white/10 bg-slate-950/60"
-								}`}
-							>
-								<div className="flex items-center justify-between">
-									<span className="text-sm font-semibold text-white">
-										{agent.name}
-									</span>
-									<span className="text-[10px] text-cyan-300 font-mono">
-										{agent.score !== undefined ? agent.score.toFixed(2) : "—"}
-									</span>
-								</div>
-								<div className="mt-1 flex items-center gap-2 text-[10px] text-slate-400">
-									<span>评级: {agent.rating ?? "—"}</span>
-									<span>响应: {agent.avgResponseTimeMs ?? "—"}ms</span>
-								</div>
-							</div>
-						))}
-					</div>
+				<div className="rounded-2xl border border-cyan-500/10 bg-slate-950/50 p-3">
+					<svg ref={svgRef} className="w-full h-[280px]" />
 				</div>
 				{isReadyForInput ? (
 					<div className="rounded-xl border border-white/10 bg-slate-900/40 px-4 py-3 space-y-3">
@@ -592,63 +699,54 @@ const JobAgentOrbit = ({
 						</button>
 					</div>
 				) : null}
-				<div className="rounded-2xl border border-cyan-500/10 bg-slate-950/50 p-3">
-					<svg ref={svgRef} className="w-full h-[280px]" />
-				</div>
-				<div className="space-y-3">
-					{candidates.map((agent) => {
-						const state = agentStates[agent.id];
-						const isSelected = selectedIds.has(agent.id);
-						const statusText = isSelected
-							? statusLabel(state?.status)
-							: "未入选";
-						const statusVariant = isSelected
-							? statusBadgeVariant(state?.status)
-							: "outline";
-						const canSubscribe = isSelected && state?.status === "done";
-						return (
-							<div
-								key={`matched-${agent.id}`}
-								className="rounded-xl border border-white/10 bg-slate-900/40 px-4 py-3"
-							>
-								<div className="flex items-center justify-between">
-									<span className="text-sm font-semibold text-white">
-										{agent.name}
-									</span>
-									<div className="flex items-center gap-2">
-										<Badge variant={isSelected ? "green" : "outline"}>
-											{isSelected ? "已选中" : "候选"}
-										</Badge>
-										<Badge variant={statusVariant}>{statusText}</Badge>
+				{phase !== "shuffling" ? (
+					<div className="space-y-3">
+						{selectedAgents.map((agent) => {
+							const state = agentStates[agent.id];
+							const canSubscribe = state?.status === "done";
+							return (
+								<div
+									key={`selected-${agent.id}`}
+									className="rounded-xl border border-white/10 bg-slate-900/40 px-4 py-3"
+								>
+									<div className="flex items-center justify-between">
+										<span className="text-sm font-semibold text-white">
+											{agent.name}
+										</span>
+										<div className="flex items-center gap-2">
+											<Badge variant={statusBadgeVariant(state?.status)}>
+												{statusLabel(state?.status)}
+											</Badge>
+										</div>
+									</div>
+									<p className="mt-2 text-xs text-slate-400">
+										{state?.result ?? "等待智能体返回结果..."}
+									</p>
+									<div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+										<span>
+											评分:{" "}
+											{agent.score !== undefined ? agent.score.toFixed(2) : "—"}
+										</span>
+										{onSubscribe ? (
+											<Button
+												size="sm"
+												variant="outline"
+												disabled={
+													!canSubscribe || subscribingAgentId === agent.id
+												}
+												onClick={() => onSubscribe(agent)}
+											>
+												{subscribingAgentId === agent.id
+													? "订阅中..."
+													: "立即订阅"}
+											</Button>
+										) : null}
 									</div>
 								</div>
-								<p className="mt-2 text-xs text-slate-400">
-									{state?.result ?? "等待智能体返回结果..."}
-								</p>
-								<div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-									<span>
-										评分:{" "}
-										{agent.score !== undefined ? agent.score.toFixed(2) : "—"}
-									</span>
-									{onSubscribe ? (
-										<Button
-											size="sm"
-											variant="outline"
-											disabled={
-												!canSubscribe || subscribingAgentId === agent.id
-											}
-											onClick={() => onSubscribe(agent)}
-										>
-											{subscribingAgentId === agent.id
-												? "订阅中..."
-												: "立即订阅"}
-										</Button>
-									) : null}
-								</div>
-							</div>
-						);
-					})}
-				</div>
+							);
+						})}
+					</div>
+				) : null}
 			</CardContent>
 		</Card>
 	);
