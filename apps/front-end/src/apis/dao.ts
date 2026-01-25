@@ -49,7 +49,7 @@ export type DisputeListResponse = {
 };
 
 export type FetchDisputeListParams = {
-	address: string;
+	address?: string;
 	page?: number;
 	limit?: number;
 };

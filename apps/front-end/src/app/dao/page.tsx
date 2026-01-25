@@ -30,7 +30,8 @@ const DAO = () => {
 	const [page] = useState(1);
 	const { address: walletAddress, isConnected: walletConnected } = useWallet();
 	const [hydrated, setHydrated] = useState(false);
-	const address = hydrated ? walletAddress : undefined;
+	const address =
+		hydrated && walletConnected && walletAddress ? walletAddress : undefined;
 	const isConnected = hydrated ? walletConnected : false;
 
 	useEffect(() => {

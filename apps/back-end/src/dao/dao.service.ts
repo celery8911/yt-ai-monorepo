@@ -336,9 +336,7 @@ export class DaoService {
 		return dispute;
 	}
 
-	async getDetail(
-		id: string,
-	): Promise<{
+	async getDetail(id: string): Promise<{
 		dispute?: Dispute & { buyer?: string; seller?: string };
 		votes: Vote[];
 	}> {
@@ -389,7 +387,6 @@ export class DaoService {
 			const jobs = await this.prisma.job.findMany({
 				where: {
 					disputeId: { not: null },
-					OR: [{ createdBy: addr }, { selectedAgentId: addr }],
 				},
 				select: {
 					id: true,
@@ -434,22 +431,23 @@ export class DaoService {
 			);
 
 			const data = resolvedDisputes.map((d) => {
-				const job = jobByDisputeId.get(d.id)!;
+				const job = jobByDisputeId.get(d.id);
 
-				const role =
-					this.normalizeAddress(job.createdBy) === addr
+				const role = addr
+					? this.normalizeAddress(job?.createdBy) === addr
 						? "BUYER"
-						: this.normalizeAddress(job.selectedAgentId) === addr
+						: this.normalizeAddress(job?.selectedAgentId) === addr
 							? "SELLER"
-							: "UNKNOWN";
+							: "UNKNOWN"
+					: "UNKNOWN";
 
 				return {
 					...this.mapDispute(d),
 					role,
-					jobId: job.id,
-					jobTitle: job.title,
-					buyer: job.createdBy,
-					seller: job.selectedAgentId,
+					jobId: job?.id ?? d.jobId,
+					jobTitle: job?.title,
+					buyer: job?.createdBy,
+					seller: job?.selectedAgentId,
 				};
 			});
 
