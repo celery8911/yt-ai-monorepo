@@ -1,5 +1,5 @@
 specVersion: 0.0.5
-description: yt-ai-monorepo automation subgraph (CBT/Escrow/DisputeDAO)
+description: yt-ai-monorepo automation subgraph (CBT/Escrow/DisputeDAO/AgentHiring)
 repository: https://github.com/celery8911/yt-ai-monorepo
 schema:
   file: ./schema.graphql
@@ -9,8 +9,9 @@ dataSources:
     name: CBT
     network: sepolia
     source:
-      address: "0x973391Eb58B2F60C4a73629729e715C216C84DA9"
+      address: "0x502BccF9d143ecB89983EdFbf107ebDeD3B9a9fc"
       abi: CBT
+      startBlock: 10117975
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -30,8 +31,9 @@ dataSources:
     name: Escrow
     network: sepolia
     source:
-      address: "0x60D37F92572fD48eD215d87F76B8A3261342F82A"
+      address: "0xd2a24326950A80272aCe018E2dcE25E22d5B5A7e"
       abi: Escrow
+      startBlock: 10117975
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -58,8 +60,9 @@ dataSources:
     name: DisputeDAO
     network: sepolia
     source:
-      address: "0x13e6b7acaCA7f8f758CC4B68a7f16f71a0EB2289"
+      address: "0x410756130fd06171298c72839FdCaB290Fe7eD16"
       abi: DisputeDAO
+      startBlock: 10117975
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -78,3 +81,29 @@ dataSources:
         - event: DisputeResolved(indexed bytes32,bool)
           handler: handleDisputeResolved
       file: ./src/mappings/dispute.ts
+
+  - kind: ethereum/contract
+    name: AgentHiring
+    network: sepolia
+    source:
+      address: "0xf54EEa283A05A5dD10944404D088c65bB60552dA"
+      abi: AgentHiring
+      startBlock: 10117975
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Engagement
+        - Transaction
+      abis:
+        - name: AgentHiring
+          file: ./abis/AgentHiring.json
+      eventHandlers:
+        - event: EngagementCreated(indexed uint256,indexed address,string,indexed address,string,uint8,uint256)
+          handler: handleEngagementCreated
+        - event: PaymentReleased(indexed uint256,indexed address,uint256)
+          handler: handlePaymentReleased
+        - event: PaymentRefunded(indexed uint256,indexed address,uint256)
+          handler: handlePaymentRefunded
+      file: ./src/mappings/agent-hiring.ts
