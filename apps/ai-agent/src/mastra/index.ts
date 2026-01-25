@@ -2,7 +2,9 @@ import { Mastra } from "@mastra/core/mastra";
 import { PinoLogger } from "@mastra/loggers";
 import { LibSQLStore } from "@mastra/libsql";
 import { weatherWorkflow } from "./workflows/weather-workflow";
+import { draftWorkflow } from "./workflows/draft-workflow";
 import { weatherAgent } from "./agents/weather-agent";
+import { draftAgent } from "./agents/draft-agent";
 import {
 	toolCallAppropriatenessScorer,
 	completenessScorer,
@@ -10,8 +12,8 @@ import {
 } from "./scorers/weather-scorer";
 
 export const mastra = new Mastra({
-	workflows: { weatherWorkflow }, // 注册天气相关工作流（中文：天气流程）
-	agents: { weatherAgent }, // 注册天气智能体，负责与模型交互
+	workflows: { weatherWorkflow, draftWorkflow }, // 注册天气相关工作流（中文：天气流程）
+	agents: { weatherAgent, draftAgent }, // 注册天气智能体，负责与模型交互
 	scorers: {
 		toolCallAppropriatenessScorer,
 		completenessScorer,
