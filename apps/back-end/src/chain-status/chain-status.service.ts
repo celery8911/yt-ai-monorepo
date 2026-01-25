@@ -72,6 +72,56 @@ const escrowsByAgentAllQuery = `
   }
 `;
 
+const escrowsByPayerQuery = `
+  query EscrowsByPayer($payer: Bytes!, $statuses: [String!]) {
+    escrows(
+      where: { payer: $payer, status_in: $statuses }
+      first: 50
+      orderBy: createdAt
+      orderDirection: desc
+    ) {
+      id
+      jobId
+      payer
+      agent
+      amount
+      serviceFee
+      currency
+      status
+      createdAt
+      releaseAt
+      releasedAt
+      refundedAt
+      frozen
+    }
+  }
+`;
+
+const escrowsByPayerAllQuery = `
+  query EscrowsByPayerAll($payer: Bytes!) {
+    escrows(
+      where: { payer: $payer }
+      first: 50
+      orderBy: createdAt
+      orderDirection: desc
+    ) {
+      id
+      jobId
+      payer
+      agent
+      amount
+      serviceFee
+      currency
+      status
+      createdAt
+      releaseAt
+      releasedAt
+      refundedAt
+      frozen
+    }
+  }
+`;
+
 type EscrowRecord = {
 	id: string;
 	jobId: string;
@@ -391,6 +441,41 @@ export class ChainStatusService {
 		return {
 			agentOwner: normalizedOwner,
 			engagements: data.engagements ?? [],
+		};
+	}
+
+	async getEscrowsByPayer(payer: string, activeOnly = true) {
+		const normalizedPayer = this.normalizeAddress(payer);
+		const data = activeOnly
+			? await querySubgraph<
+					{ payer: string; statuses: string[] },
+					EscrowsByAgentResponse
+				>(this.ensureSubgraphUrl(), {
+					query: escrowsByPayerQuery,
+					variables: {
+						payer: normalizedPayer,
+						statuses: ["LOCKED"],
+					},
+				})
+			: await querySubgraph<{ payer: string }, EscrowsByAgentResponse>(
+					this.ensureSubgraphUrl(),
+					{
+						query: escrowsByPayerAllQuery,
+						variables: {
+							payer: normalizedPayer,
+						},
+					},
+				);
+
+		const escrows = data.escrows ?? [];
+		const activeEscrows = escrows.filter(
+			(escrow) => escrow.status === "LOCKED" && !escrow.frozen,
+		);
+
+		return {
+			payer: normalizedPayer,
+			activeOnly,
+			escrows: activeOnly ? activeEscrows : escrows,
 		};
 	}
 }

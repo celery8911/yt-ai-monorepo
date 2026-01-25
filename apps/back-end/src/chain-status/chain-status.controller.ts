@@ -82,4 +82,18 @@ export class ChainStatusController {
 		};
 		return this.chainStatusService.getEngagementsByOwner(owner, options);
 	}
+
+	@Get("escrow/by-payer")
+	async getEscrowByPayer(
+		@Query("payer") payer?: string,
+		@Query("activeOnly") activeOnly?: string,
+	) {
+		if (!payer) {
+			throw new BadRequestException("payer is required");
+		}
+		const activeOnlyFlag = activeOnly
+			? activeOnly.toLowerCase() !== "false"
+			: true;
+		return this.chainStatusService.getEscrowsByPayer(payer, activeOnlyFlag);
+	}
 }

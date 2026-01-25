@@ -71,6 +71,7 @@ type Engagement @entity(immutable: false) {
   startTime: BigInt!
   endTime: BigInt
   status: String!
+  escrowId: Bytes
   transactions: [Transaction!]! @derivedFrom(field: "engagement")
 }
 
