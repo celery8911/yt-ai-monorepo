@@ -4,16 +4,17 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Badge, Button, Card, CardContent, CardHeader, Tabs } from "@yt/ui";
 import { fetchAgentDetail, type AgentListItem } from "@/apis/agent";
-import { CBT_ABI, CHAIN_IDS, CONTRACTS, Escrow_ABI } from "@yt/libs";
+import { CBT_ABI, CHAIN_IDS, CONTRACTS, AgentHiring_ABI } from "@yt/libs";
 import {
 	useChainId,
 	useReadContract,
+	useReadContracts,
 	useSwitchChain,
 	useWaitForTransactionReceipt,
 	useWallet,
 	useWriteContract,
 } from "@yt/hooks";
-import { formatUnits, keccak256, parseUnits, stringToHex } from "viem";
+import { formatUnits, parseUnits } from "viem";
 
 const AgentDetail = () => {
 	const { id } = useParams<{ id: string }>();
@@ -24,13 +25,13 @@ const AgentDetail = () => {
 	const [error, setError] = useState("");
 	const [subscribeError, setSubscribeError] = useState<string | null>(null);
 	const [hasSubscribed, setHasSubscribed] = useState(false);
-	const [escrowRequest, setEscrowRequest] = useState<{
-		jobId: `0x${string}`;
-		agentAddress: `0x${string}`;
-		amount: bigint;
+	const [hireRequest, setHireRequest] = useState<{
+		agentId: string;
+		agentOwner: `0x${string}`;
+		price: bigint;
 	} | null>(null);
 
-	const { isConnected, connect } = useWallet();
+	const { address, isConnected, connect } = useWallet();
 	const chainId = useChainId();
 	const { switchChainAsync, isPending: isSwitching } = useSwitchChain();
 	const {
@@ -40,19 +41,46 @@ const AgentDetail = () => {
 		error: approveError,
 	} = useWriteContract();
 	const {
-		writeContract: createEscrow,
-		data: escrowHash,
-		isPending: isEscrowPending,
-		error: escrowError,
-	} = useWriteContract();
+		writeContract: hire,
+		data: hireHash,
+		isPending: isHirePending,
+		error: hireError,
+	} = useWriteContract({
+		mutation: {
+			onError: (error) => {
+				console.error("Hire transaction error:", error);
+			},
+		},
+	});
 	const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } =
 		useWaitForTransactionReceipt({ hash: approveHash });
-	const { isLoading: isEscrowConfirming, isSuccess: isEscrowSuccess } =
-		useWaitForTransactionReceipt({ hash: escrowHash });
+	const { isLoading: isHireConfirming, isSuccess: isHireSuccess } =
+		useWaitForTransactionReceipt({ hash: hireHash });
 	const { data: serviceFeeBps } = useReadContract({
-		address: CONTRACTS.sepolia.Escrow,
-		abi: Escrow_ABI.abi,
+		address: CONTRACTS.sepolia.AgentHiring,
+		abi: AgentHiring_ABI.abi,
 		functionName: "serviceFeeBps",
+	});
+	const { data: engagementIds } = useReadContract({
+		address: CONTRACTS.sepolia.AgentHiring,
+		abi: AgentHiring_ABI.abi,
+		functionName: "getEngagementsByAgentId",
+		args: agent?.id ? [agent.id] : undefined,
+		query: {
+			enabled: Boolean(agent?.id),
+		},
+	});
+	const engagementIdList = Array.isArray(engagementIds) ? engagementIds : [];
+	const { data: engagementResults } = useReadContracts({
+		contracts: engagementIdList.map((engagementId) => ({
+			address: CONTRACTS.sepolia.AgentHiring,
+			abi: AgentHiring_ABI.abi,
+			functionName: "engagements",
+			args: [engagementId],
+		})),
+		query: {
+			enabled: Boolean(address) && engagementIdList.length > 0,
+		},
 	});
 
 	useEffect(() => {
@@ -82,26 +110,62 @@ const AgentDetail = () => {
 	}, [id]);
 
 	useEffect(() => {
-		if (isEscrowSuccess) {
+		if (isHireSuccess) {
 			setHasSubscribed(true);
 		}
-	}, [isEscrowSuccess]);
+	}, [isHireSuccess]);
+	useEffect(() => {
+		if (!address || !engagementResults) {
+			setHasSubscribed(false);
+			return;
+		}
+		const lowerAddress = address.toLowerCase();
+		const subscribed = engagementResults.some((engagement) => {
+			const result = engagement.result as
+				| {
+						user?: string;
+						status?: bigint | number;
+				  }
+				| readonly unknown[]
+				| undefined;
+			if (!result) return false;
+			const user =
+				"user" in (result as object) && (result as { user?: string }).user
+					? (result as { user?: string }).user
+					: (result as readonly unknown[])[1];
+			const status =
+				"status" in (result as object) &&
+				(result as { status?: unknown }).status
+					? (result as { status?: unknown }).status
+					: (result as readonly unknown[])[9];
+			const normalizedUser = typeof user === "string" ? user.toLowerCase() : "";
+			const normalizedStatus =
+				typeof status === "bigint" ? Number(status) : Number(status);
+			return (
+				normalizedUser === lowerAddress &&
+				(normalizedStatus !== 3 || Number.isNaN(normalizedStatus))
+			);
+		});
+		setHasSubscribed(subscribed);
+	}, [address, engagementResults]);
 
 	useEffect(() => {
-		if (!escrowRequest || !isApproveSuccess) return;
+		if (!hireRequest || !isApproveSuccess) return;
 
-		createEscrow({
-			address: CONTRACTS.sepolia.Escrow,
-			abi: Escrow_ABI.abi,
-			functionName: "createEscrow",
+		hire({
+			address: CONTRACTS.sepolia.AgentHiring,
+			abi: AgentHiring_ABI.abi,
+			functionName: "hire",
 			args: [
-				escrowRequest.jobId,
-				escrowRequest.agentAddress,
-				escrowRequest.amount,
+				hireRequest.agentId,
+				hireRequest.agentOwner,
+				"", // jobId - empty for direct purchase
+				hireRequest.price,
+				0, // purchaseType: 0 = DIRECT
 			],
 		});
-		setEscrowRequest(null);
-	}, [createEscrow, escrowRequest, isApproveSuccess]);
+		setHireRequest(null);
+	}, [hire, hireRequest, isApproveSuccess]);
 
 	const parsePriceToCbt = (price?: string) => {
 		if (!price) return null;
@@ -128,12 +192,16 @@ const AgentDetail = () => {
 
 		if (!agent) return;
 		if (!agent.owner) {
-			setSubscribeError("Agent 地址缺失，无法托管支付。");
+			setSubscribeError("Agent 地址缺失，无法雇佣。");
+			return;
+		}
+		if (!agent.id) {
+			setSubscribeError("Agent ID 缺失，无法雇佣。");
 			return;
 		}
 
-		const amount = parsePriceToCbt(agent.price);
-		if (!amount) {
+		const price = parsePriceToCbt(agent.price);
+		if (!price) {
 			setSubscribeError("订阅费用非 CBT 计价或格式不正确。");
 			return;
 		}
@@ -147,31 +215,27 @@ const AgentDetail = () => {
 				await switchChainAsync({ chainId: CHAIN_IDS.sepolia });
 			}
 
-			const jobId = keccak256(
-				stringToHex(`${agent.id}-${Date.now()}`),
-			) as `0x${string}`;
-
 			const feeBps = BigInt(serviceFeeBps ?? 0);
-			const fee = (amount * feeBps) / 10_000n;
-			const approveAmount = amount + fee;
+			const fee = (price * feeBps) / 10_000n;
+			const approveAmount = price + fee;
 
-			setEscrowRequest({
-				jobId,
-				agentAddress: agent.owner as `0x${string}`,
-				amount,
+			setHireRequest({
+				agentId: agent.id,
+				agentOwner: agent.owner as `0x${string}`,
+				price,
 			});
 
 			approve({
 				address: CONTRACTS.sepolia.CBT,
 				abi: CBT_ABI.abi,
 				functionName: "approve",
-				args: [CONTRACTS.sepolia.Escrow, approveAmount],
+				args: [CONTRACTS.sepolia.AgentHiring, approveAmount],
 			});
 		} catch (err) {
 			setSubscribeError(
 				err instanceof Error ? err.message : "订阅失败，请稍后再试。",
 			);
-			setEscrowRequest(null);
+			setHireRequest(null);
 		}
 	};
 
@@ -468,32 +532,32 @@ const AgentDetail = () => {
 										isSwitching ||
 										isApprovePending ||
 										isApproveConfirming ||
-										isEscrowPending ||
-										isEscrowConfirming
+										isHirePending ||
+										isHireConfirming
 									}
 								>
 									{hasSubscribed
 										? "已订阅"
 										: isApprovePending || isApproveConfirming
 											? "授权中..."
-											: isEscrowPending || isEscrowConfirming
-												? "托管中..."
+											: isHirePending || isHireConfirming
+												? "雇佣中..."
 												: "立即订阅"}
 								</Button>
 								<Button variant="outline" className="w-full">
 									免费试用
 								</Button>
 							</div>
-							{(subscribeError || approveError || escrowError) && (
+							{(subscribeError || approveError || hireError) && (
 								<p className="text-xs text-rose-400">
 									{subscribeError ||
 										approveError?.message ||
-										escrowError?.message}
+										hireError?.message}
 								</p>
 							)}
-							{isEscrowSuccess && (
+							{isHireSuccess && (
 								<p className="text-xs text-emerald-400">
-									订阅成功，资金已托管。
+									订阅成功，Agent已雇佣。
 								</p>
 							)}
 						</CardContent>

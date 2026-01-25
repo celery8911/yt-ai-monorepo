@@ -16,11 +16,13 @@ contract Treasury is Ownable {
     IERC20 public immutable cbt;
     address public escrow;
     address public dao;
+    mapping(address => bool) public authorizedCallers;
 
     mapping(bytes32 => uint256) public feeByJobId;
 
     event EscrowUpdated(address indexed oldEscrow, address indexed newEscrow);
     event DaoUpdated(address indexed oldDao, address indexed newDao);
+    event AuthorizedCallerUpdated(address indexed caller, bool allowed);
     event ServiceFeeRecorded(bytes32 indexed jobId, uint256 amount);
     event RewardReleased(bytes32 indexed jobId, address indexed to, uint256 amount);
     event EthReceived(address indexed sender, uint256 amount);
@@ -44,6 +46,12 @@ contract Treasury is Ownable {
         }
         address oldEscrow = escrow;
         escrow = escrow_;
+        if (oldEscrow != address(0)) {
+            authorizedCallers[oldEscrow] = false;
+            emit AuthorizedCallerUpdated(oldEscrow, false);
+        }
+        authorizedCallers[escrow_] = true;
+        emit AuthorizedCallerUpdated(escrow_, true);
         emit EscrowUpdated(oldEscrow, escrow_);
     }
 
@@ -56,8 +64,16 @@ contract Treasury is Ownable {
         emit DaoUpdated(oldDao, dao_);
     }
 
+    function setAuthorizedCaller(address caller, bool allowed) external onlyOwner {
+        if (caller == address(0)) {
+            revert ZeroAddress();
+        }
+        authorizedCallers[caller] = allowed;
+        emit AuthorizedCallerUpdated(caller, allowed);
+    }
+
     function recordServiceFee(bytes32 jobId, uint256 amount) external {
-        if (msg.sender != escrow) {
+        if (!authorizedCallers[msg.sender]) {
             revert Unauthorized();
         }
         feeByJobId[jobId] += amount;
