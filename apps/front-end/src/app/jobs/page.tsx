@@ -327,23 +327,23 @@ const JobsMarket = () => {
 									/>
 									<div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-slate-950/20" />
 									<div className="absolute top-3 inset-x-3 flex items-center justify-between gap-3">
-										<div className="flex flex-wrap gap-2">
+										<div className="flex flex-nowrap gap-2">
 											<Badge
 												variant={priorityVariants[job.priority]}
-												className="bg-opacity-90 shadow-sm shadow-black/40"
+												className="bg-opacity-90 shadow-sm shadow-black/40 whitespace-nowrap"
 											>
 												{job.priority}
 											</Badge>
 											<Badge
 												variant={statusVariants[job.status]}
-												className="bg-opacity-90 shadow-sm shadow-black/40"
+												className="bg-opacity-90 shadow-sm shadow-black/40 whitespace-nowrap"
 											>
 												{job.status}
 											</Badge>
 										</div>
 										<Badge
 											variant="outline"
-											className="border-white/20 bg-white/10 text-slate-100 shadow-sm shadow-black/40 backdrop-blur-sm"
+											className="border-white/20 bg-white/10 text-slate-100 shadow-sm shadow-black/40 backdrop-blur-sm whitespace-nowrap max-w-[50%] truncate"
 										>
 											{job.category}
 										</Badge>

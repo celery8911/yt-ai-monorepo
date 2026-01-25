@@ -87,6 +87,9 @@ const formatProxyResult = (payload: unknown): string => {
 	if (typeof payload === "string") return truncateText(payload);
 	if (typeof payload === "object") {
 		const record = payload as Record<string, unknown>;
+		if (typeof record.text === "string") {
+			return truncateText(record.text);
+		}
 		if (typeof record.result === "string") {
 			return truncateText(record.result);
 		}
