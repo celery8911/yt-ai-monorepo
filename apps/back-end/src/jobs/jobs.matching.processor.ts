@@ -3,6 +3,7 @@ import type { Job as QueueJob } from "bull";
 import { AgentsService } from "../agents/agents.service";
 import { MatchingService } from "../matching/matching.service";
 import { JobsService } from "./jobs.service";
+import { buildMatchSelection } from "./jobs.matching.utils";
 import {
 	MATCHING_JOB_NAME,
 	MATCHING_QUEUE_NAME,
@@ -27,6 +28,8 @@ export class JobsMatchingProcessor {
 
 		const agents = await this.agentsService.all();
 		const matches = this.matchingService.match(target, agents);
+		const { candidates, selected } = buildMatchSelection(matches, target.id);
+		const selectedIds = new Set(selected.map((agent) => agent.id));
 		const noMatchReason =
 			matches.length === 0
 				? this.matchingService.explainNoMatch(target, agents)
@@ -34,7 +37,11 @@ export class JobsMatchingProcessor {
 
 		await this.jobsService.saveMatches(
 			target.id,
-			matches.map((agent) => ({ id: agent.id, score: agent.score })),
+			candidates.map((agent) => ({
+				id: agent.id,
+				score: agent.score,
+				status: selectedIds.has(agent.id) ? "SELECTED" : "CANDIDATE",
+			})),
 		);
 
 		const nextStatus = matches.length ? "IN_PROGRESS" : "FAILED";

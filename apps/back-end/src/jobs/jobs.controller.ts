@@ -15,12 +15,18 @@ import { DaoService } from "../dao/dao.service";
 import { MatchingService } from "../matching/matching.service";
 import { JobsMatchingQueueService } from "./jobs.matching.queue";
 import { JobsService } from "./jobs.service";
+import { buildMatchSelection } from "./jobs.matching.utils";
 import {
 	CreateJobDto,
 	DisputeJobDto,
 	SelectAgentDto,
 	UpdateJobDto,
 } from "./jobs.dto";
+
+type InvokeAgentPayload = {
+	input?: string;
+	context?: Record<string, unknown>;
+};
 
 @Controller("jobs")
 export class JobsController {
@@ -43,16 +49,26 @@ export class JobsController {
 				.map((match) => {
 					const agent = agentMap.get(match.agentId);
 					if (!agent) return undefined;
-					return { ...agent, score: match.matchScore ?? 0 };
+					return {
+						...agent,
+						score: match.matchScore ?? 0,
+						matchStatus: match.status ?? undefined,
+					};
 				})
-				.filter((match): match is (typeof agents)[number] & { score: number } =>
-					Boolean(match),
-				);
+				.filter(Boolean) as Array<
+				(typeof agents)[number] & { score: number; matchStatus?: string }
+			>;
 		}
 
 		if (!this.jobsService.isDatabaseEnabled()) {
 			const agents = await this.agentsService.all();
-			return this.matchingService.match(job, agents);
+			const matches = this.matchingService.match(job, agents);
+			const { candidates, selected } = buildMatchSelection(matches, job.id);
+			const selectedIds = new Set(selected.map((agent) => agent.id));
+			return candidates.map((agent) => ({
+				...agent,
+				matchStatus: selectedIds.has(agent.id) ? "SELECTED" : "CANDIDATE",
+			}));
 		}
 
 		return [];
@@ -63,28 +79,29 @@ export class JobsController {
 		return this.agentsService.findById(selectedAgentId);
 	}
 
-	@Post()
-	async create(@Body() payload: CreateJobDto) {
-		const job = await this.jobsService.create(payload);
-		if (!payload.autoMatchEnabled) {
-			return { job, matches: [] };
-		}
-
+	private async runAutoMatch(job: Job) {
 		const hasRedisHost = Boolean(process.env.REDIS_HOST);
 		if (hasRedisHost) {
 			await this.matchingQueue.enqueue(job.id);
-			return { job, matches: [] };
+			await this.jobsService.setMatchStatus(job.id, "MATCHING", null);
+			return { job: await this.jobsService.findById(job.id), matches: [] };
 		}
 
 		const agents = await this.agentsService.all();
 		const matches = this.matchingService.match(job, agents);
+		const { candidates, selected } = buildMatchSelection(matches, job.id);
+		const selectedIds = new Set(selected.map((agent) => agent.id));
 		const noMatchReason =
 			matches.length === 0
 				? this.matchingService.explainNoMatch(job, agents)
 				: null;
 		await this.jobsService.saveMatches(
 			job.id,
-			matches.map((agent) => ({ id: agent.id, score: agent.score })),
+			candidates.map((agent) => ({
+				id: agent.id,
+				score: agent.score,
+				status: selectedIds.has(agent.id) ? "SELECTED" : "CANDIDATE",
+			})),
 		);
 		const updated =
 			(await this.jobsService.setMatchStatus(
@@ -92,7 +109,22 @@ export class JobsController {
 				matches.length ? "IN_PROGRESS" : "FAILED",
 				matches.length ? null : noMatchReason,
 			)) ?? job;
-		return { job: updated, matches };
+		return {
+			job: updated,
+			matches: candidates.map((agent) => ({
+				...agent,
+				matchStatus: selectedIds.has(agent.id) ? "SELECTED" : "CANDIDATE",
+			})),
+		};
+	}
+
+	@Post()
+	async create(@Body() payload: CreateJobDto) {
+		const job = await this.jobsService.create(payload);
+		if (!payload.autoMatchEnabled) {
+			return { job, matches: [] };
+		}
+		return this.runAutoMatch(job);
 	}
 
 	@Get()
@@ -164,18 +196,30 @@ export class JobsController {
 				.map((match) => {
 					const agent = agentMap.get(match.agentId);
 					if (!agent) return undefined;
-					return { ...agent, score: match.matchScore ?? 0 };
+					return {
+						...agent,
+						score: match.matchScore ?? 0,
+						matchStatus: match.status ?? undefined,
+					};
 				})
-				.filter((match): match is (typeof agents)[number] & { score: number } =>
-					Boolean(match),
-				);
+				.filter(Boolean) as Array<
+				(typeof agents)[number] & { score: number; matchStatus?: string }
+			>;
 			return { job, matches };
 		}
 
 		if (!this.jobsService.isDatabaseEnabled()) {
 			const agents = await this.agentsService.all();
 			const matches = this.matchingService.match(job, agents);
-			return { job, matches };
+			const { candidates, selected } = buildMatchSelection(matches, job.id);
+			const selectedIds = new Set(selected.map((agent) => agent.id));
+			return {
+				job,
+				matches: candidates.map((agent) => ({
+					...agent,
+					matchStatus: selectedIds.has(agent.id) ? "SELECTED" : "CANDIDATE",
+				})),
+			};
 		}
 
 		return { job, matches: [] };
@@ -183,9 +227,17 @@ export class JobsController {
 
 	@Put(":id")
 	async update(@Param("id") id: string, @Body() payload: UpdateJobDto) {
+		const before = await this.jobsService.findById(id);
 		const updated = await this.jobsService.update(id, payload);
 		if (!updated) {
 			throw new NotFoundException("Job not found");
+		}
+		const publishTriggered =
+			before?.status === "DRAFT" &&
+			payload.status === "OPEN" &&
+			updated.autoMatchEnabled;
+		if (publishTriggered) {
+			return this.runAutoMatch(updated);
 		}
 		return updated;
 	}
@@ -222,5 +274,124 @@ export class JobsController {
 		});
 		await this.jobsService.updateStatus(id, "DISPUTED");
 		return { job: await this.jobsService.findById(id), dispute };
+	}
+
+	@Post(":id/agents/:agentId/invoke")
+	async invokeAgent(
+		@Param("id") id: string,
+		@Param("agentId") agentId: string,
+		@Body() payload: InvokeAgentPayload,
+	) {
+		const job = await this.jobsService.findById(id);
+		if (!job) {
+			throw new NotFoundException("Job not found");
+		}
+		const agent = await this.agentsService.findById(agentId);
+		if (!agent) {
+			throw new NotFoundException("Agent not found");
+		}
+		if (!agent.endpointUrl) {
+			throw new BadRequestException("Agent endpointUrl is missing");
+		}
+
+		const startedAt = Date.now();
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), 15000);
+		let status: "ok" | "error" = "ok";
+		let result: unknown;
+		let error: string | undefined;
+
+		try {
+			const response = await fetch(agent.endpointUrl, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					input: payload?.input,
+					context: payload?.context,
+					job: {
+						id: job.id,
+						title: job.title,
+						description: job.description,
+						category: job.category,
+						tags: job.tags,
+						paymentMethod: job.paymentMethod,
+						budgetMin: job.budgetMin,
+						budgetMax: job.budgetMax,
+						currency: job.currency,
+						priority: job.priority,
+						deliverables: job.deliverables,
+						acceptanceCriteria: job.acceptanceCriteria,
+						deadlineAt: job.deadlineAt,
+					},
+				}),
+				signal: controller.signal,
+			});
+			const text = await response.text();
+			if (!response.ok) {
+				status = "error";
+				error = `Agent response ${response.status}`;
+				result = text;
+			} else {
+				try {
+					result = text ? JSON.parse(text) : null;
+				} catch {
+					result = text;
+				}
+			}
+		} catch (err) {
+			status = "error";
+			error = err instanceof Error ? err.message : "Agent request failed";
+		} finally {
+			clearTimeout(timeout);
+		}
+
+		return {
+			agentId,
+			status,
+			result,
+			error,
+			durationMs: Date.now() - startedAt,
+		};
+	}
+
+	@Post(":id/match/run")
+	async runMatch(@Param("id") id: string) {
+		const job = await this.jobsService.findById(id);
+		if (!job) {
+			throw new NotFoundException("Job not found");
+		}
+
+		const agents = await this.agentsService.all();
+		const matches = this.matchingService.match(job, agents);
+		const { candidates, selected } = buildMatchSelection(matches, job.id);
+		const selectedIds = new Set(selected.map((agent) => agent.id));
+		const noMatchReason =
+			matches.length === 0
+				? this.matchingService.explainNoMatch(job, agents)
+				: null;
+
+		await this.jobsService.saveMatches(
+			job.id,
+			candidates.map((agent) => ({
+				id: agent.id,
+				score: agent.score,
+				status: selectedIds.has(agent.id) ? "SELECTED" : "CANDIDATE",
+			})),
+		);
+
+		const updated =
+			(await this.jobsService.setMatchStatus(
+				job.id,
+				matches.length ? "IN_PROGRESS" : "FAILED",
+				matches.length ? null : noMatchReason,
+			)) ?? job;
+
+		return {
+			job: updated,
+			matches: candidates.map((agent) => ({
+				...agent,
+				matchStatus: selectedIds.has(agent.id) ? "SELECTED" : "CANDIDATE",
+			})),
+		};
 	}
 }

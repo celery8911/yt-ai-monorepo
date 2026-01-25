@@ -15,25 +15,58 @@ const skillLevelMeets = (
 	return skillOrder.indexOf(agentLevel) >= skillOrder.indexOf(requiredLevel);
 };
 
+const normalizeTags = (tags: string[]): string[] =>
+	tags
+		.flatMap((tag) =>
+			tag
+				.split(/[,\s/|;]+/g)
+				.map((item) => item.trim().toLowerCase())
+				.filter(Boolean),
+		)
+		.filter(Boolean);
+
+const tagOverlap = (jobTags: string[], agentTags: string[]): boolean => {
+	const jobNormalized = normalizeTags(jobTags);
+	const agentNormalized = normalizeTags(agentTags);
+	if (!jobNormalized.length || !agentNormalized.length) return false;
+	const agentSet = new Set(agentNormalized);
+	return jobNormalized.some((tag) => agentSet.has(tag));
+};
+
 const tagSimilarity = (jobTags: string[], agentTags: string[]): number => {
-	if (!jobTags.length || !agentTags.length) return 0;
-	const jobSet = new Set(jobTags);
-	const agentSet = new Set(agentTags);
+	const jobNormalized = normalizeTags(jobTags);
+	const agentNormalized = normalizeTags(agentTags);
+	if (!jobNormalized.length || !agentNormalized.length) return 0;
+	const jobSet = new Set(jobNormalized);
+	const agentSet = new Set(agentNormalized);
 	const intersection = [...jobSet].filter((tag) => agentSet.has(tag)).length;
 	const union = new Set([...jobSet, ...agentSet]).size;
 	return union ? intersection / union : 0;
 };
 
-const responseTimeScore = (avgResponseTimeMs?: number): number => {
-	if (!avgResponseTimeMs) return 0.5;
-	const normalized = Math.min(avgResponseTimeMs / 5000, 1);
-	return 1 - normalized;
+const categorySimilarity = (
+	jobCategory?: string,
+	agentCategory?: string,
+): number => {
+	if (!jobCategory || !agentCategory) return 0;
+	const jobNorm = jobCategory.trim().toLowerCase();
+	const agentNorm = agentCategory.trim().toLowerCase();
+	if (!jobNorm || !agentNorm) return 0;
+	if (jobNorm === agentNorm) return 1;
+	if (jobNorm.includes(agentNorm) || agentNorm.includes(jobNorm)) return 0.6;
+	return 0;
 };
 
-const ratingScore = (rating?: number): number => {
-	if (rating === undefined) return 0.5;
-	return Math.max(0, Math.min(rating / 5, 1));
-};
+// const responseTimeScore = (avgResponseTimeMs?: number): number => {
+// 	if (!avgResponseTimeMs) return 0.5;
+// 	const normalized = Math.min(avgResponseTimeMs / 5000, 1);
+// 	return 1 - normalized;
+// };
+
+// const ratingScore = (rating?: number): number => {
+// 	if (rating === undefined) return 0.5;
+// 	return Math.max(0, Math.min(rating / 5, 1));
+// };
 
 const priceFit = (job: Job, agent: Agent): number => {
 	const budgetMin = job.budgetMin ?? 0;
@@ -101,55 +134,35 @@ export class MatchingService {
 	}
 
 	hardFilter(job: Job, agents: Agent[]): Agent[] {
-		return agents.filter((agent) => {
+		const hasTagOrCategory = job.tags.length > 0 || Boolean(job.category);
+		const filtered = agents.filter((agent) => {
 			if (!agent.isActive) return false;
 			if (agent.visibility === "private" && job.visibility === "public")
 				return false;
-			if (job.currency && agent.currency !== job.currency) return false;
-			if (!agent.supportedPaymentMethods.includes(job.paymentMethod))
-				return false;
-			if (!skillLevelMeets(agent.skillLevel, job.requiredSkillLevel))
-				return false;
-			const fitsPrice = priceFit(job, agent) > 0;
-			return fitsPrice;
+			if (!hasTagOrCategory) return true;
+			const tagHit = tagOverlap(job.tags, agent.tags);
+			const categoryScore = categorySimilarity(job.category, agent.category);
+			return tagHit || categoryScore > 0;
 		});
+		return filtered;
 	}
 
 	score(job: Job, agents: Agent[]): Array<Agent & { score: number }> {
 		const weightsBase = {
-			tagSimilarity: 0.35,
-			priceFit: 0.2,
-			ratingScore: 0.2,
-			successRate: 0.15,
-			responseTimeScore: 0.1,
+			tagSimilarity: 0.7,
+			categorySimilarity: 0.3,
 		};
 
-		const responseWeight =
-			job.priority === "URGENT"
-				? weightsBase.responseTimeScore * 1.2
-				: weightsBase.responseTimeScore;
+		const weights = { ...weightsBase };
 
-		const weights = {
-			...weightsBase,
-			responseTimeScore: responseWeight,
-		};
-
-		const sumWeights =
-			weights.tagSimilarity +
-			weights.priceFit +
-			weights.ratingScore +
-			weights.successRate +
-			weights.responseTimeScore;
+		const sumWeights = weights.tagSimilarity + weights.categorySimilarity;
 
 		return agents
 			.map((agent) => {
 				const score =
 					(weights.tagSimilarity * tagSimilarity(job.tags, agent.tags) +
-						weights.priceFit * priceFit(job, agent) +
-						weights.ratingScore * ratingScore(agent.rating) +
-						weights.successRate * (agent.successRate ?? 0.5) +
-						weights.responseTimeScore *
-							responseTimeScore(agent.avgResponseTimeMs)) /
+						weights.categorySimilarity *
+							categorySimilarity(job.category, agent.category)) /
 					sumWeights;
 				return { ...agent, score };
 			})
@@ -158,6 +171,6 @@ export class MatchingService {
 
 	match(job: Job, agents: Agent[]): Array<Agent & { score: number }> {
 		const filtered = this.hardFilter(job, agents);
-		return this.score(job, filtered).slice(0, 3);
+		return this.score(job, filtered);
 	}
 }

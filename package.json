@@ -13,7 +13,8 @@
 		"release:local": "turbo run build && changeset publish --registry http://localhost:4873/ --no-git-checks",
 		"format": "biome format --write .",
 		"check": "biome check .",
-		"prepare": "husky install"
+		"prepare": "husky install",
+		"dev-test": "turbo run dev --filter=./apps/ai-agent --filter=./apps/back-end --filter=./apps/front-end"
 	},
 	"keywords": [],
 	"private": true,

@@ -14,6 +14,7 @@ import { SupabaseModule } from "./supabase/supabase.module";
 import { WalletModule } from "./wallet/wallet.module";
 import { KeeperModule } from "./keeper/keeper.module";
 import { ChainStatusModule } from "./chain-status/chain-status.module";
+import { AgentProxyModule } from "./agent-proxy/agent-proxy.module";
 
 @Module({
 	imports: [
@@ -43,6 +44,7 @@ import { ChainStatusModule } from "./chain-status/chain-status.module";
 		DashboardModule,
 		KeeperModule,
 		ChainStatusModule,
+		AgentProxyModule,
 	],
 })
 export class AppModule {}

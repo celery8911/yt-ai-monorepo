@@ -26,6 +26,7 @@ import {
 	type JobPriority,
 	type JobStatus,
 } from "@/apis/jobs";
+import JobAgentOrbit from "@/app/jobs/_components/JobAgentOrbit";
 import JobMatchSection from "@/app/jobs/_components/JobMatchSection";
 import {
 	useChainId,
@@ -67,6 +68,7 @@ const JobDetail = () => {
 	const [selectedAgent, setSelectedAgent] = useState<MatchedAgent | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
+	const [matchStartSignal, setMatchStartSignal] = useState(0);
 	const [subscribingAgentId, setSubscribingAgentId] = useState<string | null>(
 		null,
 	);
@@ -377,6 +379,14 @@ const JobDetail = () => {
 		}
 	};
 
+	const handleRunMatching = () => {
+		if (!matches.length) {
+			toast({ message: "暂无匹配结果可展示", variant: "info" });
+			return;
+		}
+		setMatchStartSignal((prev) => prev + 1);
+	};
+
 	return (
 		<div className="max-w-5xl mx-auto space-y-10 pb-20 relative">
 			<div className="pointer-events-none absolute -top-24 right-[-12%] h-72 w-72 rounded-full bg-cyan-500/20 blur-[120px]" />
@@ -545,6 +555,38 @@ const JobDetail = () => {
 
 					<div className="grid grid-cols-1 lg:grid-cols-[1.35fr_0.85fr] gap-6">
 						<div className="space-y-6">
+							{isOwner && showMatches ? (
+								<Card className="border-white/10 bg-gradient-to-br from-slate-950/70 via-slate-950/60 to-cyan-950/40">
+									<CardHeader>
+										<h4 className="font-black text-xs uppercase tracking-[0.2em] text-cyan-300">
+											智能体匹配触发
+										</h4>
+									</CardHeader>
+									<CardContent className="space-y-3 text-sm">
+										<p className="text-slate-400">
+											点击按钮后触发前端动画演示，从候选智能体中随机抽取 3
+											个并并行调用智能体。
+										</p>
+										<Button
+											variant="outline"
+											disabled={matchStartSignal > 0}
+											onClick={handleRunMatching}
+											className="border-cyan-500/30 text-cyan-100"
+										>
+											{matchStartSignal > 0 ? "已触发匹配" : "开始匹配演示"}
+										</Button>
+									</CardContent>
+								</Card>
+							) : null}
+							{isOwner && (matchStartSignal > 0 || matches.length > 0) ? (
+								<JobAgentOrbit
+									job={job}
+									matches={matches}
+									startSignal={matchStartSignal}
+									onSubscribe={handleSubscribe}
+									subscribingAgentId={subscribingAgentId}
+								/>
+							) : null}
 							{escrowRequest && isEscrowSuccess && (
 								<div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
 									<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -574,7 +616,7 @@ const JobDetail = () => {
 								matches={matches}
 								selectedAgent={selectedAgent}
 								showSelectedAgent={showSelectedAgent}
-								showMatches={showMatches}
+								showMatches={false}
 								jobPaymentMethod={job.paymentMethod}
 								onSubscribe={handleSubscribe}
 								subscribingAgentId={subscribingAgentId}
