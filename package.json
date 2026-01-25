@@ -14,7 +14,7 @@
 		"format": "biome format --write .",
 		"check": "biome check .",
 		"prepare": "husky install",
-		"dev-test": "turbo run dev --filter=./apps/agents --filter=./apps/back-end --filter=./apps/front-end"
+		"dev-test": "turbo run dev --filter=./apps/ai-agent --filter=./apps/back-end --filter=./apps/front-end"
 	},
 	"keywords": [],
 	"private": true,

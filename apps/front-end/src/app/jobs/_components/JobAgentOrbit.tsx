@@ -3,6 +3,7 @@
 import * as d3 from "d3";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Button, Card, CardContent, CardHeader } from "@yt/ui";
+import { invokeAgentProxy } from "@/apis/agentProxy";
 import type { Job, MatchedAgent } from "@/apis/jobs";
 
 type AgentRunState = {
@@ -58,6 +59,34 @@ const statusLabel = (status?: AgentRunState["status"]) => {
 	}
 };
 
+const truncateText = (value: string, limit = 240): string => {
+	if (value.length <= limit) return value;
+	return `${value.slice(0, Math.max(0, limit - 1))}…`;
+};
+
+const formatProxyResult = (payload: unknown): string => {
+	if (!payload) return "无返回结果";
+	if (typeof payload === "string") return truncateText(payload);
+	if (typeof payload === "object") {
+		const record = payload as Record<string, unknown>;
+		if (typeof record.result === "string") {
+			return truncateText(record.result);
+		}
+		if (typeof record.message === "string") {
+			return truncateText(record.message);
+		}
+		if (typeof record.data === "string") {
+			return truncateText(record.data);
+		}
+		try {
+			return truncateText(JSON.stringify(payload, null, 2), 420);
+		} catch {
+			return "返回内容解析失败";
+		}
+	}
+	return truncateText(String(payload));
+};
+
 const JobAgentOrbit = ({
 	matches,
 	startSignal,
@@ -82,6 +111,8 @@ const JobAgentOrbit = ({
 	const timeoutsRef = useRef<number[]>([]);
 	const stateRef = useRef<Record<string, AgentRunState>>({});
 	const baseAnglesRef = useRef<Record<string, number>>({});
+	const invokeInputRef = useRef("");
+	const invokeRunIdRef = useRef(0);
 
 	useEffect(() => {
 		stateRef.current = agentStates;
@@ -96,6 +127,8 @@ const JobAgentOrbit = ({
 			setInvokeInput("");
 			setInvokeError("");
 			setInvokeSignal(0);
+			invokeInputRef.current = "";
+			invokeRunIdRef.current = 0;
 			return;
 		}
 		if (candidates.length < SELECT_COUNT) {
@@ -125,6 +158,9 @@ const JobAgentOrbit = ({
 		if (!selectedAgents.length || startSignal === 0 || invokeSignal === 0)
 			return;
 
+		const runId = invokeSignal;
+		const input = invokeInputRef.current;
+
 		setAgentStates((prev) => {
 			const next: Record<string, AgentRunState> = { ...prev };
 			selectedAgents.forEach((agent) => {
@@ -134,13 +170,41 @@ const JobAgentOrbit = ({
 		});
 
 		selectedAgents.forEach((agent) => {
-			setAgentStates((prev) => ({
-				...prev,
-				[agent.id]: {
-					status: "running",
-					result: "已触发外部接口调用",
-				},
-			}));
+			(async () => {
+				const startedAt = performance.now();
+				try {
+					const response = await invokeAgentProxy(agent.id, input);
+					if (invokeRunIdRef.current !== runId) return;
+					const durationMs = Math.round(performance.now() - startedAt);
+					setAgentStates((prev) => ({
+						...prev,
+						[agent.id]: {
+							status: "done",
+							result: formatProxyResult(response),
+							durationMs,
+						},
+					}));
+					setCompletedOrder((prev) =>
+						prev.includes(agent.id) ? prev : [...prev, agent.id],
+					);
+				} catch (error) {
+					if (invokeRunIdRef.current !== runId) return;
+					const durationMs = Math.round(performance.now() - startedAt);
+					const message =
+						error instanceof Error ? error.message : "调用外部智能体失败";
+					setAgentStates((prev) => ({
+						...prev,
+						[agent.id]: {
+							status: "error",
+							result: message,
+							durationMs,
+						},
+					}));
+					setCompletedOrder((prev) =>
+						prev.includes(agent.id) ? prev : [...prev, agent.id],
+					);
+				}
+			})();
 		});
 	}, [invokeSignal, selectedAgents, startSignal]);
 
@@ -401,7 +465,10 @@ const JobAgentOrbit = ({
 			return;
 		}
 		setInvokeError("");
-		setInvokeSignal((prev) => prev + 1);
+		invokeInputRef.current = trimmed;
+		const nextRunId = invokeRunIdRef.current + 1;
+		invokeRunIdRef.current = nextRunId;
+		setInvokeSignal(nextRunId);
 		setPhase("orbiting");
 	};
 
