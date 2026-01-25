@@ -5,6 +5,7 @@ import { weatherWorkflow } from "./workflows/weather-workflow";
 import { draftWorkflow } from "./workflows/draft-workflow";
 import { weatherAgent } from "./agents/weather-agent";
 import { draftAgent } from "./agents/draft-agent";
+import { xhsAgents } from "./agents/xhs-agents";
 import {
 	toolCallAppropriatenessScorer,
 	completenessScorer,
@@ -13,7 +14,7 @@ import {
 
 export const mastra = new Mastra({
 	workflows: { weatherWorkflow, draftWorkflow }, // 注册天气相关工作流（中文：天气流程）
-	agents: { weatherAgent, draftAgent }, // 注册天气智能体，负责与模型交互
+	agents: { weatherAgent, draftAgent, ...xhsAgents }, // 注册天气智能体和所有小红书文案智能体
 	scorers: {
 		toolCallAppropriatenessScorer,
 		completenessScorer,
