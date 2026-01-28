@@ -61,6 +61,15 @@ const AgentDetail = () => {
 		abi: AgentHiring_ABI.abi,
 		functionName: "serviceFeeBps",
 	});
+	const { data: cbtBalance } = useReadContract({
+		address: CONTRACTS.sepolia.CBT,
+		abi: CBT_ABI.abi,
+		functionName: "balanceOf",
+		args: address ? [address] : undefined,
+		query: {
+			enabled: Boolean(address),
+		},
+	});
 	const { data: engagementIds } = useReadContract({
 		address: CONTRACTS.sepolia.AgentHiring,
 		abi: AgentHiring_ABI.abi,
@@ -191,6 +200,10 @@ const AgentDetail = () => {
 		setSubscribeError(null);
 
 		if (!agent) return;
+		if (serviceFeeBps === undefined || serviceFeeBps === null) {
+			setSubscribeError("正在读取服务费，请稍后重试。");
+			return;
+		}
 		if (!agent.owner) {
 			setSubscribeError("Agent 地址缺失，无法雇佣。");
 			return;
@@ -218,6 +231,14 @@ const AgentDetail = () => {
 			const feeBps = BigInt(serviceFeeBps ?? 0);
 			const fee = (price * feeBps) / 10_000n;
 			const approveAmount = price + fee;
+			if (typeof cbtBalance === "bigint" && cbtBalance < approveAmount) {
+				const needed = formatUnits(approveAmount, 18);
+				const current = formatUnits(cbtBalance, 18);
+				setSubscribeError(
+					`CBT 余额不足，需要 ${needed} CBT，当前余额 ${current} CBT。`,
+				);
+				return;
+			}
 
 			setHireRequest({
 				agentId: agent.id,

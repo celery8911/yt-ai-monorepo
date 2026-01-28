@@ -122,6 +122,85 @@ const escrowsByPayerAllQuery = `
   }
 `;
 
+const disputeByIdQuery = `
+  query DisputeById($id: ID!) {
+    dispute(id: $id) {
+      id
+      jobId
+      escrowId
+      initiator
+      status
+      votesFor
+      votesAgainst
+      totalVoters
+      createdAt
+      resolvedAt
+      resolvedOutcome
+    }
+  }
+`;
+
+const disputesQuery = `
+  query Disputes($first: Int!, $skip: Int!) {
+    disputes(
+      first: $first
+      skip: $skip
+      orderBy: createdAt
+      orderDirection: desc
+    ) {
+      id
+      jobId
+      escrowId
+      initiator
+      status
+      votesFor
+      votesAgainst
+      totalVoters
+      createdAt
+      resolvedAt
+      resolvedOutcome
+    }
+  }
+`;
+
+const votesByDisputeQuery = `
+  query VotesByDispute($disputeId: ID!, $first: Int!, $skip: Int!) {
+    votes(
+      where: { disputeId: $disputeId }
+      first: $first
+      skip: $skip
+      orderBy: createdAt
+      orderDirection: asc
+    ) {
+      id
+      disputeId
+      voter
+      support
+      cost
+      createdAt
+    }
+  }
+`;
+
+const cbtTransfersByAddressQuery = `
+  query CbtTransfersByAddress($address: Bytes!, $first: Int!, $skip: Int!) {
+    tokenTransfers(
+      where: { or: [{ from: $address }, { to: $address }] }
+      first: $first
+      skip: $skip
+      orderBy: timestamp
+      orderDirection: desc
+    ) {
+      id
+      from
+      to
+      amount
+      timestamp
+      transactionHash
+    }
+  }
+`;
+
 type EscrowRecord = {
 	id: string;
 	jobId: string;
@@ -142,6 +221,46 @@ type EscrowByIdResponse = { escrow: EscrowRecord | null };
 
 type EscrowsByAgentResponse = { escrows: EscrowRecord[] };
 
+type DisputeRecord = {
+	id: string;
+	jobId: string;
+	escrowId: string;
+	initiator: string;
+	status: string;
+	votesFor: number;
+	votesAgainst: number;
+	totalVoters: number;
+	createdAt: string;
+	resolvedAt?: string | null;
+	resolvedOutcome?: string | null;
+};
+
+type DisputeByIdResponse = { dispute: DisputeRecord | null };
+
+type DisputesResponse = { disputes: DisputeRecord[] };
+
+type VoteRecord = {
+	id: string;
+	disputeId: string;
+	voter: string;
+	support: boolean;
+	cost: string;
+	createdAt: string;
+};
+
+type VotesByDisputeResponse = { votes: VoteRecord[] };
+
+type TokenTransferRecord = {
+	id: string;
+	from: string;
+	to: string;
+	amount: string;
+	timestamp: string;
+	transactionHash: string;
+};
+
+type TokenTransfersResponse = { tokenTransfers: TokenTransferRecord[] };
+
 const ACTIVE_STATUSES = ["LOCKED", "DISPUTED", "FROZEN"] as const;
 
 type ActiveStatus = (typeof ACTIVE_STATUSES)[number];
@@ -155,6 +274,7 @@ const engagementByIdQuery = `
       agentId
       agentOwner
       jobId
+      escrowId
       purchaseType
       totalPaid
       startTime
@@ -189,6 +309,7 @@ const engagementsByUserQuery = `
       agentId
       agentOwner
       jobId
+      escrowId
       purchaseType
       totalPaid
       startTime
@@ -213,6 +334,7 @@ const engagementsByAgentIdQuery = `
       agentId
       agentOwner
       jobId
+      escrowId
       purchaseType
       totalPaid
       startTime
@@ -237,6 +359,7 @@ const engagementsByOwnerQuery = `
       agentId
       agentOwner
       jobId
+      escrowId
       purchaseType
       totalPaid
       startTime
@@ -264,6 +387,7 @@ type EngagementRecord = {
 	agentId: string;
 	agentOwner: string;
 	jobId: string | null;
+	escrowId: string | null;
 	purchaseType: string;
 	totalPaid: string;
 	startTime: string;
@@ -476,6 +600,69 @@ export class ChainStatusService {
 			payer: normalizedPayer,
 			activeOnly,
 			escrows: activeOnly ? activeEscrows : escrows,
+		};
+	}
+
+	async getDisputeById(id: string) {
+		const disputeId = this.normalizeJobId(id);
+		const data = await querySubgraph<{ id: string }, DisputeByIdResponse>(
+			this.ensureSubgraphUrl(),
+			{
+				query: disputeByIdQuery,
+				variables: { id: disputeId },
+			},
+		);
+
+		return data.dispute;
+	}
+
+	async getDisputes(options: { first?: number; skip?: number } = {}) {
+		const { first = 20, skip = 0 } = options;
+		const data = await querySubgraph<
+			{ first: number; skip: number },
+			DisputesResponse
+		>(this.ensureSubgraphUrl(), {
+			query: disputesQuery,
+			variables: { first, skip },
+		});
+
+		return data.disputes ?? [];
+	}
+
+	async getVotesByDispute(
+		disputeId: string,
+		options: { first?: number; skip?: number } = {},
+	) {
+		const { first = 100, skip = 0 } = options;
+		const normalizedDisputeId = this.normalizeJobId(disputeId);
+		const data = await querySubgraph<
+			{ disputeId: string; first: number; skip: number },
+			VotesByDisputeResponse
+		>(this.ensureSubgraphUrl(), {
+			query: votesByDisputeQuery,
+			variables: { disputeId: normalizedDisputeId, first, skip },
+		});
+
+		return data.votes ?? [];
+	}
+
+	async getCbtTransfersByAddress(
+		address: string,
+		options: { first?: number; skip?: number } = {},
+	) {
+		const { first = 50, skip = 0 } = options;
+		const normalizedAddress = this.normalizeAddress(address);
+		const data = await querySubgraph<
+			{ address: string; first: number; skip: number },
+			TokenTransfersResponse
+		>(this.ensureSubgraphUrl(), {
+			query: cbtTransfersByAddressQuery,
+			variables: { address: normalizedAddress, first, skip },
+		});
+
+		return {
+			address: normalizedAddress,
+			transfers: data.tokenTransfers ?? [],
 		};
 	}
 }

@@ -11,7 +11,7 @@ interface ITreasury {
 }
 
 interface IEscrow {
-    function createEscrow(bytes32 jobId, address agent, uint256 price) external;
+    function createEscrow(bytes32 jobId, address payer, address agent, uint256 price) external;
     function statusOf(bytes32 jobId) external view returns (uint8);
 }
 
@@ -147,7 +147,7 @@ contract AgentHiring is Ownable, ReentrancyGuard {
         cbt.approve(address(escrow), price);
 
         // Create escrow record (this will transfer price from this contract to Escrow)
-        escrow.createEscrow(escrowId, agentOwner, price);
+        escrow.createEscrow(escrowId, msg.sender, agentOwner, price);
 
         // Record engagement metadata
         engagements[engagementId] = Engagement({

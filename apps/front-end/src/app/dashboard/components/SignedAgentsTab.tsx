@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
 	Badge,
@@ -66,8 +67,26 @@ export const SignedAgentsTab = ({ address }: SignedAgentsTabProps) => {
 						<TBody>
 							{data?.data.map((item) => (
 								<TR key={item.jobId}>
-									<TD className="font-bold text-slate-200">{item.jobTitle}</TD>
-									<TD className="text-slate-400">{item.agentName ?? "--"}</TD>
+									<TD className="font-bold text-slate-200">
+										<Link
+											href={`/jobs/${item.jobId}`}
+											className="hover:text-blue-400 transition-colors"
+										>
+											{item.jobTitle}
+										</Link>
+									</TD>
+									<TD className="text-slate-400">
+										{item.agentId ? (
+											<Link
+												href={`/agent/${item.agentId}`}
+												className="hover:text-blue-400 transition-colors"
+											>
+												{item.agentName ?? item.agentId}
+											</Link>
+										) : (
+											(item.agentName ?? "--")
+										)}
+									</TD>
 									<TD className="text-slate-400 font-mono text-xs">
 										{item.author ?? item.owner ?? "--"}
 									</TD>

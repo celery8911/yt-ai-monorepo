@@ -19,8 +19,7 @@ import {
 import { useUserStore } from "@/store/useUserStore";
 import { useCBT } from "@/hooks/contracts/useCBT";
 import { formatUnits } from "viem";
-import { fetchAgentList } from "@/apis/agent";
-import { fetchEngagementsByUser } from "@/apis/chain-status";
+import { fetchCbtTransfersByAddress } from "@/apis/chain-status";
 
 const Wallet = () => {
 	const {
@@ -44,6 +43,7 @@ const Wallet = () => {
 			jobId?: string;
 			status: string;
 			amount: string;
+			isPositive: boolean;
 			date: string;
 		}>
 	>([]);
@@ -95,31 +95,31 @@ const Wallet = () => {
 			setTransactionsLoading(true);
 			setTransactionsError(null);
 			try {
-				const [{ engagements }, agentList] = await Promise.all([
-					fetchEngagementsByUser(address, { first: 20 }),
-					fetchAgentList(),
-				]);
-				const agentNameById = new Map(
-					agentList.items.map((agent) => [agent.id, agent.name]),
-				);
-				const mapped = engagements.map((engagement) => {
-					const agentName =
-						agentNameById.get(engagement.agentId) ?? engagement.agentId;
-					const totalPaid = BigInt(engagement.totalPaid);
+				const { transfers } = await fetchCbtTransfersByAddress(address, {
+					first: 50,
+				});
+				const normalizedAddress = address.toLowerCase();
+				const mapped = transfers.map((transfer) => {
+					const isIncoming = transfer.to.toLowerCase() === normalizedAddress;
+					const counterparty = isIncoming ? transfer.from : transfer.to;
+					const amount = BigInt(transfer.amount);
 					const dateLabel = new Date(
-						Number(engagement.startTime) * 1000,
-					).toLocaleDateString();
-					const jobId =
-						engagement.jobId && engagement.jobId !== ""
-							? engagement.jobId
-							: undefined;
+						Number(transfer.timestamp) * 1000,
+					).toLocaleString("zh-CN", {
+						year: "numeric",
+						month: "2-digit",
+						day: "2-digit",
+						hour: "2-digit",
+						minute: "2-digit",
+					});
 					return {
-						id: engagement.id,
-						agentName,
-						agentId: engagement.agentId,
-						jobId,
-						status: engagement.status,
-						amount: `${formatUnits(totalPaid, 18)} CBT`,
+						id: transfer.id,
+						agentName: counterparty,
+						agentId: counterparty,
+						jobId: undefined,
+						status: isIncoming ? "IN" : "OUT",
+						amount: `${isIncoming ? "+" : "-"}${formatUnits(amount, 18)} CBT`,
+						isPositive: isIncoming,
 						date: dateLabel,
 					};
 				});
@@ -376,8 +376,7 @@ const Wallet = () => {
 						<THead>
 							<TR>
 								<TH>时间</TH>
-								<TH>Agent</TH>
-								<TH>关联任务</TH>
+								<TH>转入地址</TH>
 								<TH>状态</TH>
 								<TH className="text-right">金额</TH>
 							</TR>
@@ -387,29 +386,15 @@ const Wallet = () => {
 								<TR key={tx.id}>
 									<TD className="text-slate-500 font-mono">{tx.date}</TD>
 									<TD className="font-bold">{tx.agentName}</TD>
-									<TD className="text-slate-400">
-										{tx.jobId ? tx.jobId : "--"}
-									</TD>
+
 									<TD>
-										<Badge
-											variant={
-												tx.status === "COMPLETED"
-													? "green"
-													: tx.status === "CANCELLED"
-														? "outline"
-														: "blue"
-											}
-										>
+										<Badge variant={tx.isPositive ? "green" : "blue"}>
 											{tx.status}
 										</Badge>
 									</TD>
 									<TD
 										className={`text-right font-black ${
-											tx.status === "COMPLETED"
-												? "text-emerald-400"
-												: tx.status === "CANCELLED"
-													? "text-rose-400"
-													: "text-blue-400"
+											tx.isPositive ? "text-emerald-400" : "text-rose-400"
 										}`}
 									>
 										{tx.amount}

@@ -247,7 +247,7 @@ const JobDetail = () => {
 			(selectedAgent?.id === escrowRequest.agentId ? selectedAgent : null));
 
 	useEffect(() => {
-		if (!escrowRequest || !isApproveSuccess) return;
+		if (!escrowRequest || !isApproveSuccess || !address) return;
 
 		createEscrow({
 			address: CONTRACTS.sepolia.Escrow,
@@ -255,11 +255,12 @@ const JobDetail = () => {
 			functionName: "createEscrow",
 			args: [
 				escrowRequest.jobId,
+				address,
 				escrowRequest.agentAddress,
 				escrowRequest.amount,
 			],
 		});
-	}, [createEscrow, escrowRequest, isApproveSuccess]);
+	}, [createEscrow, escrowRequest, isApproveSuccess, address]);
 
 	useEffect(() => {
 		if (!job || !escrowRequest || !isEscrowSuccess) return;

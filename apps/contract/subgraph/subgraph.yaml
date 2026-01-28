@@ -11,7 +11,7 @@ dataSources:
     source:
       address: "0x502BccF9d143ecB89983EdFbf107ebDeD3B9a9fc"
       abi: CBT
-      startBlock: 10117975
+      startBlock: 10119395
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -19,21 +19,24 @@ dataSources:
       entities:
         - Wallet
         - Treasury
+        - TokenTransfer
       abis:
         - name: CBT
           file: ./abis/CBT.json
       eventHandlers:
         - event: Minted(indexed address,uint256,uint256)
           handler: handleMinted
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
       file: ./src/mappings/cbt.ts
 
   - kind: ethereum/contract
     name: Escrow
     network: sepolia
     source:
-      address: "0xd2a24326950A80272aCe018E2dcE25E22d5B5A7e"
+      address: "0xfdCC19d2CA9a6b6A7151082Fac9d7337D7010351"
       abi: Escrow
-      startBlock: 10117975
+      startBlock: 10119396
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -60,9 +63,9 @@ dataSources:
     name: DisputeDAO
     network: sepolia
     source:
-      address: "0x410756130fd06171298c72839FdCaB290Fe7eD16"
+      address: "0x97b0Bc33c98089adC042E9877D3170D33CDA0493"
       abi: DisputeDAO
-      startBlock: 10117975
+      startBlock: 10119402
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -86,7 +89,7 @@ dataSources:
     name: AgentHiring
     network: sepolia
     source:
-      address: "0xf54EEa283A05A5dD10944404D088c65bB60552dA"
+      address: "0xc803C3cd728eb419a00a79660DA9377cb1c54BbA"
       abi: AgentHiring
       startBlock: 10117975
     mapping:

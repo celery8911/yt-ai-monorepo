@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation";
 import { useWallet } from "@yt/hooks";
 import { Button, Card, CardContent, CardHeader, Textarea } from "@yt/ui";
 import { useQuery } from "@tanstack/react-query";
-import { fetchSignedAgents } from "@/apis/dashboard";
-import type { SignedAgentItem } from "@/apis/dashboard.types";
+import {
+	fetchEngagementsByUser,
+	fetchEscrowByJob,
+	type EscrowRecord,
+} from "@/apis/chain-status";
+import { ethers } from "ethers";
 import { initiateDispute } from "@/apis/dao";
 import { useDisputeDAO } from "@/hooks/contracts/useDisputeDAO";
-import { ethers } from "ethers";
+import { formatUnits } from "viem";
 
 const MAX_REASON_LENGTH = 500;
 
@@ -30,7 +34,7 @@ const resolveSubmitError = (submitError: unknown): string => {
 const CreateProposal = () => {
 	const router = useRouter();
 	const { address, isConnected } = useWallet();
-	const [selectedAgent, setSelectedAgent] = useState<SignedAgentItem | null>(
+	const [selectedEscrow, setSelectedEscrow] = useState<EscrowRecord | null>(
 		null,
 	);
 	const [reason, setReason] = useState("");
@@ -41,45 +45,72 @@ const CreateProposal = () => {
 	const { openDispute, isOpenDisputePending, isOpenDisputeSuccess } =
 		useDisputeDAO();
 
-	// 获取用户订阅的智能体列表
+	// 获取用户的 Escrow 列表
 	const {
-		data: signedAgentsData,
-		isLoading: isLoadingAgents,
-		error: agentsError,
+		data: escrowsData,
+		isLoading: isLoadingEscrows,
+		error: escrowsError,
 	} = useQuery({
-		queryKey: ["signed-agents", address],
-		queryFn: () => fetchSignedAgents(address ?? "", { page: 1, limit: 50 }),
+		queryKey: ["escrows-by-user", address],
+		queryFn: async () => {
+			const { engagements } = await fetchEngagementsByUser(address ?? "", {
+				first: 50,
+				skip: 0,
+			});
+			const escrowIds = Array.from(
+				new Set(
+					engagements
+						.map((engagement) =>
+							ethers.solidityPackedKeccak256(
+								["string", "uint256"],
+								["engagement", BigInt(engagement.engagementId)],
+							),
+						)
+						.filter((escrowId): escrowId is string => Boolean(escrowId)),
+				),
+			);
+			if (escrowIds.length === 0) {
+				return { escrows: [] as EscrowRecord[] };
+			}
+			const escrows = await Promise.all(
+				escrowIds.map(async (escrowId) => {
+					const response = await fetchEscrowByJob(escrowId);
+					return response.escrow ?? null;
+				}),
+			);
+			return { escrows: escrows.filter(Boolean) as EscrowRecord[] };
+		},
 		enabled: Boolean(address),
 	});
 
-	const agents = useMemo(
+	const escrows = useMemo(
 		() =>
-			signedAgentsData?.data.filter(
-				(agent) => agent.contractStatus === "ACTIVE",
+			escrowsData?.escrows.filter(
+				(escrow) => escrow.status === "LOCKED" && !escrow.frozen,
 			) ?? [],
-		[signedAgentsData],
+		[escrowsData],
 	);
 
 	const reasonCount = useMemo(() => reason.length, [reason]);
 
 	// 当交易成功时，提交到后端
 	useEffect(() => {
-		if (isOpenDisputeSuccess && selectedAgent && address) {
+		if (isOpenDisputeSuccess && selectedEscrow && address) {
 			initiateDispute({
-				jobId: selectedAgent.jobId,
-				escrowId: selectedAgent.jobId, // 使用 jobId 作为 escrowId
+				jobId: selectedEscrow.jobId,
+				escrowId: selectedEscrow.id,
 				initiator: address,
 				reason: reason.trim(),
 			})
-				.then((dispute) => {
-					router.push(`/dao/${dispute.id}`);
+				.then(() => {
+					router.push(`/dao/${selectedEscrow.jobId}`);
 				})
 				.catch((err) => {
 					setError(`链上交易成功，但后端记录失败: ${resolveSubmitError(err)}`);
 					setSubmitting(false);
 				});
 		}
-	}, [isOpenDisputeSuccess, selectedAgent, address, reason, router]);
+	}, [isOpenDisputeSuccess, selectedEscrow, address, reason, router]);
 
 	const handleSubmit = async () => {
 		setError("");
@@ -89,8 +120,8 @@ const CreateProposal = () => {
 			return;
 		}
 
-		if (!selectedAgent) {
-			setError("请选择一个订阅的智能体。");
+		if (!selectedEscrow) {
+			setError("请选择一个托管记录。");
 			return;
 		}
 
@@ -107,11 +138,8 @@ const CreateProposal = () => {
 		setSubmitting(true);
 
 		try {
-			// 转换 jobId 为 bytes32
-			const jobIdBytes32 = ethers.id(selectedAgent.jobId);
-
-			// 调用合约发起争议
-			await openDispute(jobIdBytes32, reasonCode);
+			// Escrow 的 jobId 已经是 bytes32 格式，直接使用
+			await openDispute(selectedEscrow.jobId, reasonCode);
 
 			// 等待交易确认后，在 useEffect 中处理后端提交
 		} catch (submitError) {
@@ -158,29 +186,29 @@ const CreateProposal = () => {
 				</Card>
 			) : null}
 
-			{isConnected && agentsError ? (
+			{isConnected && escrowsError ? (
 				<Card className="border-rose-500/20 bg-rose-500/5">
 					<CardContent className="p-6">
 						<p className="text-sm text-rose-400">
-							加载订阅列表失败: {agentsError.message}
+							加载托管记录失败: {escrowsError.message}
 						</p>
 					</CardContent>
 				</Card>
 			) : null}
 
-			{isConnected && agents.length === 0 && !isLoadingAgents ? (
+			{isConnected && escrows.length === 0 && !isLoadingEscrows ? (
 				<Card className="border-slate-500/20">
 					<CardContent className="p-6 text-center">
 						<p className="text-slate-400">
-							您当前没有订阅的智能体。
+							您当前没有可争议的托管记录。
 							<br />
-							只有处于 ACTIVE 状态的订阅才能发起争议。
+							只有状态为 LOCKED 且未冻结的托管记录才能发起争议。
 						</p>
 					</CardContent>
 				</Card>
 			) : null}
 
-			{isConnected && (agents.length > 0 || isLoadingAgents) ? (
+			{isConnected && (escrows.length > 0 || isLoadingEscrows) ? (
 				<>
 					<Card className="border-purple-500/20">
 						<CardHeader>
@@ -189,26 +217,26 @@ const CreateProposal = () => {
 									1
 								</span>
 								<h3 className="font-black text-sm uppercase tracking-widest text-slate-300">
-									选择订阅的智能体
+									选择托管记录
 								</h3>
 							</div>
 						</CardHeader>
 						<CardContent className="space-y-4">
-							{isLoadingAgents ? (
-								<div className="text-sm text-slate-400">加载订阅列表...</div>
+							{isLoadingEscrows ? (
+								<div className="text-sm text-slate-400">加载托管记录...</div>
 							) : (
 								<div className="space-y-3">
-									{agents.map((agent) => {
-										const isSelected = selectedAgent?.jobId === agent.jobId;
-										const amount = agent.contractAmount ?? 0;
+									{escrows.map((escrow) => {
+										const isSelected = selectedEscrow?.id === escrow.id;
+										const amount = formatUnits(BigInt(escrow.amount), 18);
 										const createdDate = new Date(
-											agent.signedAt,
+											Number(escrow.createdAt) * 1000,
 										).toLocaleDateString("zh-CN");
 
 										return (
 											<div
-												key={agent.jobId}
-												onClick={() => setSelectedAgent(agent)}
+												key={escrow.id}
+												onClick={() => setSelectedEscrow(escrow)}
 												className={`p-4 rounded-lg border cursor-pointer transition-all ${
 													isSelected
 														? "border-purple-500 bg-purple-500/10"
@@ -219,28 +247,26 @@ const CreateProposal = () => {
 													<div className="flex-grow">
 														<div className="flex items-center gap-2 mb-2">
 															<span className="text-sm font-bold text-slate-200">
-																{agent.agentName ?? "未命名智能体"}
+																托管记录
 															</span>
 															<span className="text-xs font-mono text-slate-500">
-																#{agent.jobId.slice(-8)}
+																#{escrow.id.slice(-8)}
 															</span>
 														</div>
 														<div className="flex items-center gap-4 text-xs">
 															<span className="text-slate-400">
-																订阅金额:{" "}
+																托管金额:{" "}
 																<span className="font-black text-blue-400">
-																	{amount} {agent.currency ?? "CBT"}
+																	{amount} {escrow.currency}
 																</span>
 															</span>
 															<span className="text-slate-500">
-																订阅于: {createdDate}
+																创建于: {createdDate}
 															</span>
 														</div>
-														{agent.jobTitle && (
-															<div className="mt-2 text-xs text-slate-500">
-																任务: {agent.jobTitle}
-															</div>
-														)}
+														<div className="mt-2 text-xs text-slate-500">
+															代理地址: {escrow.agent.slice(0, 10)}...
+														</div>
 													</div>
 													<div className="ml-4">
 														{isSelected ? (
@@ -329,7 +355,7 @@ const CreateProposal = () => {
 						<Button
 							className="flex-grow py-6 bg-purple-600 hover:bg-purple-500 shadow-xl shadow-purple-600/30"
 							onClick={handleSubmit}
-							disabled={submitting || isOpenDisputePending || !selectedAgent}
+							disabled={submitting || isOpenDisputePending || !selectedEscrow}
 						>
 							{isOpenDisputePending
 								? "链上交易确认中..."

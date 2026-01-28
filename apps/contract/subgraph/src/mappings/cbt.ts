@@ -1,6 +1,6 @@
 import { BigInt as GraphBigInt, Bytes } from "@graphprotocol/graph-ts";
-import { Minted } from "../../generated/CBT/CBT";
-import { Treasury, Wallet } from "../../generated/schema";
+import { Minted, Transfer } from "../../generated/CBT/CBT";
+import { TokenTransfer, Treasury, Wallet } from "../../generated/schema";
 
 const TREASURY_ID = "treasury";
 
@@ -31,4 +31,18 @@ export function handleMinted(event: Minted): void {
 	treasury.ethCollected = treasury.ethCollected.plus(event.params.ethIn);
 	treasury.updatedAt = event.block.timestamp;
 	treasury.save();
+}
+
+export function handleTransfer(event: Transfer): void {
+	const transferId = event.transaction.hash
+		.toHexString()
+		.concat("-")
+		.concat(event.logIndex.toString());
+	const transfer = new TokenTransfer(transferId);
+	transfer.from = event.params.from;
+	transfer.to = event.params.to;
+	transfer.amount = event.params.value;
+	transfer.timestamp = event.block.timestamp;
+	transfer.transactionHash = event.transaction.hash;
+	transfer.save();
 }

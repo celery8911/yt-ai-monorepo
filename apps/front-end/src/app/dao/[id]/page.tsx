@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Badge, Button, Card, CardContent, CardHeader } from "@yt/ui";
 import { useWallet } from "@yt/hooks";
-import { fetchDisputeDetail, voteDispute } from "@/apis/dao";
+import { fetchDisputeDetail } from "@/apis/dao";
 import { useDisputeDAO } from "@/hooks/contracts/useDisputeDAO";
 import { formatUnits } from "viem";
 import { ethers } from "ethers";
@@ -23,6 +23,36 @@ const formatDateTime = (value?: string) => {
 	return date.toLocaleString("zh-CN");
 };
 
+const normalizeBytes32 = (value?: string | null) => {
+	if (!value) return null;
+	const trimmed = value.trim();
+	if (ethers.isHexString(trimmed, 32)) return trimmed;
+	if (/^[0-9a-fA-F]{64}$/.test(trimmed)) return `0x${trimmed}`;
+	return null;
+};
+
+const resolveDisputeBytes32 = (dispute?: {
+	escrowId?: string | null;
+	jobId?: string | null;
+}) => {
+	if (!dispute) return null;
+	return (
+		normalizeBytes32(dispute.escrowId ?? undefined) ??
+		normalizeBytes32(dispute.jobId ?? undefined)
+	);
+};
+
+const formatCountdown = (ms: number) => {
+	if (ms <= 0) return "已结束";
+	const totalSeconds = Math.floor(ms / 1000);
+	const days = Math.floor(totalSeconds / 86400);
+	const hours = Math.floor((totalSeconds % 86400) / 3600);
+	const minutes = Math.floor((totalSeconds % 3600) / 60);
+	const seconds = totalSeconds % 60;
+	const dayPart = days > 0 ? `${days}d ` : "";
+	return `${dayPart}${hours}h ${minutes}m ${seconds}s`;
+};
+
 const DisputeDetail = () => {
 	const { id } = useParams<{ id: string }>();
 	const router = useRouter();
@@ -30,6 +60,7 @@ const DisputeDetail = () => {
 	const [voteError, setVoteError] = useState("");
 	const [voteValue, setVoteValue] = useState<"approve" | "reject" | null>(null);
 	const [needApprove, setNeedApprove] = useState(false);
+	const [votingPeriodHoursInput, setVotingPeriodHoursInput] = useState("");
 
 	const { data, isLoading, error, refetch } = useQuery({
 		queryKey: ["dao-dispute", id],
@@ -50,6 +81,20 @@ const DisputeDetail = () => {
 		approveError,
 		voteCost,
 		allowance,
+		keeper,
+		resolveDispute,
+		isResolvePending,
+		isResolveConfirming,
+		isResolveSuccess,
+		resolveError,
+		votingPeriod,
+		minVoters,
+		owner,
+		setVotingPeriod,
+		isSetVotingConfigPending,
+		isSetVotingConfigConfirming,
+		isSetVotingConfigSuccess,
+		setVotingConfigError,
 	} = useDisputeDAO();
 
 	const dispute = data?.dispute;
@@ -83,6 +128,31 @@ const DisputeDetail = () => {
 		!hasVoted &&
 		dispute?.status !== "RESOLVED";
 
+	const isKeeper =
+		Boolean(address && keeper) &&
+		address?.toLowerCase() === String(keeper).toLowerCase();
+	const isOwner =
+		Boolean(address && owner) &&
+		address?.toLowerCase() === String(owner).toLowerCase();
+
+	const createdAtMs = dispute?.createdAt
+		? new Date(dispute.createdAt).getTime()
+		: null;
+	const votingPeriodSeconds =
+		votingPeriod !== undefined ? Number(votingPeriod) : null;
+	const votingDeadlineMs =
+		createdAtMs && votingPeriodSeconds
+			? createdAtMs + votingPeriodSeconds * 1000
+			: null;
+	const remainingMs =
+		votingDeadlineMs && dispute?.status !== "RESOLVED"
+			? votingDeadlineMs - Date.now()
+			: 0;
+	const deadlineLabel = votingDeadlineMs
+		? new Date(votingDeadlineMs).toLocaleString("zh-CN")
+		: "--";
+	const remainingLabel = votingDeadlineMs ? formatCountdown(remainingMs) : "--";
+
 	const voteHint = useMemo(() => {
 		if (!dispute) return "--";
 		if (dispute.status === "RESOLVED") return "已完成裁决";
@@ -102,7 +172,13 @@ const DisputeDetail = () => {
 			if (!dispute || !address || !voteValue) return;
 
 			setVoteError("");
-			const jobIdBytes32 = ethers.id(dispute.jobId);
+			const jobIdBytes32 =
+				normalizeBytes32(dispute.escrowId) ?? normalizeBytes32(dispute.jobId);
+			if (!jobIdBytes32) {
+				setVoteError("争议缺少链上 escrowId，无法投票");
+				setVoteValue(null);
+				return;
+			}
 
 			try {
 				const supportEmployer = voteValue === "approve";
@@ -118,27 +194,24 @@ const DisputeDetail = () => {
 		}
 	}, [isApproveSuccess, voteValue, dispute, address, vote]);
 
-	// 当投票成功后,同步到后端
+	// 当投票成功后,刷新链上数据
 	useEffect(() => {
 		if (isVoteSuccess && voteValue && address) {
-			voteDispute({ disputeId: String(id), voter: address, vote: voteValue })
-				.then(() => {
-					refetch();
-					setVoteValue(null);
-				})
-				.catch((err) => {
-					setVoteError(
-						`链上投票成功，但后端记录失败: ${err instanceof Error ? err.message : "未知错误"}`,
-					);
-				});
+			refetch();
+			setVoteValue(null);
 		}
-	}, [isVoteSuccess, voteValue, address, id, refetch]);
+	}, [isVoteSuccess, voteValue, address, refetch]);
 
 	const handleVoteOnChain = async (value: "approve" | "reject") => {
 		if (!dispute || !address) return;
 
 		setVoteError("");
-		const jobIdBytes32 = ethers.id(dispute.jobId);
+		const jobIdBytes32 = resolveDisputeBytes32(dispute);
+		if (!jobIdBytes32) {
+			setVoteError("争议缺少链上 escrowId，无法投票");
+			setVoteValue(null);
+			return;
+		}
 
 		try {
 			// supportEmployer: approve = true (支持雇主), reject = false (支持 agent)
@@ -147,6 +220,34 @@ const DisputeDetail = () => {
 		} catch (err) {
 			setVoteError(err instanceof Error ? err.message : "投票失败");
 			setVoteValue(null);
+		}
+	};
+
+	const handleResolve = async () => {
+		if (!dispute || !isKeeper) return;
+		const jobIdBytes32 = resolveDisputeBytes32(dispute);
+		if (!jobIdBytes32) {
+			setVoteError("争议缺少链上 escrowId，无法结算");
+			return;
+		}
+		try {
+			await resolveDispute(jobIdBytes32);
+		} catch (err) {
+			setVoteError(err instanceof Error ? err.message : "结算失败");
+		}
+	};
+
+	const handleSetVotingPeriod = async () => {
+		if (!isOwner) return;
+		const hours = Number(votingPeriodHoursInput);
+		if (!Number.isFinite(hours) || hours <= 0) {
+			setVoteError("投票期必须是正数小时");
+			return;
+		}
+		try {
+			await setVotingPeriod(BigInt(Math.floor(hours * 60 * 60)));
+		} catch (err) {
+			setVoteError(err instanceof Error ? err.message : "更新投票期失败");
 		}
 	};
 
@@ -175,7 +276,12 @@ const DisputeDetail = () => {
 		isApprovePending ||
 		isApproveConfirming ||
 		isVotePending ||
-		isVoteConfirming;
+		isVoteConfirming ||
+		isResolvePending ||
+		isResolveConfirming ||
+		isSetVotingConfigPending ||
+		isSetVotingConfigConfirming;
+	const isApproveInProgress = isApprovePending || isApproveConfirming;
 
 	const voteCostFormatted = voteCost ? formatUnits(BigInt(voteCost), 18) : "--";
 
@@ -232,7 +338,7 @@ const DisputeDetail = () => {
 					</div>
 
 					<h1 className="text-4xl font-black tracking-tight">
-						争议详情: 任务 #{dispute.jobId}
+						争议详情: {dispute.agentName ?? `任务 #${dispute.jobId}`}
 					</h1>
 
 					<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -312,6 +418,14 @@ const DisputeDetail = () => {
 											投票成本: {voteCostFormatted} CBT
 										</p>
 									</div>
+									<div className="p-3 bg-white/2 border border-white/5 rounded-lg space-y-1">
+										<p className="text-[10px] uppercase text-slate-500 font-bold">
+											投票截止时间: {deadlineLabel}
+										</p>
+										<p className="text-xs text-slate-300">
+											剩余时间: {remainingLabel}
+										</p>
+									</div>
 									<p className="text-[10px] uppercase text-slate-500 font-bold">
 										{voteHint}
 									</p>
@@ -325,6 +439,24 @@ const DisputeDetail = () => {
 											{voteError ||
 												contractVoteError?.message ||
 												approveError?.message}
+										</p>
+									</CardContent>
+								</Card>
+							)}
+							{setVotingConfigError && (
+								<Card className="border-rose-500/20 bg-rose-500/5">
+									<CardContent className="p-4">
+										<p className="text-xs text-rose-400">
+											{setVotingConfigError.message}
+										</p>
+									</CardContent>
+								</Card>
+							)}
+							{resolveError && (
+								<Card className="border-rose-500/20 bg-rose-500/5">
+									<CardContent className="p-4">
+										<p className="text-xs text-rose-400">
+											{resolveError.message}
 										</p>
 									</CardContent>
 								</Card>
@@ -355,28 +487,80 @@ const DisputeDetail = () => {
 									onClick={() => handleVote("approve")}
 									disabled={!canVote || isProcessing}
 								>
-									{isApprovePending || isApproveConfirming
-										? "授权中..."
-										: isVotePending || isVoteConfirming
-											? "投票中..."
-											: needApprove
-												? `授权并支持返还`
-												: "支持返还"}
+									{isProcessing && voteValue === "approve"
+										? isApproveInProgress
+											? "授权中..."
+											: "投票中..."
+										: needApprove
+											? "授权并支持返还"
+											: "支持返还"}
 								</Button>
 								<Button
 									className="w-full py-4 bg-purple-600 hover:bg-purple-500"
 									onClick={() => handleVote("reject")}
 									disabled={!canVote || isProcessing}
 								>
-									{isApprovePending || isApproveConfirming
-										? "授权中..."
-										: isVotePending || isVoteConfirming
-											? "投票中..."
-											: needApprove
-												? `授权并支持释放`
-												: "支持释放"}
+									{isProcessing && voteValue === "reject"
+										? isApproveInProgress
+											? "授权中..."
+											: "投票中..."
+										: needApprove
+											? "授权并支持释放"
+											: "支持释放"}
 								</Button>
+								{isKeeper ? (
+									<Button
+										variant="outline"
+										className="w-full py-4"
+										onClick={handleResolve}
+										disabled={!dispute || isProcessing || isResolveSuccess}
+									>
+										{isResolvePending || isResolveConfirming
+											? "结算中..."
+											: isResolveSuccess
+												? "已结算"
+												: "结算争议"}
+									</Button>
+								) : null}
 							</div>
+
+							{isOwner ? (
+								<Card className="border-white/5 bg-white/2">
+									<CardContent className="p-4 space-y-3">
+										<p className="text-xs uppercase text-slate-500 font-bold">
+											调整投票期 (小时)
+										</p>
+										<input
+											className="w-full rounded-md bg-slate-900/60 border border-white/10 px-3 py-2 text-sm text-slate-100"
+											placeholder={
+												votingPeriod !== undefined
+													? `${Number(votingPeriod) / 3600}`
+													: "48"
+											}
+											value={votingPeriodHoursInput}
+											onChange={(event) =>
+												setVotingPeriodHoursInput(event.target.value)
+											}
+										/>
+										<Button
+											variant="outline"
+											className="w-full"
+											onClick={handleSetVotingPeriod}
+											disabled={isProcessing}
+										>
+											{isSetVotingConfigPending || isSetVotingConfigConfirming
+												? "更新中..."
+												: isSetVotingConfigSuccess
+													? "已更新"
+													: "更新投票期"}
+										</Button>
+										<p className="text-[10px] text-slate-500">
+											当前最小投票人数:{" "}
+											{minVoters !== undefined ? String(minVoters) : "--"}
+										</p>
+									</CardContent>
+								</Card>
+							) : null}
 
 							<p className="text-center text-[10px] text-slate-600 font-bold uppercase tracking-[0.2em]">
 								投票将通过智能合约进行，需消耗 {voteCostFormatted} CBT

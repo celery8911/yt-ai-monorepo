@@ -22,20 +22,51 @@ function getStagedFiles() {
 }
 
 function hasDependencyChanges(file) {
-	try {
-		const diff = run(`git diff --cached -- ${file}`);
-		// Check if the diff includes dependency-related fields
-		const dependencyFields = [
-			"dependencies",
-			"devDependencies",
-			"peerDependencies",
-			"optionalDependencies",
-			"packageManager",
-		];
-		return dependencyFields.some((field) => diff.includes(`"${field}"`));
-	} catch {
-		return true; // If we can't check, assume there are dependency changes
-	}
+	const dependencyFields = [
+		"dependencies",
+		"devDependencies",
+		"peerDependencies",
+		"optionalDependencies",
+		"packageManager",
+	];
+
+	const readJson = (ref) => {
+		try {
+			const content =
+				ref === ":" ? run(`git show :${file}`) : run(`git show ${ref}:${file}`);
+			return JSON.parse(content);
+		} catch {
+			return null;
+		}
+	};
+
+	const normalizeDeps = (value) => {
+		if (!value || typeof value !== "object") return null;
+		const sorted = Object.keys(value)
+			.sort()
+			.reduce((acc, key) => {
+				acc[key] = String(value[key]);
+				return acc;
+			}, {});
+		return sorted;
+	};
+
+	const staged = readJson(":");
+	if (!staged) return true;
+	const head = readJson("HEAD");
+
+	return dependencyFields.some((field) => {
+		const stagedValue = staged[field];
+		const headValue = head ? head[field] : undefined;
+
+		if (field === "packageManager") {
+			return String(stagedValue || "") !== String(headValue || "");
+		}
+
+		const stagedDeps = normalizeDeps(stagedValue);
+		const headDeps = normalizeDeps(headValue);
+		return JSON.stringify(stagedDeps) !== JSON.stringify(headDeps);
+	});
 }
 
 function listAllFiles() {

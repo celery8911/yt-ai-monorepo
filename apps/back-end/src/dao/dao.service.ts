@@ -1,25 +1,19 @@
 import {
 	BadRequestException,
-	ConflictException,
 	Injectable,
 	NotFoundException,
 } from "@nestjs/common";
-import type {
-	Dispute as PrismaDispute,
-	Vote as PrismaVote,
-} from "@prisma/client";
+import type { Dispute as PrismaDispute } from "@prisma/client";
 import { Dispute, Vote } from "../common/types";
 import { generateId, nowIso, toNumber } from "../common/utils";
+import { ethers } from "ethers";
 import { PrismaService } from "../prisma/prisma.service";
-import { WalletService } from "../wallet/wallet.service";
+import { ChainStatusService } from "../chain-status/chain-status.service";
 import { InitiateDisputeDto, VoteDto } from "./dao.dto";
 
 @Injectable()
 export class DaoService {
 	private readonly disputes: Dispute[] = [];
-	private readonly votes: Vote[] = [];
-	private readonly defaultVotingPeriodHours = 48;
-	private readonly defaultMinVoters = 3;
 
 	// ✅ 不要在构造时固定住 env 判断（避免模块启动顺序导致永远走错分支）
 	private get useDatabase() {
@@ -28,7 +22,7 @@ export class DaoService {
 
 	constructor(
 		private readonly prisma: PrismaService,
-		private readonly walletService: WalletService,
+		private readonly chainStatusService: ChainStatusService,
 	) {}
 
 	private normalizeAddress(address?: string | null) {
@@ -56,93 +50,67 @@ export class DaoService {
 		};
 	}
 
-	private mapVote(vote: PrismaVote): Vote {
+	private isBytes32(value?: string | null) {
+		return Boolean(value && ethers.isHexString(value, 32));
+	}
+
+	private toIsoFromSeconds(value?: string | null) {
+		if (!value) return undefined;
+		const seconds = Number(value);
+		if (!Number.isFinite(seconds)) return undefined;
+		return new Date(seconds * 1000).toISOString();
+	}
+
+	private resolveChainStatus(status: string, totalVoters: number) {
+		if (status === "OPEN" && totalVoters > 0) return "VOTING";
+		return status as Dispute["status"];
+	}
+
+	private mapChainDispute(record: {
+		id: string;
+		jobId: string;
+		escrowId: string;
+		initiator: string;
+		status: string;
+		votesFor: number;
+		votesAgainst: number;
+		totalVoters: number;
+		createdAt: string;
+		resolvedAt?: string | null;
+		resolvedOutcome?: string | null;
+	}): Dispute {
 		return {
-			id: vote.id,
-			disputeId: vote.disputeId,
-			voter: vote.voter,
-			vote: vote.vote as Vote["vote"],
-			weight: toNumber(vote.weight) ?? 0,
-			createdAt: vote.createdAt.toISOString(),
+			id: record.id,
+			jobId: record.jobId,
+			escrowId: record.escrowId,
+			initiator: record.initiator,
+			status: this.resolveChainStatus(record.status, record.totalVoters),
+			votesFor: record.votesFor ?? 0,
+			votesAgainst: record.votesAgainst ?? 0,
+			totalWeight: record.totalVoters ?? 0,
+			resolvedOutcome: record.resolvedOutcome
+				? (record.resolvedOutcome as Dispute["resolvedOutcome"])
+				: undefined,
+			createdAt: this.toIsoFromSeconds(record.createdAt) ?? nowIso(),
+			resolvedAt: this.toIsoFromSeconds(record.resolvedAt),
 		};
 	}
 
-	private get votingPeriodMs() {
-		const hours = Number(
-			process.env.DAO_VOTING_PERIOD_HOURS ?? this.defaultVotingPeriodHours,
-		);
-		if (!Number.isFinite(hours) || hours <= 0) {
-			return this.defaultVotingPeriodHours * 60 * 60 * 1000;
-		}
-		return hours * 60 * 60 * 1000;
-	}
-
-	private get minVoters() {
-		const minVoters = Number(
-			process.env.DAO_MIN_VOTERS ?? this.defaultMinVoters,
-		);
-		if (!Number.isFinite(minVoters) || minVoters <= 0) {
-			return this.defaultMinVoters;
-		}
-		return Math.floor(minVoters);
-	}
-
-	private isDisputeExpired(dispute: PrismaDispute) {
-		const createdAt = dispute.createdAt?.getTime();
-		if (!createdAt) return false;
-		return Date.now() > createdAt + this.votingPeriodMs;
-	}
-
-	private async resolveDisputeIfNeeded(
-		dispute: PrismaDispute,
-	): Promise<PrismaDispute> {
-		if (dispute.status === "RESOLVED") return dispute;
-		if (!this.isDisputeExpired(dispute)) return dispute;
-
-		const job = await this.prisma.job.findUnique({
-			where: { id: dispute.jobId },
-			select: {
-				id: true,
-				createdBy: true,
-				selectedAgentId: true,
-			},
-		});
-		if (!job) throw new NotFoundException("Job not found");
-
-		const totalVoters = dispute.votesFor + dispute.votesAgainst;
-		const employerWins =
-			totalVoters < this.minVoters ||
-			dispute.votesFor === dispute.votesAgainst ||
-			dispute.votesFor > dispute.votesAgainst;
-
-		const escrow = await this.prisma.escrow.findUnique({
-			where: { id: dispute.escrowId },
-		});
-		if (!escrow) throw new NotFoundException("Escrow not found");
-
-		const winnerAddress = employerWins ? job.createdBy : job.selectedAgentId;
-		if (!winnerAddress) {
-			throw new BadRequestException("Winner address not available");
-		}
-
-		if (escrow.status !== "RELEASED") {
-			await this.prisma.escrow.update({
-				where: { id: escrow.id },
-				data: { releaseTo: winnerAddress },
-			});
-			await this.walletService.release(escrow.id);
-		}
-
-		const resolved = await this.prisma.dispute.update({
-			where: { id: dispute.id },
-			data: {
-				status: "RESOLVED",
-				resolvedOutcome: employerWins ? "REFUND_PAYER" : "RELEASE_TO_AGENT",
-				resolvedAt: new Date(),
-			},
-		});
-
-		return resolved;
+	private mapChainVote(record: {
+		id: string;
+		disputeId: string;
+		voter: string;
+		support: boolean;
+		createdAt: string;
+	}): Vote {
+		return {
+			id: record.id,
+			disputeId: record.disputeId,
+			voter: record.voter,
+			vote: record.support ? "approve" : "reject",
+			weight: 1,
+			createdAt: this.toIsoFromSeconds(record.createdAt) ?? nowIso(),
+		};
 	}
 
 	async initiate(payload: InitiateDisputeDto): Promise<Dispute> {
@@ -156,11 +124,15 @@ export class DaoService {
 
 		if (this.useDatabase) {
 			const job = await this.prisma.job.findUnique({ where: { id: jobId } });
-			if (!job) throw new NotFoundException("Job not found");
-
-			const escrowId = job.escrowId ?? "";
+			let escrowId = job?.escrowId ?? "";
+			if (!job && !inputEscrowId) {
+				throw new NotFoundException("Job not found");
+			}
 			if (!escrowId) {
-				throw new BadRequestException("Job has no escrow id");
+				escrowId = inputEscrowId ?? "";
+			}
+			if (!escrowId) {
+				throw new BadRequestException("Escrow id is required");
 			}
 			if (inputEscrowId && escrowId !== inputEscrowId) {
 				throw new BadRequestException("Escrow id does not match job");
@@ -169,8 +141,11 @@ export class DaoService {
 			const escrow = await this.prisma.escrow.findUnique({
 				where: { id: escrowId },
 			});
-			if (!escrow) throw new NotFoundException("Escrow not found");
-			if (escrow.jobId !== jobId) {
+			if (!escrow) {
+				if (!inputEscrowId) {
+					throw new NotFoundException("Escrow not found");
+				}
+			} else if (job && escrow.jobId !== jobId) {
 				throw new BadRequestException("Escrow does not belong to job");
 			}
 
@@ -187,13 +162,15 @@ export class DaoService {
 
 			// ✅ 关键：你之前 SQL 是 join on j."disputeId" = d.id
 			// 所以创建 dispute 后把 job.disputeId 写回去，避免 DAO 列表查不到
-			try {
-				await this.prisma.job.update({
-					where: { id: jobId },
-					data: { disputeId: created.id },
-				});
-			} catch {
-				// 如果 schema 没有 disputeId 字段或不可写，就忽略
+			if (job) {
+				try {
+					await this.prisma.job.update({
+						where: { id: jobId },
+						data: { disputeId: created.id },
+					});
+				} catch {
+					// 如果 schema 没有 disputeId 字段或不可写，就忽略
+				}
 			}
 
 			return this.mapDispute(created);
@@ -220,239 +197,334 @@ export class DaoService {
 	}
 
 	async vote(payload: VoteDto): Promise<Dispute | undefined> {
-		const voter = this.normalizeAddress(payload.voter);
+		const disputeId =
+			payload.disputeId || payload.escrowId || payload.jobId || "";
+		if (!disputeId) return undefined;
+
+		const chainDispute =
+			await this.chainStatusService.getDisputeById(disputeId);
+		if (chainDispute) {
+			return this.mapChainDispute(chainDispute);
+		}
 
 		if (this.useDatabase) {
-			const dispute = await this.prisma.dispute.findUnique({
-				where: { id: payload.disputeId },
+			const fallback = await this.prisma.dispute.findFirst({
+				where: {
+					OR: [
+						{ id: disputeId },
+						{ escrowId: disputeId },
+						{ jobId: disputeId },
+					],
+				},
 			});
-			if (!dispute) return undefined;
-
-			const resolvedDispute = await this.resolveDisputeIfNeeded(dispute);
-			if (resolvedDispute.status === "RESOLVED") {
-				throw new BadRequestException("Voting is closed");
-			}
-
-			const job = await this.prisma.job.findUnique({
-				where: { id: resolvedDispute.jobId },
-				select: { createdBy: true, selectedAgentId: true },
-			});
-			if (!job) throw new NotFoundException("Job not found");
-
-			const normalizedVoter = this.normalizeAddress(voter);
-			if (
-				normalizedVoter === this.normalizeAddress(job.createdBy) ||
-				normalizedVoter === this.normalizeAddress(job.selectedAgentId)
-			) {
-				throw new BadRequestException("Buyer or seller cannot vote");
-			}
-			if (
-				normalizedVoter === this.normalizeAddress(resolvedDispute.initiator)
-			) {
-				throw new BadRequestException("Initiator cannot vote");
-			}
-
-			const existing = await this.prisma.vote.findFirst({
-				where: { disputeId: payload.disputeId, voter },
-			});
-			if (existing) throw new ConflictException("Already voted");
-
-			const updated = await this.prisma.$transaction(async (tx) => {
-				await tx.vote.create({
-					data: {
-						id: generateId("vote"),
-						disputeId: payload.disputeId,
-						voter,
-						vote: payload.vote,
-						weight: 1,
-					},
-				});
-
-				const deltaFor = payload.vote === "approve" ? 1 : 0;
-				const deltaAgainst = payload.vote === "reject" ? 1 : 0;
-
-				return tx.dispute.update({
-					where: { id: payload.disputeId },
-					data: {
-						votesFor: { increment: deltaFor },
-						votesAgainst: { increment: deltaAgainst },
-						totalWeight: { increment: 1 },
-						status: "VOTING",
-					},
-				});
-			});
-
-			return this.mapDispute(updated);
+			return fallback ? this.mapDispute(fallback) : undefined;
 		}
 
-		const dispute = this.disputes.find((item) => item.id === payload.disputeId);
-		if (!dispute) return undefined;
-		if (dispute.status === "RESOLVED") {
-			throw new BadRequestException("Voting is closed");
-		}
-		const normalizedVoter = this.normalizeAddress(voter);
-		if (normalizedVoter === this.normalizeAddress(dispute.initiator)) {
-			throw new BadRequestException("Initiator cannot vote");
-		}
-		const createdAt = new Date(dispute.createdAt).getTime();
-		if (
-			Number.isFinite(createdAt) &&
-			Date.now() > createdAt + this.votingPeriodMs
-		) {
-			const totalVoters = dispute.votesFor + dispute.votesAgainst;
-			const employerWins =
-				totalVoters < this.minVoters ||
-				dispute.votesFor === dispute.votesAgainst ||
-				dispute.votesFor > dispute.votesAgainst;
-			dispute.status = "RESOLVED";
-			dispute.resolvedOutcome = employerWins
-				? "REFUND_PAYER"
-				: "RELEASE_TO_AGENT";
-			dispute.resolvedAt = nowIso();
-			throw new BadRequestException("Voting is closed");
-		}
-
-		const duplicateVote = this.votes.find(
-			(item) => item.disputeId === payload.disputeId && item.voter === voter,
+		const dispute = this.disputes.find(
+			(item) =>
+				item.id === disputeId ||
+				item.escrowId === disputeId ||
+				item.jobId === disputeId,
 		);
-		if (duplicateVote) throw new ConflictException("Already voted");
-
-		const vote: Vote = {
-			id: generateId("vote"),
-			disputeId: payload.disputeId,
-			voter,
-			vote: payload.vote,
-			weight: 1,
-			createdAt: nowIso(),
-		};
-
-		this.votes.push(vote);
-
-		if (payload.vote === "approve") dispute.votesFor += 1;
-		else dispute.votesAgainst += 1;
-
-		dispute.totalWeight += 1;
-		dispute.status = "VOTING";
 		return dispute;
 	}
 
-	async getDetail(
-		id: string,
-	): Promise<{
+	async getDetail(id: string): Promise<{
 		dispute?: Dispute & { buyer?: string; seller?: string };
 		votes: Vote[];
 	}> {
+		let dbDispute: PrismaDispute | undefined;
+		let memoryDispute: Dispute | undefined;
 		if (this.useDatabase) {
-			const [dispute, votes] = await this.prisma.$transaction([
-				this.prisma.dispute.findUnique({ where: { id } }),
-				this.prisma.vote.findMany({ where: { disputeId: id } }),
-			]);
-			const resolvedDispute = dispute
-				? await this.resolveDisputeIfNeeded(dispute)
-				: undefined;
-			const job = resolvedDispute
-				? await this.prisma.job.findUnique({
-						where: { id: resolvedDispute.jobId },
-						select: { createdBy: true, selectedAgentId: true },
-					})
-				: undefined;
-			return {
-				dispute: resolvedDispute
-					? {
-							...this.mapDispute(resolvedDispute),
-							buyer: job?.createdBy ?? undefined,
-							seller: job?.selectedAgentId ?? undefined,
-						}
-					: undefined,
-				votes: votes.map((vote) => this.mapVote(vote)),
-			};
+			const primary = await this.prisma.dispute.findUnique({ where: { id } });
+			const fallback = await this.prisma.dispute.findFirst({
+				where: {
+					OR: [{ escrowId: id }, { jobId: id }],
+				},
+				orderBy: { createdAt: "desc" },
+			});
+			dbDispute = primary ?? fallback ?? undefined;
+		} else {
+			memoryDispute =
+				this.disputes.find((item) => item.id === id) ??
+				this.disputes.find((item) => item.escrowId === id) ??
+				this.disputes.find((item) => item.jobId === id);
 		}
 
-		const dispute = this.disputes.find((item) => item.id === id);
-		const votes = this.votes.filter((vote) => vote.disputeId === id);
-		return { dispute, votes };
+		const chainId = this.isBytes32(id)
+			? id
+			: (dbDispute?.escrowId ??
+				dbDispute?.jobId ??
+				memoryDispute?.escrowId ??
+				memoryDispute?.jobId);
+		const chainDispute = chainId
+			? await this.chainStatusService.getDisputeById(chainId)
+			: null;
+
+		const chainVotes = chainDispute
+			? await this.chainStatusService.getVotesByDispute(chainDispute.id)
+			: [];
+
+		const escrow = chainDispute
+			? await this.chainStatusService.getEscrowByJobId(chainDispute.escrowId)
+			: undefined;
+		const escrowAgentOwner = escrow?.escrow?.agent
+			? this.normalizeAddress(escrow.escrow.agent)
+			: undefined;
+		const agentByOwner =
+			this.useDatabase && escrowAgentOwner
+				? await this.prisma.agent.findFirst({
+						where: { owner: { equals: escrowAgentOwner, mode: "insensitive" } },
+						select: { name: true },
+					})
+				: null;
+
+		let engagementAgentId: string | undefined;
+		if (this.useDatabase && chainDispute?.initiator) {
+			try {
+				const { engagements } =
+					await this.chainStatusService.getEngagementsByUser(
+						chainDispute.initiator,
+						{ first: 50, skip: 0 },
+					);
+				for (const engagement of engagements) {
+					const rawAgentId = engagement.agentId?.trim();
+					if (!rawAgentId) continue;
+					const escrowId = ethers.solidityPackedKeccak256(
+						["string", "uint256"],
+						["engagement", BigInt(engagement.engagementId)],
+					);
+					if (
+						chainDispute.escrowId &&
+						escrowId.toLowerCase() === chainDispute.escrowId.toLowerCase()
+					) {
+						engagementAgentId = rawAgentId;
+						break;
+					}
+				}
+			} catch {
+				// ignore subgraph errors
+			}
+		}
+		const agentByEngagementId =
+			this.useDatabase && engagementAgentId
+				? await this.prisma.agent.findFirst({
+						where: { id: { equals: engagementAgentId, mode: "insensitive" } },
+						select: { name: true },
+					})
+				: null;
+
+		const dispute = chainDispute
+			? {
+					...this.mapChainDispute(chainDispute),
+					reason: dbDispute?.reason ?? memoryDispute?.reason ?? undefined,
+					agentName:
+						agentByOwner?.name ??
+						agentByEngagementId?.name ??
+						engagementAgentId,
+				}
+			: dbDispute
+				? this.mapDispute(dbDispute)
+				: memoryDispute;
+
+		const votes = chainVotes.length
+			? chainVotes.map((vote) => this.mapChainVote(vote))
+			: [];
+
+		return {
+			dispute: dispute
+				? {
+						...dispute,
+						buyer: escrow?.escrow?.payer ?? undefined,
+						seller: escrow?.escrow?.agent ?? undefined,
+					}
+				: undefined,
+			votes,
+		};
 	}
 
-	async getDisputes(address: string, page = 1, limit = 10) {
-		const addr = this.normalizeAddress(address);
+	async getDisputes(_address: string, page = 1, limit = 10) {
 		const skip = (page - 1) * limit;
 
 		try {
-			console.log("========== DAO getDisputes ==========");
-			console.log("[address]", address, "normalized =", addr);
-
-			/**
-			 * 1️⃣ 找所有「和我有关」且已产生 dispute 的 Job
-			 * - 买方：createdBy = address
-			 * - 卖方：selectedAgentId = address
-			 */
-			const jobs = await this.prisma.job.findMany({
-				where: {
-					disputeId: { not: null },
-					OR: [{ createdBy: addr }, { selectedAgentId: addr }],
-				},
-				select: {
-					id: true,
-					title: true,
-					createdBy: true,
-					selectedAgentId: true,
-					disputeId: true,
-				},
+			const chainDisputes = await this.chainStatusService.getDisputes({
+				first: limit,
+				skip,
 			});
 
-			if (jobs.length === 0) {
+			if (chainDisputes.length === 0) {
 				return {
 					data: [],
 					pagination: this.buildPagination(page, limit, 0),
 				};
 			}
 
-			/**
-			 * 2️⃣ 根据 disputeId 查 Dispute
-			 */
-			const disputeIds = jobs.map((j) => j.disputeId!).filter(Boolean);
-
-			const [disputes, total] = await Promise.all([
-				this.prisma.dispute.findMany({
-					where: { id: { in: disputeIds } },
-					orderBy: { createdAt: "desc" },
-					skip,
-					take: limit,
+			const escrowLookups = await Promise.all(
+				chainDisputes.map((dispute) =>
+					this.chainStatusService.getEscrowByJobId(dispute.escrowId),
+				),
+			);
+			const escrowById = new Map(
+				escrowLookups
+					.map((lookup) => lookup.escrow)
+					.filter((escrow): escrow is NonNullable<typeof escrow> =>
+						Boolean(escrow),
+					)
+					.map((escrow) => [escrow.id.toLowerCase(), escrow]),
+			);
+			const escrowOwners = Array.from(
+				new Set(
+					Array.from(escrowById.values())
+						.map((escrow) => escrow.agent)
+						.filter(Boolean)
+						.map((owner) => this.normalizeAddress(owner)),
+				),
+			);
+			const initiators = Array.from(
+				new Set(
+					chainDisputes
+						.map((dispute) => this.normalizeAddress(dispute.initiator))
+						.filter(Boolean),
+				),
+			);
+			const engagementAgentIdByEscrowId = new Map<string, string>();
+			const engagementAgentIds = new Set<string>();
+			await Promise.all(
+				initiators.map(async (initiator) => {
+					try {
+						const { engagements } =
+							await this.chainStatusService.getEngagementsByUser(initiator, {
+								first: 50,
+								skip: 0,
+							});
+						for (const engagement of engagements) {
+							const rawAgentId = engagement.agentId?.trim();
+							if (!rawAgentId) continue;
+							const escrowId = ethers.solidityPackedKeccak256(
+								["string", "uint256"],
+								["engagement", BigInt(engagement.engagementId)],
+							);
+							engagementAgentIdByEscrowId.set(
+								escrowId.toLowerCase(),
+								rawAgentId,
+							);
+							engagementAgentIds.add(rawAgentId);
+						}
+					} catch {
+						// ignore subgraph errors
+					}
 				}),
-				this.prisma.dispute.count({
-					where: { id: { in: disputeIds } },
-				}),
-			]);
-
-			/**
-			 * 3️⃣ 组装返回数据（顺便算 role）
-			 */
-			const jobByDisputeId = new Map(jobs.map((j) => [j.disputeId!, j]));
-
-			const resolvedDisputes = await Promise.all(
-				disputes.map((item) => this.resolveDisputeIfNeeded(item)),
+			);
+			const agentsByOwner = this.useDatabase
+				? await this.prisma.agent.findMany({
+						where:
+							escrowOwners.length > 0
+								? {
+										OR: escrowOwners.map((owner) => ({
+											owner: { equals: owner, mode: "insensitive" },
+										})),
+									}
+								: undefined,
+						select: { owner: true, name: true },
+					})
+				: [];
+			const agentsByEngagementId = this.useDatabase
+				? await this.prisma.agent.findMany({
+						where:
+							engagementAgentIds.size > 0
+								? {
+										OR: Array.from(engagementAgentIds).map((agentId) => ({
+											id: { equals: agentId, mode: "insensitive" },
+										})),
+									}
+								: undefined,
+						select: { id: true, name: true },
+					})
+				: [];
+			const agentNameByOwner = new Map(
+				agentsByOwner.map((agent) => [
+					this.normalizeAddress(agent.owner),
+					agent.name,
+				]),
+			);
+			const agentNameById = new Map(
+				agentsByEngagementId.map((agent) => [
+					agent.id.toLowerCase(),
+					agent.name,
+				]),
 			);
 
-			const data = resolvedDisputes.map((d) => {
-				const job = jobByDisputeId.get(d.id)!;
+			const dbDisputes = this.useDatabase
+				? await this.prisma.dispute.findMany({
+						where: {
+							OR: [
+								{ escrowId: { in: chainDisputes.map((d) => d.escrowId) } },
+								{ jobId: { in: chainDisputes.map((d) => d.jobId) } },
+							],
+						},
+					})
+				: this.disputes.filter((item) =>
+						chainDisputes.some(
+							(dispute) =>
+								dispute.escrowId === item.escrowId ||
+								dispute.jobId === item.jobId,
+						),
+					);
+			const dbByEscrowId = new Map(
+				dbDisputes
+					.filter((item) => this.isBytes32(item.escrowId))
+					.map((item) => [item.escrowId.toLowerCase(), item]),
+			);
+			const dbByJobId = new Map(dbDisputes.map((item) => [item.jobId, item]));
 
-				const role =
-					this.normalizeAddress(job.createdBy) === addr
-						? "BUYER"
-						: this.normalizeAddress(job.selectedAgentId) === addr
-							? "SELLER"
-							: "UNKNOWN";
+			const normalizedUser = this.normalizeAddress(_address);
+
+			const data = chainDisputes.map((d) => {
+				const mapped = this.mapChainDispute(d);
+				const escrow = escrowById.get(d.escrowId.toLowerCase());
+				const db =
+					dbByEscrowId.get(d.escrowId.toLowerCase()) ?? dbByJobId.get(d.jobId);
+				const agentName = escrow?.agent
+					? agentNameByOwner.get(this.normalizeAddress(escrow.agent))
+					: undefined;
+				const engagementAgentId = engagementAgentIdByEscrowId.get(
+					d.escrowId.toLowerCase(),
+				);
+				const engagementAgentName = engagementAgentId
+					? agentNameById.get(engagementAgentId.toLowerCase())
+					: undefined;
+
+				let role: "BUYER" | "SELLER" | "UNKNOWN" | "INITIATOR" = "UNKNOWN";
+				if (normalizedUser && mapped.initiator === normalizedUser) {
+					role = "INITIATOR";
+				} else if (
+					normalizedUser &&
+					escrow?.payer &&
+					this.normalizeAddress(escrow.payer) === normalizedUser
+				) {
+					role = "BUYER";
+				} else if (
+					normalizedUser &&
+					escrow?.agent &&
+					this.normalizeAddress(escrow.agent) === normalizedUser
+				) {
+					role = "SELLER";
+				}
 
 				return {
-					...this.mapDispute(d),
+					...mapped,
+					reason: db?.reason ?? undefined,
 					role,
-					jobId: job.id,
-					jobTitle: job.title,
-					buyer: job.createdBy,
-					seller: job.selectedAgentId,
+					agentName: agentName ?? engagementAgentName ?? engagementAgentId,
+					jobTitle: undefined,
+					buyer: escrow?.payer ?? undefined,
+					seller: escrow?.agent ?? undefined,
+					escrowAmount: escrow?.amount ?? undefined,
+					currency: escrow?.currency ?? undefined,
 				};
 			});
 
+			const total = skip + data.length;
 			return {
 				data,
 				pagination: this.buildPagination(page, limit, total),

@@ -8,6 +8,16 @@ type Wallet @entity(immutable: false) {
   updatedAt: BigInt!
 }
 
+"""CBT transfer events."""
+type TokenTransfer @entity(immutable: true) {
+  id: ID!
+  from: Bytes!
+  to: Bytes!
+  amount: BigInt!
+  timestamp: BigInt!
+  transactionHash: Bytes!
+}
+
 """Escrow record for a job payment."""
 type Escrow @entity(immutable: false) {
   id: ID!

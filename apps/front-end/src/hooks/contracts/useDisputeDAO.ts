@@ -78,6 +78,36 @@ export const useDisputeDAO = () => {
 		error: claimError,
 	} = useWriteContract();
 
+	// 结算争议
+	const {
+		writeContract: resolveDispute,
+		data: resolveHash,
+		isPending: isResolvePending,
+		error: resolveError,
+	} = useWriteContract();
+
+	// 更新投票配置
+	const {
+		writeContract: setVotingConfig,
+		data: setVotingConfigHash,
+		isPending: isSetVotingConfigPending,
+		error: setVotingConfigError,
+	} = useWriteContract();
+
+	// 等待结算交易确认
+	const { isLoading: isResolveConfirming, isSuccess: isResolveSuccess } =
+		useWaitForTransactionReceipt({
+			hash: resolveHash,
+		});
+
+	// 等待投票配置更新确认
+	const {
+		isLoading: isSetVotingConfigConfirming,
+		isSuccess: isSetVotingConfigSuccess,
+	} = useWaitForTransactionReceipt({
+		hash: setVotingConfigHash,
+	});
+
 	// 等待领取奖励交易确认
 	const { isLoading: isClaimConfirming, isSuccess: isClaimSuccess } =
 		useWaitForTransactionReceipt({
@@ -89,6 +119,34 @@ export const useDisputeDAO = () => {
 		address: CONTRACTS.sepolia.DisputeDAO,
 		abi: DisputeDAO_ABI.abi,
 		functionName: "voteCost",
+	});
+
+	// 读取投票周期
+	const { data: votingPeriod } = useReadContract({
+		address: CONTRACTS.sepolia.DisputeDAO,
+		abi: DisputeDAO_ABI.abi,
+		functionName: "votingPeriod",
+	});
+
+	// 读取最小投票人数
+	const { data: minVoters } = useReadContract({
+		address: CONTRACTS.sepolia.DisputeDAO,
+		abi: DisputeDAO_ABI.abi,
+		functionName: "minVoters",
+	});
+
+	// 读取 keeper
+	const { data: keeper } = useReadContract({
+		address: CONTRACTS.sepolia.DisputeDAO,
+		abi: DisputeDAO_ABI.abi,
+		functionName: "keeper",
+	});
+
+	// 读取 owner
+	const { data: owner } = useReadContract({
+		address: CONTRACTS.sepolia.DisputeDAO,
+		abi: DisputeDAO_ABI.abi,
+		functionName: "owner",
 	});
 
 	// 读取 CBT allowance
@@ -162,6 +220,37 @@ export const useDisputeDAO = () => {
 		[ensureCorrectNetwork, claimReward],
 	);
 
+	// 结算争议操作
+	const handleResolveDispute = useCallback(
+		async (jobId: string) => {
+			await ensureCorrectNetwork();
+			return resolveDispute({
+				address: CONTRACTS.sepolia.DisputeDAO,
+				abi: DisputeDAO_ABI.abi,
+				functionName: "resolveDispute",
+				args: [jobId as `0x${string}`],
+			});
+		},
+		[ensureCorrectNetwork, resolveDispute],
+	);
+
+	// 更新投票周期操作
+	const handleSetVotingPeriod = useCallback(
+		async (periodSeconds: bigint) => {
+			if (voteCost === undefined || minVoters === undefined) {
+				throw new Error("Voting config not loaded");
+			}
+			await ensureCorrectNetwork();
+			return setVotingConfig({
+				address: CONTRACTS.sepolia.DisputeDAO,
+				abi: DisputeDAO_ABI.abi,
+				functionName: "setVotingConfig",
+				args: [BigInt(voteCost), periodSeconds, BigInt(minVoters)],
+			});
+		},
+		[ensureCorrectNetwork, minVoters, setVotingConfig, voteCost],
+	);
+
 	return {
 		// 发起争议
 		openDispute: handleOpenDispute,
@@ -195,8 +284,28 @@ export const useDisputeDAO = () => {
 		isClaimSuccess,
 		claimError,
 
+		// 结算争议
+		resolveDispute: handleResolveDispute,
+		resolveHash,
+		isResolvePending,
+		isResolveConfirming,
+		isResolveSuccess,
+		resolveError,
+
+		// 更新投票配置
+		setVotingPeriod: handleSetVotingPeriod,
+		setVotingConfigHash,
+		isSetVotingConfigPending,
+		isSetVotingConfigConfirming,
+		isSetVotingConfigSuccess,
+		setVotingConfigError,
+
 		// 读取数据
 		voteCost,
+		votingPeriod,
+		minVoters,
+		keeper,
+		owner,
 		allowance,
 		refetchAllowance,
 	};
