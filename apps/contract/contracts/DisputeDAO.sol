@@ -52,6 +52,7 @@ contract DisputeDAO is Ownable {
         uint32 votesAgainst;
         Status status;
         bool employerWins;
+        uint256 voteCost;
         uint256 rewardPerWinner;
     }
 
@@ -115,6 +116,41 @@ contract DisputeDAO is Ownable {
         emit VotingConfigUpdated(voteCost_, votingPeriod_, minVoters_);
     }
 
+    function disputeInfo(bytes32 jobId)
+        external
+        view
+        returns (
+            address initiator,
+            uint40 openedAt,
+            uint32 votesFor,
+            uint32 votesAgainst,
+            Status status,
+            bool employerWins,
+            uint256 rewardPerWinner
+        )
+    {
+        Dispute storage dispute = disputes[jobId];
+        return (
+            dispute.initiator,
+            dispute.openedAt,
+            dispute.votesFor,
+            dispute.votesAgainst,
+            dispute.status,
+            dispute.employerWins,
+            dispute.rewardPerWinner
+        );
+    }
+
+    function voterStatus(bytes32 jobId, address voter)
+        external
+        view
+        returns (bool voted, bool supportEmployer, bool claimed)
+    {
+        voted = hasVoted[jobId][voter];
+        supportEmployer = voteSide[jobId][voter];
+        claimed = hasClaimed[jobId][voter];
+    }
+
     function openDispute(bytes32 jobId, uint8 reason) external {
         if (disputes[jobId].status != Status.NONE) {
             revert InvalidStatus();
@@ -134,6 +170,7 @@ contract DisputeDAO is Ownable {
             votesAgainst: 0,
             status: Status.OPEN,
             employerWins: false,
+            voteCost: voteCost,
             rewardPerWinner: 0
         });
         disputeQueue.push(jobId);
@@ -164,9 +201,9 @@ contract DisputeDAO is Ownable {
             dispute.votesAgainst += 1;
         }
 
-        cbt.safeTransferFrom(msg.sender, address(treasury), voteCost);
+        cbt.safeTransferFrom(msg.sender, address(this), dispute.voteCost);
 
-        emit VoteCast(jobId, msg.sender, supportEmployer, voteCost);
+        emit VoteCast(jobId, msg.sender, supportEmployer, dispute.voteCost);
     }
 
     function resolveDispute(bytes32 jobId) external {
@@ -253,12 +290,9 @@ contract DisputeDAO is Ownable {
         uint256 winnerCount = employerWins ? dispute.votesFor : dispute.votesAgainst;
         uint256 rewardPerWinner = 0;
         if (winnerCount > 0) {
-            uint256 serviceFee = escrow.serviceFeeOf(jobId);
-            rewardPerWinner = serviceFee / winnerCount;
-            uint256 totalReward = rewardPerWinner * winnerCount;
-            if (totalReward > 0) {
-                treasury.releaseReward(jobId, totalReward, address(this));
-            }
+            uint256 totalParticipants = uint256(dispute.votesFor) + uint256(dispute.votesAgainst);
+            uint256 totalReward = dispute.voteCost * totalParticipants;
+            rewardPerWinner = totalReward / winnerCount;
         }
         dispute.rewardPerWinner = rewardPerWinner;
 

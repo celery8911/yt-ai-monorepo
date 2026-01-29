@@ -77,14 +77,16 @@ export interface DisputeItem {
 	id: string;
 	jobId: string;
 	jobTitle?: string;
+	agentName?: string;
 	status: string;
 	initiator: string;
-	isMyInitiated: boolean;
+	role?: "BUYER" | "SELLER" | "UNKNOWN" | "INITIATOR";
+	isMyInitiated?: boolean;
 	reason?: string;
 	votesFor: number;
 	votesAgainst: number;
 	totalWeight: number;
-	escrowAmount?: number;
+	escrowAmount?: number | string;
 	currency?: string;
 	resolvedOutcome?: string;
 	createdAt: string;

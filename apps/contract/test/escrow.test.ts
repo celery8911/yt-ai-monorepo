@@ -81,7 +81,7 @@ describe("Dashboard contracts", () => {
 		await cbt.connect(employer).approve(await escrow.getAddress(), price + fee);
 		await escrow
 			.connect(employer)
-			.createEscrow(ethers.id("job-1"), agent.address, price);
+			.createEscrow(ethers.id("job-1"), employer.address, agent.address, price);
 
 		expect(await cbt.balanceOf(await escrow.getAddress())).to.equal(price);
 		expect(await cbt.balanceOf(await treasury.getAddress())).to.equal(fee);
@@ -103,7 +103,12 @@ describe("Dashboard contracts", () => {
 		await cbt.connect(employer).approve(await escrow.getAddress(), price + fee);
 		await escrow
 			.connect(employer)
-			.createEscrow(ethers.id("job-ready"), agent.address, price);
+			.createEscrow(
+				ethers.id("job-ready"),
+				employer.address,
+				agent.address,
+				price,
+			);
 
 		await time.increase(RELEASE_DELAY + 1);
 		await escrow.connect(keeper).releaseReady();
@@ -124,10 +129,20 @@ describe("Dashboard contracts", () => {
 			.approve(await escrow.getAddress(), (price + fee) * 2n);
 		await escrow
 			.connect(employer)
-			.createEscrow(ethers.id("job-frozen"), agent.address, price);
+			.createEscrow(
+				ethers.id("job-frozen"),
+				employer.address,
+				agent.address,
+				price,
+			);
 		await escrow
 			.connect(employer)
-			.createEscrow(ethers.id("job-ready-2"), agent.address, price);
+			.createEscrow(
+				ethers.id("job-ready-2"),
+				employer.address,
+				agent.address,
+				price,
+			);
 
 		await dao.connect(employer).openDispute(ethers.id("job-frozen"), 1);
 
@@ -148,7 +163,7 @@ describe("Dashboard contracts", () => {
 		await cbt.connect(employer).approve(await escrow.getAddress(), price + fee);
 		await escrow
 			.connect(employer)
-			.createEscrow(ethers.id("job-2"), agent.address, price);
+			.createEscrow(ethers.id("job-2"), employer.address, agent.address, price);
 
 		await dao.connect(employer).openDispute(ethers.id("job-2"), 1);
 
@@ -171,7 +186,12 @@ describe("Dashboard contracts", () => {
 		await cbt.connect(employer).approve(await escrow.getAddress(), price + fee);
 		await escrow
 			.connect(employer)
-			.createEscrow(ethers.id("job-queue"), agent.address, price);
+			.createEscrow(
+				ethers.id("job-queue"),
+				employer.address,
+				agent.address,
+				price,
+			);
 		await dao.connect(employer).openDispute(ethers.id("job-queue"), 1);
 
 		const balanceBefore = await cbt.balanceOf(employer.address);
@@ -202,7 +222,7 @@ describe("Dashboard contracts", () => {
 		await cbt.connect(employer).approve(await escrow.getAddress(), price + fee);
 		await escrow
 			.connect(employer)
-			.createEscrow(ethers.id("job-3"), agent.address, price);
+			.createEscrow(ethers.id("job-3"), employer.address, agent.address, price);
 
 		await dao.connect(employer).openDispute(ethers.id("job-3"), 1);
 

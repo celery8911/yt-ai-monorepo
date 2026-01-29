@@ -12,6 +12,7 @@ async function main() {
 	// 获取已部署的合约地址
 	const cbtAddress = process.env.CBT_ADDRESS;
 	const treasuryAddress = process.env.TREASURY_ADDRESS;
+	const escrowAddress = process.env.ESCROW_ADDRESS;
 
 	if (!cbtAddress || !ethers.isAddress(cbtAddress)) {
 		throw new Error("Invalid or missing CBT_ADDRESS in environment");
@@ -19,6 +20,10 @@ async function main() {
 
 	if (!treasuryAddress || !ethers.isAddress(treasuryAddress)) {
 		throw new Error("Invalid or missing TREASURY_ADDRESS in environment");
+	}
+
+	if (!escrowAddress || !ethers.isAddress(escrowAddress)) {
+		throw new Error("Invalid or missing ESCROW_ADDRESS in environment");
 	}
 
 	// 配置参数
@@ -29,6 +34,7 @@ async function main() {
 	console.log("Deployer:", deployer.address);
 	console.log("CBT Address:", cbtAddress);
 	console.log("Treasury Address:", treasuryAddress);
+	console.log("Escrow Address:", escrowAddress);
 	console.log("Keeper Address:", keeper);
 	console.log("Service Fee:", `${Number(serviceFeeBps) / 100}%`);
 	console.log("Release Delay:", `${releaseDelay / (24 * 60 * 60)} days`);
@@ -38,6 +44,8 @@ async function main() {
 	const agentHiring = await AgentHiring.deploy(
 		cbtAddress,
 		treasuryAddress,
+		escrowAddress,
+		keeper,
 		serviceFeeBps,
 		releaseDelay,
 	);

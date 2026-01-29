@@ -6,11 +6,19 @@ import { useQuery } from "@tanstack/react-query";
 import { Badge, Button, Card, CardContent, CardHeader } from "@yt/ui";
 import { useWallet } from "@yt/hooks";
 import { fetchDisputeList } from "@/apis/dao";
+import { formatUnits } from "viem";
 
-const formatAmount = (amount?: number, currency?: string) => {
+const formatAmount = (amount?: string | number, currency?: string) => {
 	if (amount === undefined) return "--";
-	const value = amount.toLocaleString();
-	return currency ? `${value} ${currency}` : value;
+	try {
+		const value =
+			typeof amount === "number"
+				? formatUnits(BigInt(Math.trunc(amount)), 18)
+				: formatUnits(BigInt(amount), 18);
+		return currency ? `${value} ${currency}` : value;
+	} catch {
+		return currency ? `-- ${currency}` : "--";
+	}
 };
 
 const formatDate = (value?: string) => {
@@ -130,7 +138,11 @@ const DAO = () => {
 					(item, index) => {
 						const title = isLoading
 							? "加载中..."
-							: (item.jobTitle ?? `争议 #${item.id}`);
+							: item.agentName && item.jobTitle
+								? `${item.agentName}-${item.jobTitle}`
+								: item.agentName
+									? item.agentName
+									: (item.jobTitle ?? `争议 #${item.id}`);
 						const status = isLoading ? "OPEN" : item.status;
 						const amount = isLoading ? undefined : item.escrowAmount;
 						const currency = isLoading ? undefined : item.currency;

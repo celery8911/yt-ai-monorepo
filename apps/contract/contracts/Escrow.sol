@@ -103,8 +103,8 @@ contract Escrow is Ownable {
         emit ReleaseDelayUpdated(oldDelay, newDelay);
     }
 
-    function createEscrow(bytes32 jobId, address agent, uint256 price) external {
-        if (agent == address(0)) {
+    function createEscrow(bytes32 jobId, address payer, address agent, uint256 price) external {
+        if (payer == address(0) || agent == address(0)) {
             revert ZeroAddress();
         }
         if (price == 0) {
@@ -124,7 +124,7 @@ contract Escrow is Ownable {
         }
 
         escrows[jobId] = EscrowInfo({
-            payer: msg.sender,
+            payer: payer,
             agent: agent,
             price: uint128(price),
             serviceFee: uint128(fee),
@@ -133,7 +133,7 @@ contract Escrow is Ownable {
         });
         releaseQueue.push(jobId);
 
-        emit PaymentCreated(jobId, msg.sender, agent, price, fee);
+        emit PaymentCreated(jobId, payer, agent, price, fee);
         emit AutoReleaseScheduled(jobId, releaseAt);
     }
 

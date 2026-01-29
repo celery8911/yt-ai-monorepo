@@ -307,6 +307,89 @@
 			"type": "function"
 		},
 		{
+			"inputs": [
+				{
+					"internalType": "bytes32",
+					"name": "jobId",
+					"type": "bytes32"
+				}
+			],
+			"name": "disputeInfo",
+			"outputs": [
+				{
+					"internalType": "address",
+					"name": "initiator",
+					"type": "address"
+				},
+				{
+					"internalType": "uint40",
+					"name": "openedAt",
+					"type": "uint40"
+				},
+				{
+					"internalType": "uint32",
+					"name": "votesFor",
+					"type": "uint32"
+				},
+				{
+					"internalType": "uint32",
+					"name": "votesAgainst",
+					"type": "uint32"
+				},
+				{
+					"internalType": "enum DisputeDAO.Status",
+					"name": "status",
+					"type": "uint8"
+				},
+				{
+					"internalType": "bool",
+					"name": "employerWins",
+					"type": "bool"
+				},
+				{
+					"internalType": "uint256",
+					"name": "rewardPerWinner",
+					"type": "uint256"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
+			"inputs": [
+				{
+					"internalType": "bytes32",
+					"name": "jobId",
+					"type": "bytes32"
+				},
+				{
+					"internalType": "address",
+					"name": "voter",
+					"type": "address"
+				}
+			],
+			"name": "voterStatus",
+			"outputs": [
+				{
+					"internalType": "bool",
+					"name": "voted",
+					"type": "bool"
+				},
+				{
+					"internalType": "bool",
+					"name": "supportEmployer",
+					"type": "bool"
+				},
+				{
+					"internalType": "bool",
+					"name": "claimed",
+					"type": "bool"
+				}
+			],
+			"stateMutability": "view",
+			"type": "function"
+		},
+		{
 			"inputs": [],
 			"name": "escrow",
 			"outputs": [

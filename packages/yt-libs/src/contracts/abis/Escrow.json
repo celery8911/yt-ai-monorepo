@@ -365,6 +365,11 @@
 				},
 				{
 					"internalType": "address",
+					"name": "payer",
+					"type": "address"
+				},
+				{
+					"internalType": "address",
 					"name": "agent",
 					"type": "address"
 				},

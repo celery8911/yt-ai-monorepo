@@ -10,7 +10,8 @@ async function main() {
 		keeperEnv && ethers.isAddress(keeperEnv) ? keeperEnv : deployer.address;
 
 	const rate = 1_000_000n;
-	const serviceFeeBps = 1000n;
+	const serviceFeeBps = 1000n; // Service fee for AgentHiring
+	const escrowServiceFeeBps = 0n; // No fee for Escrow (fee handled by AgentHiring)
 	const releaseDelay = 15 * 60;
 	const voteCost = 100n * 10n ** 18n;
 	const votingPeriod = 48 * 60 * 60;
@@ -30,7 +31,7 @@ async function main() {
 	const escrow = await Escrow.deploy(
 		await cbt.getAddress(),
 		await treasury.getAddress(),
-		serviceFeeBps,
+		escrowServiceFeeBps,
 		releaseDelay,
 	);
 	await escrow.waitForDeployment();
@@ -57,6 +58,7 @@ async function main() {
 	const agentHiring = await AgentHiring.deploy(
 		await cbt.getAddress(),
 		await treasury.getAddress(),
+		await escrow.getAddress(),
 		keeper,
 		serviceFeeBps,
 		releaseDelay,

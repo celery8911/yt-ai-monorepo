@@ -8,9 +8,9 @@ export const CONTRACTS = {
 	sepolia: {
 		CBT: "0x502BccF9d143ecB89983EdFbf107ebDeD3B9a9fc" as const,
 		Treasury: "0x80E3E5bEeCee6A1EE694e7CE8D34660a9C65EA1d" as const,
-		Escrow: "0xd2a24326950A80272aCe018E2dcE25E22d5B5A7e" as const,
-		DisputeDAO: "0x410756130fd06171298c72839FdCaB290Fe7eD16" as const,
-		AgentHiring: "0xf54EEa283A05A5dD10944404D088c65bB60552dA" as const,
+		Escrow: "0xfdCC19d2CA9a6b6A7151082Fac9d7337D7010351" as const,
+		DisputeDAO: "0xe0132Ef13B63223345039E910b5080B1CaaA54DE" as const,
+		AgentHiring: "0xc803C3cd728eb419a00a79660DA9377cb1c54BbA" as const,
 	},
 } as const;
 

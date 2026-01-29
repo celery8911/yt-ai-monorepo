@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
 	Badge,
@@ -66,7 +67,14 @@ export const PublishedAgentsTab = ({ address }: PublishedAgentsTabProps) => {
 						<TBody>
 							{data?.data.map((agent) => (
 								<TR key={agent.id}>
-									<TD className="font-bold text-slate-200">{agent.name}</TD>
+									<TD className="font-bold text-slate-200">
+										<Link
+											href={`/agent/${agent.id}`}
+											className="hover:text-blue-400 transition-colors"
+										>
+											{agent.name}
+										</Link>
+									</TD>
 									<TD className="text-slate-400 font-mono text-xs">
 										{agent.author ?? agent.owner ?? "--"}
 									</TD>

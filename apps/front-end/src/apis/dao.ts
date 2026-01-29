@@ -9,6 +9,7 @@ export type Dispute = {
 	escrowId?: string;
 	initiator: string;
 	reason?: string;
+	agentName?: string;
 	status: DisputeStatus;
 	votesFor: number;
 	votesAgainst: number;
@@ -32,9 +33,10 @@ export type Vote = {
 export type DisputeListItem = Dispute & {
 	role?: "BUYER" | "SELLER" | "UNKNOWN";
 	jobTitle?: string;
+	agentName?: string;
 	buyer?: string;
 	seller?: string;
-	escrowAmount?: number;
+	escrowAmount?: string | number;
 	currency?: string;
 };
 
@@ -100,6 +102,8 @@ export type VoteDisputePayload = {
 	voter: string;
 	vote: VoteValue;
 	weight?: number;
+	jobId?: string;
+	escrowId?: string;
 };
 
 export const voteDispute = async (

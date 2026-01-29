@@ -8,6 +8,16 @@ type Wallet @entity(immutable: false) {
   updatedAt: BigInt!
 }
 
+"""CBT transfer events."""
+type TokenTransfer @entity(immutable: true) {
+  id: ID!
+  from: Bytes!
+  to: Bytes!
+  amount: BigInt!
+  timestamp: BigInt!
+  transactionHash: Bytes!
+}
+
 """Escrow record for a job payment."""
 type Escrow @entity(immutable: false) {
   id: ID!
@@ -50,6 +60,16 @@ type Vote @entity(immutable: false) {
   createdAt: BigInt!
 }
 
+"""Reward claim entries for dispute winners."""
+type RewardClaim @entity(immutable: true) {
+  id: ID!
+  disputeId: ID!
+  claimant: Bytes!
+  amount: BigInt!
+  timestamp: BigInt!
+  transactionHash: Bytes!
+}
+
 """Treasury accounting for fees and ETH in."""
 type Treasury @entity(immutable: false) {
   id: ID!
@@ -71,6 +91,7 @@ type Engagement @entity(immutable: false) {
   startTime: BigInt!
   endTime: BigInt
   status: String!
+  escrowId: Bytes
   transactions: [Transaction!]! @derivedFrom(field: "engagement")
 }
 

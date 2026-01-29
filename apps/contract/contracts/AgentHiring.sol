@@ -10,6 +10,11 @@ interface ITreasury {
     function recordServiceFee(bytes32 jobId, uint256 amount) external;
 }
 
+interface IEscrow {
+    function createEscrow(bytes32 jobId, address payer, address agent, uint256 price) external;
+    function statusOf(bytes32 jobId) external view returns (uint8);
+}
+
 error ZeroAddress();
 error InvalidPrice();
 error InvalidAgentId();
@@ -22,6 +27,7 @@ contract AgentHiring is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     enum EngagementStatus {
+        NONE,
         ACTIVE,
         COMPLETED,
         DISPUTED,
@@ -48,6 +54,7 @@ contract AgentHiring is Ownable, ReentrancyGuard {
 
     IERC20 public immutable cbt;
     ITreasury public treasury;
+    IEscrow public escrow;
     address public keeper;
     uint256 public serviceFeeBps;
     uint256 public releaseDelay;
@@ -88,15 +95,17 @@ contract AgentHiring is Ownable, ReentrancyGuard {
     constructor(
         address cbt_,
         address treasury_,
+        address escrow_,
         address keeper_,
         uint256 serviceFeeBps_,
         uint256 releaseDelay_
     ) Ownable(msg.sender) {
-        if (cbt_ == address(0) || treasury_ == address(0)) {
+        if (cbt_ == address(0) || treasury_ == address(0) || escrow_ == address(0)) {
             revert ZeroAddress();
         }
         cbt = IERC20(cbt_);
         treasury = ITreasury(treasury_);
+        escrow = IEscrow(escrow_);
         keeper = keeper_;
         serviceFeeBps = serviceFeeBps_;
         releaseDelay = releaseDelay_;
@@ -121,15 +130,26 @@ contract AgentHiring is Ownable, ReentrancyGuard {
 
         uint256 engagementId = nextEngagementId++;
         uint256 fee = (price * serviceFeeBps) / 10_000;
-        uint256 total = price + fee;
 
+        // Generate unique escrow ID from engagement ID
+        bytes32 escrowId = keccak256(abi.encodePacked("engagement", engagementId));
+
+        // Transfer price from user to this contract
         cbt.safeTransferFrom(msg.sender, address(this), price);
+
+        // Transfer service fee directly to Treasury
         if (fee > 0) {
             cbt.safeTransferFrom(msg.sender, address(treasury), fee);
-            bytes32 escrowId = keccak256(abi.encodePacked(engagementId));
             treasury.recordServiceFee(escrowId, fee);
         }
 
+        // Approve Escrow to spend the price amount
+        cbt.approve(address(escrow), price);
+
+        // Create escrow record (this will transfer price from this contract to Escrow)
+        escrow.createEscrow(escrowId, msg.sender, agentOwner, price);
+
+        // Record engagement metadata
         engagements[engagementId] = Engagement({
             id: engagementId,
             user: msg.sender,
@@ -160,57 +180,22 @@ contract AgentHiring is Ownable, ReentrancyGuard {
         return engagementId;
     }
 
-    function approveCompletion(uint256 engagementId) external nonReentrant {
-        Engagement storage engagement = engagements[engagementId];
-        if (msg.sender != engagement.user) {
-            revert Unauthorized();
-        }
-        if (engagement.status != EngagementStatus.ACTIVE) {
-            revert InvalidStatus();
-        }
+    // Note: Payment release is now handled by Escrow contract
+    // Engagement status should be updated by monitoring Escrow events off-chain
 
-        _releasePayment(engagement);
-    }
-
-    function autoRelease(uint256 engagementId) external {
-        if (msg.sender != keeper) {
+    function updateEngagementStatus(uint256 engagementId, EngagementStatus newStatus) external {
+        if (msg.sender != keeper && msg.sender != owner()) {
             revert Unauthorized();
         }
         Engagement storage engagement = engagements[engagementId];
-        if (engagement.status != EngagementStatus.ACTIVE) {
-            revert InvalidStatus();
-        }
-        if (block.timestamp < engagement.startTime + releaseDelay) {
-            revert TooEarly();
-        }
-
-        _releasePayment(engagement);
-    }
-
-    function refund(uint256 engagementId) external onlyOwner nonReentrant {
-        Engagement storage engagement = engagements[engagementId];
-        if (
-            engagement.status != EngagementStatus.ACTIVE &&
-            engagement.status != EngagementStatus.DISPUTED
-        ) {
+        if (engagement.status == EngagementStatus.NONE) {
             revert InvalidStatus();
         }
 
-        engagement.status = EngagementStatus.CANCELLED;
-        engagement.endTime = block.timestamp;
-
-        cbt.safeTransfer(engagement.user, engagement.totalPaid);
-
-        emit PaymentRefunded(engagementId, engagement.user, engagement.totalPaid);
-    }
-
-    function _releasePayment(Engagement storage engagement) private {
-        engagement.status = EngagementStatus.COMPLETED;
-        engagement.endTime = block.timestamp;
-
-        cbt.safeTransfer(engagement.agentOwner, engagement.totalPaid);
-
-        emit PaymentReleased(engagement.id, engagement.agentOwner, engagement.totalPaid);
+        engagement.status = newStatus;
+        if (newStatus == EngagementStatus.COMPLETED || newStatus == EngagementStatus.CANCELLED) {
+            engagement.endTime = block.timestamp;
+        }
     }
 
     function getEngagementsByUser(address user) external view returns (uint256[] memory) {

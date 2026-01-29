@@ -82,4 +82,34 @@ export class ChainStatusController {
 		};
 		return this.chainStatusService.getEngagementsByOwner(owner, options);
 	}
+
+	@Get("escrow/by-payer")
+	async getEscrowByPayer(
+		@Query("payer") payer?: string,
+		@Query("activeOnly") activeOnly?: string,
+	) {
+		if (!payer) {
+			throw new BadRequestException("payer is required");
+		}
+		const activeOnlyFlag = activeOnly
+			? activeOnly.toLowerCase() !== "false"
+			: true;
+		return this.chainStatusService.getEscrowsByPayer(payer, activeOnlyFlag);
+	}
+
+	@Get("cbt/transfers")
+	async getCbtTransfers(
+		@Query("address") address?: string,
+		@Query("first") first?: string,
+		@Query("skip") skip?: string,
+	) {
+		if (!address) {
+			throw new BadRequestException("address is required");
+		}
+		const options = {
+			first: first ? Number.parseInt(first, 10) : undefined,
+			skip: skip ? Number.parseInt(skip, 10) : undefined,
+		};
+		return this.chainStatusService.getCbtTransfersByAddress(address, options);
+	}
 }
