@@ -1,0 +1,7 @@
+{
+	"buildCommand": "npx pnpm --filter @yt/front-end build",
+	"outputDirectory": "apps/front-end/.next",
+	"installCommand": "npx pnpm install --no-frozen-lockfile",
+	"framework": "nextjs",
+	"regions": ["hnd1"]
+}

@@ -104,6 +104,10 @@ out/
 # Serverless directories
 .serverless/
 
+# SST
+.sst/
+.open-next/
+
 # FuseBox cache
 .fusebox/
 
@@ -126,3 +130,5 @@ packages/yt-libs/src/*.esm.js.map
 packages/yt-libs/src/*.umd.js
 packages/yt-libs/src/*.umd.js.map
 packages/yt-libs/src/*.ts.map
+.vercel
+.env*.local

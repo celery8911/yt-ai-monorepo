@@ -1,0 +1,108 @@
+service: yt-backend
+
+# 禁用内置 ESBuild，使用 serverless-esbuild 插件
+build:
+  esbuild: false
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  architecture: arm64  # ARM Graviton2 降低成本 20%
+  region: ap-northeast-1  # 东京区域
+  memorySize: 512
+  timeout: 29  # API Gateway 最大 30s
+  stage: ${opt:stage, 'dev'}
+
+  # 环境变量
+  environment:
+    NODE_ENV: production
+    DATABASE_URL: ${env:DATABASE_URL}
+    DIRECT_URL: ${env:DIRECT_URL}
+    SUPABASE_URL: ${env:SUPABASE_URL}
+    SUPABASE_ANON_KEY: ${env:SUPABASE_ANON_KEY}
+    REDIS_URL: ${env:REDIS_URL}
+    PORT: 4000
+
+functions:
+  api:
+    handler: dist/lambda.handler
+    events:
+      - httpApi:
+          path: /api/{proxy+}
+          method: ANY
+      - httpApi:
+          path: /api
+          method: ANY
+
+plugins:
+  - serverless-esbuild
+  - serverless-offline
+
+custom:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    platform: node
+    target: node20
+    packager: npm
+    # 保留装饰器元数据
+    keepNames: true
+    define:
+      'process.env.REFLECT_METADATA': 'true'
+    external:
+      # NestJS 可选模块
+      - '@nestjs/websockets'
+      - '@nestjs/websockets/*'
+      - '@nestjs/microservices'
+      - '@nestjs/microservices/*'
+      - '@nestjs/platform-fastify'
+      - '@nestjs/platform-socket.io'
+      - '@nestjs/terminus'
+      - '@nestjs/schedule'
+      - '@nestjs/event-emitter'
+      - '@nestjs/cache-manager'
+      # Apollo/GraphQL 可选依赖
+      - '@apollo/gateway'
+      - '@apollo/subgraph'
+      - '@apollo/subgraph/*'
+      - '@apollo/federation'
+      - '@apollo/federation/*'
+      - '@as-integrations/fastify'
+      - '@mercuriusjs/gateway'
+      - mercurius
+      # 构建工具
+      - ts-morph
+      - '@swc/*'
+      - webpack
+      - '@angular-devkit/*'
+      # 其他可选依赖
+      - class-transformer/storage
+      - cache-manager
+      - cache-manager/*
+      - fsevents
+      - mqtt
+      - kafkajs
+      - amqplib
+      - amqp-connection-manager
+      - nats
+      - redis
+      # Bull 队列需要外部化以保留 Lua 脚本
+      - bull
+      - ioredis
+      # Prisma 需要外部化以保留 Query Engine
+      - '@prisma/client'
+      - '.prisma/client'
+
+package:
+  patterns:
+    - 'prisma/**'
+    # Prisma (由 copy-prisma.js 脚本复制到本地)
+    - 'node_modules/.prisma/**'
+    - 'node_modules/@prisma/client/**'
+    # Bull 队列
+    - 'node_modules/bull/**'
+    - 'node_modules/ioredis/**'
+    # 排除不需要的引擎
+    - '!**/*windows*'
+    - '!**/*darwin*'

@@ -19,12 +19,26 @@ import { AgentProxyModule } from "./agent-proxy/agent-proxy.module";
 @Module({
 	imports: [
 		BullModule.forRoot({
-			redis: {
-				host: process.env.REDIS_HOST ?? "127.0.0.1",
-				port: Number(process.env.REDIS_PORT ?? 6379),
-				password: process.env.REDIS_PASSWORD || undefined,
-				db: process.env.REDIS_DB ? Number(process.env.REDIS_DB) : undefined,
-			},
+			redis: process.env.REDIS_URL
+				? (() => {
+						const url = new URL(process.env.REDIS_URL);
+						return {
+							host: url.hostname,
+							port: Number(url.port),
+							username: url.username,
+							password: url.password,
+							tls:
+								url.protocol === "rediss:"
+									? { rejectUnauthorized: false }
+									: undefined,
+						};
+					})()
+				: {
+						host: process.env.REDIS_HOST ?? "127.0.0.1",
+						port: Number(process.env.REDIS_PORT ?? 6379),
+						password: process.env.REDIS_PASSWORD || undefined,
+						db: process.env.REDIS_DB ? Number(process.env.REDIS_DB) : undefined,
+					},
 		}),
 		GraphQLModule.forRoot<ApolloDriverConfig>({
 			driver: ApolloDriver,
