@@ -23,15 +23,15 @@ export function handleEngagementCreated(event: EngagementCreated): void {
 	engagement.endTime = GraphBigInt.zero();
 	engagement.status = "ACTIVE";
 
-	// Calculate escrow ID (matches the contract: keccak256(abi.encodePacked("engagement", engagementId)))
+	// Calculate escrow ID (matches solidity: keccak256(abi.encodePacked("engagement", engagementId)))
 	const prefix = Bytes.fromUTF8("engagement");
-	const idBytes = Bytes.fromUTF8(engagementId);
+	const idHex = event.params.engagementId.toHexString().slice(2);
+	const padded = `0x${"0".repeat(64 - idHex.length)}${idHex}`;
+	const idBytes = Bytes.fromHexString(padded) as Bytes;
 	const combined = new Uint8Array(prefix.length + idBytes.length);
 	combined.set(prefix, 0);
 	combined.set(idBytes, prefix.length);
-	const combinedBytes = Bytes.fromUint8Array(combined);
-	const hash = crypto.keccak256(combinedBytes);
-	// Convert ByteArray to Bytes using Bytes.fromUint8Array
+	const hash = crypto.keccak256(Bytes.fromUint8Array(combined));
 	engagement.escrowId = Bytes.fromUint8Array(hash);
 
 	engagement.save();

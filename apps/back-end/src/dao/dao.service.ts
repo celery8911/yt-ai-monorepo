@@ -290,10 +290,12 @@ export class DaoService {
 				for (const engagement of engagements) {
 					const rawAgentId = engagement.agentId?.trim();
 					if (!rawAgentId) continue;
-					const escrowId = ethers.solidityPackedKeccak256(
-						["string", "uint256"],
-						["engagement", BigInt(engagement.engagementId)],
-					);
+					const escrowId =
+						engagement.escrowId ??
+						ethers.solidityPackedKeccak256(
+							["string", "uint256"],
+							["engagement", BigInt(engagement.engagementId)],
+						);
 					if (
 						chainDispute.escrowId &&
 						escrowId.toLowerCase() === chainDispute.escrowId.toLowerCase()
@@ -319,8 +321,8 @@ export class DaoService {
 					...this.mapChainDispute(chainDispute),
 					reason: dbDispute?.reason ?? memoryDispute?.reason ?? undefined,
 					agentName:
-						agentByOwner?.name ??
 						agentByEngagementId?.name ??
+						agentByOwner?.name ??
 						engagementAgentId,
 				}
 			: dbDispute
@@ -400,10 +402,12 @@ export class DaoService {
 						for (const engagement of engagements) {
 							const rawAgentId = engagement.agentId?.trim();
 							if (!rawAgentId) continue;
-							const escrowId = ethers.solidityPackedKeccak256(
-								["string", "uint256"],
-								["engagement", BigInt(engagement.engagementId)],
-							);
+							const escrowId =
+								engagement.escrowId ??
+								ethers.solidityPackedKeccak256(
+									["string", "uint256"],
+									["engagement", BigInt(engagement.engagementId)],
+								);
 							engagementAgentIdByEscrowId.set(
 								escrowId.toLowerCase(),
 								rawAgentId,
@@ -515,7 +519,7 @@ export class DaoService {
 					...mapped,
 					reason: db?.reason ?? undefined,
 					role,
-					agentName: agentName ?? engagementAgentName ?? engagementAgentId,
+					agentName: engagementAgentName ?? agentName ?? engagementAgentId,
 					jobTitle: undefined,
 					buyer: escrow?.payer ?? undefined,
 					seller: escrow?.agent ?? undefined,

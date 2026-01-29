@@ -2,9 +2,10 @@ import { Bytes } from "@graphprotocol/graph-ts";
 import {
 	DisputeOpened,
 	DisputeResolved,
+	RewardDistributed,
 	VoteCast,
 } from "../../generated/DisputeDAO/DisputeDAO";
-import { Dispute, Vote } from "../../generated/schema";
+import { Dispute, RewardClaim, Vote } from "../../generated/schema";
 
 function getDisputeId(jobId: Bytes): string {
 	return jobId.toHexString();
@@ -60,4 +61,16 @@ export function handleDisputeResolved(event: DisputeResolved): void {
 	dispute.resolvedOutcome = event.params.employerWins ? "EMPLOYER" : "AGENT";
 	dispute.resolvedAt = event.block.timestamp;
 	dispute.save();
+}
+
+export function handleRewardDistributed(event: RewardDistributed): void {
+	const disputeId = getDisputeId(event.params.jobId);
+	const claimId = `${disputeId}-${event.params.winner.toHexString()}`;
+	const claim = new RewardClaim(claimId);
+	claim.disputeId = disputeId;
+	claim.claimant = event.params.winner;
+	claim.amount = event.params.amount;
+	claim.timestamp = event.block.timestamp;
+	claim.transactionHash = event.transaction.hash;
+	claim.save();
 }

@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Badge, Button, Card, CardContent, CardHeader } from "@yt/ui";
-import { useWallet } from "@yt/hooks";
+import { useReadContract, useWallet } from "@yt/hooks";
 import { fetchDisputeDetail } from "@/apis/dao";
 import { useDisputeDAO } from "@/hooks/contracts/useDisputeDAO";
 import { formatUnits } from "viem";
 import { ethers } from "ethers";
+import { CONTRACTS, DisputeDAO_ABI } from "@yt/libs";
 
 const resolveStatusVariant = (status?: string) => {
 	if (status === "OPEN" || status === "VOTING") return "yellow";
@@ -79,6 +80,11 @@ const DisputeDetail = () => {
 		isApproveConfirming,
 		isApproveSuccess,
 		approveError,
+		claimReward,
+		isClaimPending,
+		isClaimConfirming,
+		isClaimSuccess,
+		claimError,
 		voteCost,
 		allowance,
 		keeper,
@@ -99,6 +105,7 @@ const DisputeDetail = () => {
 
 	const dispute = data?.dispute;
 	const votes = data?.votes ?? [];
+	const disputeId = useMemo(() => resolveDisputeBytes32(dispute), [dispute]);
 	const normalizedAddress = (address ?? "").toLowerCase();
 	const isInitiator =
 		Boolean(dispute?.initiator) &&
@@ -152,6 +159,76 @@ const DisputeDetail = () => {
 		? new Date(votingDeadlineMs).toLocaleString("zh-CN")
 		: "--";
 	const remainingLabel = votingDeadlineMs ? formatCountdown(remainingMs) : "--";
+
+	const { data: disputeInfo } = useReadContract({
+		address: CONTRACTS.sepolia.DisputeDAO,
+		abi: DisputeDAO_ABI.abi,
+		functionName: "disputeInfo",
+		args: disputeId ? [disputeId] : undefined,
+		query: {
+			enabled: Boolean(disputeId),
+		},
+	});
+
+	const { data: voterStatus } = useReadContract({
+		address: CONTRACTS.sepolia.DisputeDAO,
+		abi: DisputeDAO_ABI.abi,
+		functionName: "voterStatus",
+		args: disputeId && address ? [disputeId, address] : undefined,
+		query: {
+			enabled: Boolean(disputeId && address),
+		},
+	});
+
+	const rewardPerWinner = useMemo(() => {
+		if (!disputeInfo) return null;
+		const result = disputeInfo as [
+			string,
+			bigint,
+			bigint,
+			bigint,
+			number,
+			boolean,
+			bigint,
+		];
+		return result[6] ?? null;
+	}, [disputeInfo]);
+
+	const [hasVotedOnchain, supportEmployerOnchain, hasClaimedOnchain] =
+		(voterStatus as [boolean, boolean, boolean]) ?? [false, false, false];
+
+	const employerWins = dispute?.resolvedOutcome === "EMPLOYER";
+	const isResolved = dispute?.status === "RESOLVED";
+	const isWinner =
+		Boolean(voterStatus) &&
+		(supportEmployerOnchain ? employerWins : !employerWins);
+	const hasReward = rewardPerWinner ? rewardPerWinner > 0n : false;
+	const canClaimReward =
+		Boolean(isConnected && disputeId) &&
+		isResolved &&
+		hasVotedOnchain &&
+		isWinner &&
+		!hasClaimedOnchain &&
+		hasReward;
+	const claimBlockedReason = useMemo(() => {
+		if (!isConnected) return "请先连接钱包";
+		if (!disputeId) return "缺少 escrowId";
+		if (!isResolved) return "争议尚未结束";
+		if (!hasVotedOnchain) return "你未参与投票";
+		if (!isWinner) return "非胜方投票者";
+		if (hasClaimedOnchain || isClaimSuccess) return "奖励已领取";
+		if (!hasReward) return "当前没有可分配奖励";
+		return "";
+	}, [
+		disputeId,
+		hasClaimedOnchain,
+		hasReward,
+		hasVotedOnchain,
+		isClaimSuccess,
+		isConnected,
+		isResolved,
+		isWinner,
+	]);
 
 	const voteHint = useMemo(() => {
 		if (!dispute) return "--";
@@ -223,6 +300,18 @@ const DisputeDetail = () => {
 		}
 	};
 
+	const handleClaimReward = async () => {
+		if (!disputeId) {
+			setVoteError("争议缺少链上 escrowId，无法领取奖励");
+			return;
+		}
+		try {
+			await claimReward(disputeId);
+		} catch (err) {
+			setVoteError(err instanceof Error ? err.message : "领取奖励失败");
+		}
+	};
+
 	const handleResolve = async () => {
 		if (!dispute || !isKeeper) return;
 		const jobIdBytes32 = resolveDisputeBytes32(dispute);
@@ -281,6 +370,7 @@ const DisputeDetail = () => {
 		isResolveConfirming ||
 		isSetVotingConfigPending ||
 		isSetVotingConfigConfirming;
+	const isClaimInProgress = isClaimPending || isClaimConfirming;
 	const isApproveInProgress = isApprovePending || isApproveConfirming;
 
 	const voteCostFormatted = voteCost ? formatUnits(BigInt(voteCost), 18) : "--";
@@ -432,13 +522,17 @@ const DisputeDetail = () => {
 								</CardContent>
 							</Card>
 
-							{(voteError || contractVoteError || approveError) && (
+							{(voteError ||
+								contractVoteError ||
+								approveError ||
+								claimError) && (
 								<Card className="border-rose-500/20 bg-rose-500/5">
 									<CardContent className="p-4">
 										<p className="text-xs text-rose-400">
 											{voteError ||
 												contractVoteError?.message ||
-												approveError?.message}
+												approveError?.message ||
+												claimError?.message}
 										</p>
 									</CardContent>
 								</Card>
@@ -521,6 +615,23 @@ const DisputeDetail = () => {
 												? "已结算"
 												: "结算争议"}
 									</Button>
+								) : null}
+								<Button
+									variant="outline"
+									className="w-full py-4"
+									onClick={handleClaimReward}
+									disabled={!canClaimReward || isClaimInProgress}
+								>
+									{isClaimInProgress
+										? "领取中..."
+										: hasClaimedOnchain || isClaimSuccess
+											? "已领取"
+											: "领取奖励"}
+								</Button>
+								{!canClaimReward && claimBlockedReason ? (
+									<p className="text-xs text-slate-500 text-center">
+										不可领取原因: {claimBlockedReason}
+									</p>
 								) : null}
 							</div>
 

@@ -214,6 +214,7 @@ Contract Agent - 详见 [`.ai/agents/contract-agent.md`](../../.ai/agents/contra
   - `VoteCast(bytes32 indexed escrowId, address indexed voter, bool support, uint256 cost)`
   - `DisputeResolved(bytes32 indexed escrowId, bool employerWins)`
   - `RewardDistributed(bytes32 indexed escrowId, address indexed winner, uint256 amount)`
+  - 奖励来源：投票者消耗的 `voteCost` 汇总，胜方平分
 
 ## Interaction Guide (Draft)
 
@@ -250,7 +251,7 @@ Contract Agent - 详见 [`.ai/agents/contract-agent.md`](../../.ai/agents/contra
 - 投票者调用 `DisputeDAO.vote(escrowId, supportEmployer)`，每票消耗 100 CBT
 - 投票结束后 Keeper 调用 `DisputeDAO.resolveDispute(escrowId)`
 - 或调用 `DisputeDAO.resolveReady()` 自动处理队列头部争议
-- 胜方投票者调用 `DisputeDAO.claimReward(escrowId)` 平分奖励
+- 胜方投票者调用 `DisputeDAO.claimReward(escrowId)` 平分奖励（奖励池来自投票消耗的 CBT）
 
 ## Hardhat Deployment Guide
 
@@ -298,7 +299,7 @@ pnpm --filter @yt/contracts deploy:sepolia
 - CBT: `0x502BccF9d143ecB89983EdFbf107ebDeD3B9a9fc`
 - Treasury: `0x80E3E5bEeCee6A1EE694e7CE8D34660a9C65EA1d`
 - Escrow: `0xd2a24326950A80272aCe018E2dcE25E22d5B5A7e`
-- DisputeDAO: `0x410756130fd06171298c72839FdCaB290Fe7eD16`
+- DisputeDAO: `0xe0132Ef13B63223345039E910b5080B1CaaA54DE`
 - AgentHiring: `0xf54EEa283A05A5dD10944404D088c65bB60552dA`
 
 ## Integration Checklist (FE/BE)

@@ -7,15 +7,18 @@ import { Button, Card, CardContent, CardHeader, Textarea } from "@yt/ui";
 import { useQuery } from "@tanstack/react-query";
 import {
 	fetchEngagementsByUser,
-	fetchEscrowByJob,
+	fetchEscrowsByPayer,
 	type EscrowRecord,
 } from "@/apis/chain-status";
+import { fetchAgentDetail } from "@/apis/agent";
 import { ethers } from "ethers";
 import { initiateDispute } from "@/apis/dao";
 import { useDisputeDAO } from "@/hooks/contracts/useDisputeDAO";
 import { formatUnits } from "viem";
 
 const MAX_REASON_LENGTH = 500;
+
+const normalizeEscrowId = (value: string) => value.toLowerCase();
 
 const resolveSubmitError = (submitError: unknown): string => {
 	if (submitError && typeof submitError === "object") {
@@ -53,32 +56,71 @@ const CreateProposal = () => {
 	} = useQuery({
 		queryKey: ["escrows-by-user", address],
 		queryFn: async () => {
+			const escrowsResponse = await fetchEscrowsByPayer(address ?? "", true);
+			const escrows = escrowsResponse.escrows ?? [];
+			if (!escrows.length) {
+				return {
+					escrows: [] as EscrowRecord[],
+					agentNameByEscrowId: {} as Record<string, string>,
+				};
+			}
+
 			const { engagements } = await fetchEngagementsByUser(address ?? "", {
 				first: 50,
 				skip: 0,
 			});
-			const escrowIds = Array.from(
-				new Set(
-					engagements
-						.map((engagement) =>
-							ethers.solidityPackedKeccak256(
-								["string", "uint256"],
-								["engagement", BigInt(engagement.engagementId)],
-							),
-						)
-						.filter((escrowId): escrowId is string => Boolean(escrowId)),
-				),
-			);
-			if (escrowIds.length === 0) {
-				return { escrows: [] as EscrowRecord[] };
+			if (!engagements.length) {
+				return {
+					escrows,
+					agentNameByEscrowId: {} as Record<string, string>,
+				};
 			}
-			const escrows = await Promise.all(
-				escrowIds.map(async (escrowId) => {
-					const response = await fetchEscrowByJob(escrowId);
-					return response.escrow ?? null;
+
+			const escrowIdSet = new Set(
+				escrows.map((escrow) => normalizeEscrowId(escrow.id)),
+			);
+			const agentIdByEscrowId = new Map<string, string>();
+			for (const engagement of engagements) {
+				const escrowId =
+					engagement.escrowId ??
+					ethers.solidityPackedKeccak256(
+						["string", "uint256"],
+						["engagement", BigInt(engagement.engagementId)],
+					);
+				const normalizedEscrowId = normalizeEscrowId(escrowId);
+				if (!escrowIdSet.has(normalizedEscrowId)) {
+					continue;
+				}
+				if (engagement.agentId) {
+					agentIdByEscrowId.set(normalizedEscrowId, engagement.agentId);
+				}
+			}
+
+			const agentIds = Array.from(new Set(agentIdByEscrowId.values()));
+			const agentNameById = new Map<string, string>();
+			const agentResults = await Promise.allSettled(
+				agentIds.map(async (agentId) => {
+					const agent = await fetchAgentDetail(agentId);
+					return { agentId, agent };
 				}),
 			);
-			return { escrows: escrows.filter(Boolean) as EscrowRecord[] };
+			for (const result of agentResults) {
+				if (result.status === "fulfilled" && result.value.agent?.name) {
+					agentNameById.set(result.value.agentId, result.value.agent.name);
+				}
+			}
+			const agentNameByEscrowId: Record<string, string> = {};
+			agentIdByEscrowId.forEach((agentId, escrowId) => {
+				const agentName = agentNameById.get(agentId);
+				if (agentName) {
+					agentNameByEscrowId[escrowId] = agentName;
+				}
+			});
+
+			return {
+				escrows,
+				agentNameByEscrowId,
+			};
 		},
 		enabled: Boolean(address),
 	});
@@ -90,6 +132,7 @@ const CreateProposal = () => {
 			) ?? [],
 		[escrowsData],
 	);
+	const agentNameByEscrowId = escrowsData?.agentNameByEscrowId ?? {};
 
 	const reasonCount = useMemo(() => reason.length, [reason]);
 
@@ -232,6 +275,9 @@ const CreateProposal = () => {
 										const createdDate = new Date(
 											Number(escrow.createdAt) * 1000,
 										).toLocaleDateString("zh-CN");
+										const agentName =
+											agentNameByEscrowId[normalizeEscrowId(escrow.id)] ??
+											"未知 Agent";
 
 										return (
 											<div
@@ -247,7 +293,7 @@ const CreateProposal = () => {
 													<div className="flex-grow">
 														<div className="flex items-center gap-2 mb-2">
 															<span className="text-sm font-bold text-slate-200">
-																托管记录
+																{agentName}
 															</span>
 															<span className="text-xs font-mono text-slate-500">
 																#{escrow.id.slice(-8)}

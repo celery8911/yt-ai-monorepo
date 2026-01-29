@@ -42,6 +42,8 @@ export type CategoriesResponse = {
 	categories: Array<{ id: string; label: string }>;
 };
 
+const agentDetailCache = new Map<string, AgentListItem | null>();
+
 const formatPrice = (agent: BackendAgent): string | undefined => {
 	const price = agent.pricePerTask ?? agent.resultBasedMinPrice ?? agent.minBid;
 	if (price === undefined) return undefined;
@@ -173,11 +175,32 @@ export const fetchAgentDetail = async (
 	id: string,
 ): Promise<AgentListItem | null> => {
 	try {
-		const response = await fetchAgentList();
-		const agent = response.items.find((item) => item.id === id);
-		return agent || null;
+		if (agentDetailCache.has(id)) {
+			return agentDetailCache.get(id) ?? null;
+		}
+		const agent = await request<BackendAgent>({
+			url: `/agents/${id}`,
+			method: "GET",
+		});
+		const detail = {
+			id: agent.id,
+			name: agent.name,
+			category: agent.category ?? "其他",
+			rating: agent.rating,
+			price: formatPrice(agent),
+			owner: agent.owner,
+			desc: agent.description,
+			tags: agent.tags ?? [],
+			skillLevel: agent.skillLevel,
+			successRate: agent.successRate,
+			visibility: agent.visibility,
+			isActive: agent.isActive,
+		};
+		agentDetailCache.set(id, detail);
+		return detail;
 	} catch (error) {
 		console.error("获取Agent详情失败:", error);
+		agentDetailCache.set(id, null);
 		return null;
 	}
 };
