@@ -3,44 +3,53 @@ import { IsNumber, IsOptional, IsString, Min } from "class-validator";
 
 @InputType()
 export class DepositDto {
-  @Field()
-  @IsString()
-  address!: string;
+	@Field()
+	@IsString()
+	address!: string;
 
-  @Field()
-  @IsNumber()
-  @Min(0)
-  amount!: number;
+	@Field()
+	@IsNumber()
+	@Min(0)
+	amount!: number;
 }
 
 @InputType()
 export class CreateEscrowDto {
-  @Field()
-  @IsString()
-  jobId!: string;
+	@Field({ nullable: true })
+	@IsOptional()
+	@IsString()
+	jobId?: string;
 
-  @Field()
-  @IsString()
-  payer!: string;
+	@Field()
+	@IsString()
+	engagementId!: string;
 
-  @Field()
-  @IsNumber()
-  @Min(0)
-  amount!: number;
+	@Field()
+	@IsString()
+	escrowId!: string;
 
-  @Field()
-  @IsString()
-  currency!: string;
+	@Field()
+	@IsString()
+	payer!: string;
 
-  @Field({ nullable: true })
-  @IsOptional()
-  @IsString()
-  releaseTo?: string;
+	@Field()
+	@IsNumber()
+	@Min(0)
+	amount!: number;
+
+	@Field()
+	@IsString()
+	currency!: string;
+
+	@Field({ nullable: true })
+	@IsOptional()
+	@IsString()
+	releaseTo?: string;
 }
 
 @InputType()
 export class ReleaseEscrowDto {
-  @Field()
-  @IsString()
-  escrowId!: string;
+	@Field()
+	@IsString()
+	escrowId!: string;
 }

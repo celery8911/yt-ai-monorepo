@@ -3,8 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Badge, Button, Card, CardContent, CardHeader } from "@yt/ui";
-import { useReadContract, useWallet } from "@yt/hooks";
+import { Badge, Button, Card, CardContent, CardHeader, useToast } from "@yt/ui";
+import {
+	useReadContract,
+	useWallet,
+	useWaitForTransactionReceipt,
+} from "@yt/hooks";
 import { fetchDisputeDetail } from "@/apis/dao";
 import { useDisputeDAO } from "@/hooks/contracts/useDisputeDAO";
 import { formatUnits } from "viem";
@@ -58,6 +62,7 @@ const DisputeDetail = () => {
 	const { id } = useParams<{ id: string }>();
 	const router = useRouter();
 	const { address, isConnected } = useWallet();
+	const { toast } = useToast();
 	const [voteError, setVoteError] = useState("");
 	const [voteValue, setVoteValue] = useState<"approve" | "reject" | null>(null);
 	const [needApprove, setNeedApprove] = useState(false);
@@ -71,6 +76,7 @@ const DisputeDetail = () => {
 
 	const {
 		vote,
+		voteHash,
 		isVotePending,
 		isVoteConfirming,
 		isVoteSuccess,
@@ -107,6 +113,20 @@ const DisputeDetail = () => {
 	const votes = data?.votes ?? [];
 	const disputeId = useMemo(() => resolveDisputeBytes32(dispute), [dispute]);
 	const normalizedAddress = (address ?? "").toLowerCase();
+
+	const { data: voterStatus } = useReadContract({
+		address: CONTRACTS.sepolia.DisputeDAO,
+		abi: DisputeDAO_ABI.abi,
+		functionName: "voterStatus",
+		args: disputeId && address ? [disputeId, address] : undefined,
+		query: {
+			enabled: Boolean(disputeId && address),
+		},
+	});
+
+	const [hasVotedOnchain, supportEmployerOnchain, hasClaimedOnchain] =
+		(voterStatus as [boolean, boolean, boolean]) ?? [false, false, false];
+
 	const isInitiator =
 		Boolean(dispute?.initiator) &&
 		normalizedAddress === dispute?.initiator?.toLowerCase();
@@ -116,10 +136,12 @@ const DisputeDetail = () => {
 	const isSeller =
 		Boolean(dispute?.seller) &&
 		normalizedAddress === dispute?.seller?.toLowerCase();
-	const hasVoted = votes.some(
-		(vote) =>
-			normalizedAddress && vote.voter.toLowerCase() === normalizedAddress,
-	);
+	const hasVoted =
+		hasVotedOnchain ||
+		votes.some(
+			(vote) =>
+				normalizedAddress && vote.voter.toLowerCase() === normalizedAddress,
+		);
 	const totalVotes = (dispute?.votesFor ?? 0) + (dispute?.votesAgainst ?? 0);
 	const percentFor =
 		totalVotes > 0 && dispute
@@ -170,16 +192,6 @@ const DisputeDetail = () => {
 		},
 	});
 
-	const { data: voterStatus } = useReadContract({
-		address: CONTRACTS.sepolia.DisputeDAO,
-		abi: DisputeDAO_ABI.abi,
-		functionName: "voterStatus",
-		args: disputeId && address ? [disputeId, address] : undefined,
-		query: {
-			enabled: Boolean(disputeId && address),
-		},
-	});
-
 	const rewardPerWinner = useMemo(() => {
 		if (!disputeInfo) return null;
 		const result = disputeInfo as [
@@ -193,9 +205,6 @@ const DisputeDetail = () => {
 		];
 		return result[6] ?? null;
 	}, [disputeInfo]);
-
-	const [hasVotedOnchain, supportEmployerOnchain, hasClaimedOnchain] =
-		(voterStatus as [boolean, boolean, boolean]) ?? [false, false, false];
 
 	const employerWins = dispute?.resolvedOutcome === "EMPLOYER";
 	const isResolved = dispute?.status === "RESOLVED";
@@ -267,17 +276,143 @@ const DisputeDetail = () => {
 		};
 
 		if (isApproveSuccess && voteValue && dispute) {
+			toast({
+				message: "✅ CBT 授权成功！正在提交投票...",
+				variant: "success",
+				duration: 3000,
+			});
 			handleApproveSuccess();
 		}
-	}, [isApproveSuccess, voteValue, dispute, address, vote]);
+	}, [isApproveSuccess, voteValue, dispute, address, vote, toast]);
 
-	// 当投票成功后,刷新链上数据
+	// 当投票成功后,刷新链上数据并显示成功提示
 	useEffect(() => {
 		if (isVoteSuccess && voteValue && address) {
+			toast({
+				message: `✅ 投票成功！您已投票支持${voteValue === "approve" ? "返还" : "释放"}`,
+				variant: "success",
+				duration: 5000,
+			});
 			refetch();
 			setVoteValue(null);
 		}
-	}, [isVoteSuccess, voteValue, address, refetch]);
+	}, [isVoteSuccess, voteValue, address, refetch, toast]);
+
+	// 当投票失败时显示错误提示（增强版：解析具体错误原因）
+	useEffect(() => {
+		if (contractVoteError) {
+			const errorMessage =
+				contractVoteError.message || String(contractVoteError);
+			let userFriendlyMessage = "投票失败";
+
+			// 解析常见的合约错误
+			if (
+				errorMessage.includes("ERC20: transfer amount exceeds balance") ||
+				errorMessage.includes("insufficient balance") ||
+				errorMessage.includes("transfer amount exceeds balance")
+			) {
+				userFriendlyMessage = "CBT 余额不足，无法支付投票费用（需要 100 CBT）";
+			} else if (
+				errorMessage.includes("ERC20: insufficient allowance") ||
+				errorMessage.includes("insufficient allowance")
+			) {
+				userFriendlyMessage = "CBT 授权额度不足";
+			} else if (errorMessage.includes("Already voted")) {
+				userFriendlyMessage = "您已经投过票了";
+			} else if (
+				errorMessage.includes("Voting period ended") ||
+				errorMessage.includes("Voting has ended")
+			) {
+				userFriendlyMessage = "投票期已结束";
+			} else if (
+				errorMessage.includes("User rejected") ||
+				errorMessage.includes("user rejected")
+			) {
+				userFriendlyMessage = "您已取消交易";
+			} else if (errorMessage.includes("gas")) {
+				userFriendlyMessage = "Gas 费用不足或估算失败";
+			} else {
+				// 显示原始错误的简化版本
+				const shortError = errorMessage.split("\n")[0];
+				userFriendlyMessage =
+					shortError.length > 80
+						? shortError.substring(0, 80) + "..."
+						: shortError;
+			}
+
+			toast({
+				message: `❌ ${userFriendlyMessage}`,
+				variant: "error",
+				duration: 6000,
+			});
+		}
+	}, [contractVoteError, toast]);
+
+	// 监听投票交易收据，检查是否真的成功
+	const { data: voteReceipt, isError: isVoteReceiptError } =
+		useWaitForTransactionReceipt({
+			hash: voteHash,
+		});
+
+	useEffect(() => {
+		// 优先使用 contractVoteError（如果有的话）
+		if (contractVoteError) {
+			return; // contractVoteError 的 useEffect 会处理
+		}
+
+		// 检查交易是否失败
+		if (
+			isVoteReceiptError ||
+			(voteReceipt && voteReceipt.status === "reverted")
+		) {
+			// 由于无法直接从 receipt 获取 revert 原因，显示通用但有用的错误信息
+			const errorMessage =
+				"投票失败：可能是 CBT 余额不足（需要 100 CBT）、已投过票或投票期已结束";
+
+			toast({
+				message: `❌ ${errorMessage}`,
+				variant: "error",
+				duration: 6000,
+			});
+		}
+	}, [isVoteReceiptError, voteReceipt, contractVoteError, toast]);
+
+	// 当授权失败时显示错误提示
+	useEffect(() => {
+		if (approveError) {
+			toast({
+				message: `❌ CBT 授权失败：${approveError.message || "未知错误"}`,
+				variant: "error",
+				duration: 6000,
+			});
+		}
+	}, [approveError, toast]);
+
+	// 解析并优化错误信息
+	const parseErrorMessage = (err: unknown): string => {
+		if (!err) return "未知错误";
+
+		const message = err instanceof Error ? err.message : String(err);
+
+		// 检查常见错误模式
+		if (message.includes("insufficient") || message.includes("balance")) {
+			return "CBT 余额不足，请先获取足够的 CBT token";
+		}
+		if (message.includes("allowance")) {
+			return "CBT 授权额度不足";
+		}
+		if (
+			message.includes("User rejected") ||
+			message.includes("user rejected")
+		) {
+			return "您已取消交易";
+		}
+		if (message.includes("gas")) {
+			return "Gas 费用不足或估算失败";
+		}
+
+		return message;
+	};
 
 	const handleVoteOnChain = async (value: "approve" | "reject") => {
 		if (!dispute || !address) return;
@@ -285,7 +420,13 @@ const DisputeDetail = () => {
 		setVoteError("");
 		const jobIdBytes32 = resolveDisputeBytes32(dispute);
 		if (!jobIdBytes32) {
-			setVoteError("争议缺少链上 escrowId，无法投票");
+			const errorMsg = "争议缺少链上 escrowId，无法投票";
+			setVoteError(errorMsg);
+			toast({
+				message: `❌ ${errorMsg}`,
+				variant: "error",
+				duration: 5000,
+			});
 			setVoteValue(null);
 			return;
 		}
@@ -295,7 +436,13 @@ const DisputeDetail = () => {
 			const supportEmployer = value === "approve";
 			await vote(jobIdBytes32, supportEmployer);
 		} catch (err) {
-			setVoteError(err instanceof Error ? err.message : "投票失败");
+			const errorMsg = parseErrorMessage(err);
+			setVoteError(errorMsg);
+			toast({
+				message: `❌ 投票失败：${errorMsg}`,
+				variant: "error",
+				duration: 6000,
+			});
 			setVoteValue(null);
 		}
 	};
@@ -341,7 +488,23 @@ const DisputeDetail = () => {
 	};
 
 	const handleVote = async (value: "approve" | "reject") => {
-		if (!id || !address || !dispute) return;
+		if (!address) {
+			toast({
+				message: "❌ 请先连接钱包",
+				variant: "error",
+				duration: 4000,
+			});
+			return;
+		}
+
+		if (!id || !dispute) {
+			toast({
+				message: "❌ 争议数据加载失败，请刷新页面",
+				variant: "error",
+				duration: 4000,
+			});
+			return;
+		}
 
 		setVoteError("");
 		setVoteValue(value);
@@ -352,7 +515,13 @@ const DisputeDetail = () => {
 				await approveCBT(BigInt(voteCost));
 				// approve 成功后会在 useEffect 中自动调用投票
 			} catch (err) {
-				setVoteError(err instanceof Error ? err.message : "授权失败");
+				const errorMsg = err instanceof Error ? err.message : "授权失败";
+				setVoteError(errorMsg);
+				toast({
+					message: `❌ CBT 授权失败：${errorMsg}`,
+					variant: "error",
+					duration: 6000,
+				});
 				setVoteValue(null);
 			}
 		} else {
@@ -602,6 +771,7 @@ const DisputeDetail = () => {
 											? "授权并支持释放"
 											: "支持释放"}
 								</Button>
+
 								{isKeeper ? (
 									<Button
 										variant="outline"

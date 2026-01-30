@@ -2,16 +2,25 @@
 pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {
+    SafeERC20
+} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 interface ITreasury {
     function recordServiceFee(bytes32 jobId, uint256 amount) external;
 }
 
 interface IEscrow {
-    function createEscrow(bytes32 jobId, address payer, address agent, uint256 price) external;
+    function createEscrow(
+        bytes32 jobId,
+        address payer,
+        address agent,
+        uint256 price
+    ) external;
     function statusOf(bytes32 jobId) external view returns (uint8);
 }
 
@@ -100,7 +109,11 @@ contract AgentHiring is Ownable, ReentrancyGuard {
         uint256 serviceFeeBps_,
         uint256 releaseDelay_
     ) Ownable(msg.sender) {
-        if (cbt_ == address(0) || treasury_ == address(0) || escrow_ == address(0)) {
+        if (
+            cbt_ == address(0) ||
+            treasury_ == address(0) ||
+            escrow_ == address(0)
+        ) {
             revert ZeroAddress();
         }
         cbt = IERC20(cbt_);
@@ -130,16 +143,19 @@ contract AgentHiring is Ownable, ReentrancyGuard {
 
         uint256 engagementId = nextEngagementId++;
         uint256 fee = (price * serviceFeeBps) / 10_000;
+        uint256 totalToCollect = price + fee;
 
         // Generate unique escrow ID from engagement ID
-        bytes32 escrowId = keccak256(abi.encodePacked("engagement", engagementId));
+        bytes32 escrowId = keccak256(
+            abi.encodePacked("engagement", engagementId)
+        );
 
-        // Transfer price from user to this contract
-        cbt.safeTransferFrom(msg.sender, address(this), price);
+        // Transfer total amount (price + fee) from user to this contract
+        cbt.safeTransferFrom(msg.sender, address(this), totalToCollect);
 
         // Transfer service fee directly to Treasury
         if (fee > 0) {
-            cbt.safeTransferFrom(msg.sender, address(treasury), fee);
+            cbt.safeTransfer(address(treasury), fee);
             treasury.recordServiceFee(escrowId, fee);
         }
 
@@ -147,6 +163,7 @@ contract AgentHiring is Ownable, ReentrancyGuard {
         cbt.approve(address(escrow), price);
 
         // Create escrow record (this will transfer price from this contract to Escrow)
+        // Note: Escrow.createEscrow now only takes the price, as fee is already handled
         escrow.createEscrow(escrowId, msg.sender, agentOwner, price);
 
         // Record engagement metadata
@@ -155,7 +172,7 @@ contract AgentHiring is Ownable, ReentrancyGuard {
             user: msg.sender,
             agentId: agentId,
             agentOwner: agentOwner,
-            jobId: jobId,
+            jobId: jobId, // Can be empty string for DIRECT purchaseType
             purchaseType: purchaseType,
             totalPaid: price,
             startTime: block.timestamp,
@@ -183,7 +200,10 @@ contract AgentHiring is Ownable, ReentrancyGuard {
     // Note: Payment release is now handled by Escrow contract
     // Engagement status should be updated by monitoring Escrow events off-chain
 
-    function updateEngagementStatus(uint256 engagementId, EngagementStatus newStatus) external {
+    function updateEngagementStatus(
+        uint256 engagementId,
+        EngagementStatus newStatus
+    ) external {
         if (msg.sender != keeper && msg.sender != owner()) {
             revert Unauthorized();
         }
@@ -193,20 +213,29 @@ contract AgentHiring is Ownable, ReentrancyGuard {
         }
 
         engagement.status = newStatus;
-        if (newStatus == EngagementStatus.COMPLETED || newStatus == EngagementStatus.CANCELLED) {
+        if (
+            newStatus == EngagementStatus.COMPLETED ||
+            newStatus == EngagementStatus.CANCELLED
+        ) {
             engagement.endTime = block.timestamp;
         }
     }
 
-    function getEngagementsByUser(address user) external view returns (uint256[] memory) {
+    function getEngagementsByUser(
+        address user
+    ) external view returns (uint256[] memory) {
         return engagementsByUser[user];
     }
 
-    function getEngagementsByAgentId(string memory agentId) external view returns (uint256[] memory) {
+    function getEngagementsByAgentId(
+        string memory agentId
+    ) external view returns (uint256[] memory) {
         return engagementsByAgentId[agentId];
     }
 
-    function getEngagementsByOwner(address owner) external view returns (uint256[] memory) {
+    function getEngagementsByOwner(
+        address owner
+    ) external view returns (uint256[] memory) {
         return engagementsByOwner[owner];
     }
 

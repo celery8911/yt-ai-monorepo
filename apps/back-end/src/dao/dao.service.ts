@@ -32,7 +32,7 @@ export class DaoService {
 	private mapDispute(dispute: PrismaDispute): Dispute {
 		return {
 			id: dispute.id,
-			jobId: dispute.jobId,
+			jobId: dispute.jobId ?? null,
 			escrowId: dispute.escrowId,
 			initiator: dispute.initiator,
 			reason: dispute.reason ?? undefined,
@@ -40,9 +40,8 @@ export class DaoService {
 			votesFor: dispute.votesFor,
 			votesAgainst: dispute.votesAgainst,
 			totalWeight: toNumber(dispute.totalWeight) ?? 0,
-			resolvedOutcome: dispute.resolvedOutcome
-				? (dispute.resolvedOutcome as Dispute["resolvedOutcome"])
-				: undefined,
+			resolvedOutcome:
+				(dispute.resolvedOutcome as Dispute["resolvedOutcome"]) ?? undefined,
 			createdAt: dispute.createdAt.toISOString(),
 			resolvedAt: dispute.resolvedAt
 				? dispute.resolvedAt.toISOString()

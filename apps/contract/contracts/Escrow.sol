@@ -2,7 +2,9 @@
 pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {
+    SafeERC20
+} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 interface ITreasury {
@@ -48,7 +50,13 @@ contract Escrow is Ownable {
     bytes32[] private releaseQueue;
     uint256 private releaseHead;
 
-    event PaymentCreated(bytes32 indexed jobId, address payer, address agent, uint256 price, uint256 serviceFee);
+    event PaymentCreated(
+        bytes32 indexed jobId,
+        address payer,
+        address agent,
+        uint256 price,
+        uint256 serviceFee
+    );
     event AutoReleaseScheduled(bytes32 indexed jobId, uint256 releaseAt);
     event AutoReleased(bytes32 indexed jobId, address agent, uint256 amount);
     event EscrowFrozen(bytes32 indexed jobId);
@@ -103,7 +111,12 @@ contract Escrow is Ownable {
         emit ReleaseDelayUpdated(oldDelay, newDelay);
     }
 
-    function createEscrow(bytes32 jobId, address payer, address agent, uint256 price) external {
+    function createEscrow(
+        bytes32 jobId,
+        address payer,
+        address agent,
+        uint256 price
+    ) external {
         if (payer == address(0) || agent == address(0)) {
             revert ZeroAddress();
         }
@@ -114,26 +127,22 @@ contract Escrow is Ownable {
             revert EscrowExists();
         }
 
-        uint256 fee = (price * serviceFeeBps) / 10_000;
         uint256 releaseAt = block.timestamp + releaseDelay;
 
+        // Transfer price from caller (AgentHiring contract) to this contract
         cbt.safeTransferFrom(msg.sender, address(this), price);
-        if (fee > 0) {
-            cbt.safeTransferFrom(msg.sender, address(treasury), fee);
-            treasury.recordServiceFee(jobId, fee);
-        }
 
         escrows[jobId] = EscrowInfo({
             payer: payer,
             agent: agent,
             price: uint128(price),
-            serviceFee: uint128(fee),
+            serviceFee: 0, // Fee handled by AgentHiring
             releaseAt: uint40(releaseAt),
             status: Status.LOCKED
         });
         releaseQueue.push(jobId);
 
-        emit PaymentCreated(jobId, payer, agent, price, fee);
+        emit PaymentCreated(jobId, payer, agent, price, 0);
         emit AutoReleaseScheduled(jobId, releaseAt);
     }
 
@@ -171,7 +180,10 @@ contract Escrow is Ownable {
         for (uint256 i = releaseHead; i < releaseQueue.length; i++) {
             bytes32 jobId = releaseQueue[i];
             EscrowInfo storage escrow = escrows[jobId];
-            if (escrow.status == Status.RELEASED || escrow.status == Status.REFUNDED) {
+            if (
+                escrow.status == Status.RELEASED ||
+                escrow.status == Status.REFUNDED
+            ) {
                 if (i == releaseHead) {
                     releaseHead += 1;
                 }

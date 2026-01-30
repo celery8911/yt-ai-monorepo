@@ -9,9 +9,9 @@ dataSources:
     name: CBT
     network: sepolia
     source:
-      address: "0x502BccF9d143ecB89983EdFbf107ebDeD3B9a9fc"
+      address: "0xac2eb74a857b3b6eb37809D2390AF425347046f4"
       abi: CBT
-      startBlock: 10119395
+      startBlock: 10154486
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -34,9 +34,9 @@ dataSources:
     name: Escrow
     network: sepolia
     source:
-      address: "0xfdCC19d2CA9a6b6A7151082Fac9d7337D7010351"
+      address: "0x910628E50bA74C6c6603d5B5032fFA93A8989f3b"
       abi: Escrow
-      startBlock: 10119396
+      startBlock: 10154486
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -63,9 +63,9 @@ dataSources:
     name: DisputeDAO
     network: sepolia
     source:
-      address: "0xe0132Ef13B63223345039E910b5080B1CaaA54DE"
+      address: "0x430BDF1B04A5E443adFE32B00D34b279c4E697eA"
       abi: DisputeDAO
-      startBlock: 10148045
+      startBlock: 10154486
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
@@ -92,9 +92,9 @@ dataSources:
     name: AgentHiring
     network: sepolia
     source:
-      address: "0xc803C3cd728eb419a00a79660DA9377cb1c54BbA"
+      address: "0xeC9b3a67fE5cfdE991a66AeeA6Cd0Ea969B4eb03"
       abi: AgentHiring
-      startBlock: 10117975
+      startBlock: 10154486
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
