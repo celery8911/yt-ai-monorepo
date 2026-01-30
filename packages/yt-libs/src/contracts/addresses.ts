@@ -6,11 +6,11 @@
 
 export const CONTRACTS = {
 	sepolia: {
-		CBT: "0x502BccF9d143ecB89983EdFbf107ebDeD3B9a9fc" as const,
-		Treasury: "0x80E3E5bEeCee6A1EE694e7CE8D34660a9C65EA1d" as const,
-		Escrow: "0xfdCC19d2CA9a6b6A7151082Fac9d7337D7010351" as const,
-		DisputeDAO: "0xe0132Ef13B63223345039E910b5080B1CaaA54DE" as const,
-		AgentHiring: "0xc803C3cd728eb419a00a79660DA9377cb1c54BbA" as const,
+		CBT: "0xac2eb74a857b3b6eb37809D2390AF425347046f4" as const,
+		Treasury: "0x5738aecFA9CEe06034c0d22E89aaf576EB570B74" as const,
+		Escrow: "0x910628E50bA74C6c6603d5B5032fFA93A8989f3b" as const,
+		DisputeDAO: "0x430BDF1B04A5E443adFE32B00D34b279c4E697eA" as const,
+		AgentHiring: "0xeC9b3a67fE5cfdE991a66AeeA6Cd0Ea969B4eb03" as const,
 	},
 } as const;
 

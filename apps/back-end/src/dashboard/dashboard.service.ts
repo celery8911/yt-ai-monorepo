@@ -459,7 +459,13 @@ export class DashboardService {
 		const jobMap = new Map(
 			(
 				await this.prisma.job.findMany({
-					where: { id: { in: disputes.map((dispute) => dispute.jobId) } },
+					where: {
+						id: {
+							in: disputes
+								.map((dispute) => dispute.jobId)
+								.filter((id): id is string => !!id),
+						},
+					},
 					select: { id: true, title: true },
 				})
 			).map((job) => [job.id, job.title]),
@@ -473,7 +479,7 @@ export class DashboardService {
 			return {
 				id: dispute.id,
 				jobId: dispute.jobId,
-				jobTitle: jobMap.get(dispute.jobId),
+				jobTitle: dispute.jobId ? jobMap.get(dispute.jobId) : "Unknown",
 				status: dispute.status,
 				initiator: dispute.initiator,
 				isMyInitiated: dispute.initiator === address,

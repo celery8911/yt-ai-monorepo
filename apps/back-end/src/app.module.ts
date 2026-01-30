@@ -15,36 +15,38 @@ import { WalletModule } from "./wallet/wallet.module";
 import { KeeperModule } from "./keeper/keeper.module";
 import { ChainStatusModule } from "./chain-status/chain-status.module";
 import { AgentProxyModule } from "./agent-proxy/agent-proxy.module";
+import { EngagementsModule } from "./engagements/engagements.module";
 
 @Module({
-	imports: [
-		BullModule.forRoot({
-			redis: {
-				host: process.env.REDIS_HOST ?? "127.0.0.1",
-				port: Number(process.env.REDIS_PORT ?? 6379),
-				password: process.env.REDIS_PASSWORD || undefined,
-				db: process.env.REDIS_DB ? Number(process.env.REDIS_DB) : undefined,
-			},
-		}),
-		GraphQLModule.forRoot<ApolloDriverConfig>({
-			driver: ApolloDriver,
-			autoSchemaFile: true,
-			sortSchema: true,
-			playground: true,
-		}),
-		PrismaModule,
-		SupabaseModule,
-		JobsModule,
-		AgentsModule,
-		MatchingModule,
-		BidsModule,
-		WalletModule,
-		BillsModule,
-		DaoModule,
-		DashboardModule,
-		KeeperModule,
-		ChainStatusModule,
-		AgentProxyModule,
-	],
+  imports: [
+    BullModule.forRoot({
+      redis: {
+        host: process.env.REDIS_HOST ?? "127.0.0.1",
+        port: Number(process.env.REDIS_PORT ?? 6379),
+        password: process.env.REDIS_PASSWORD || undefined,
+        db: process.env.REDIS_DB ? Number(process.env.REDIS_DB) : undefined,
+      },
+    }),
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: true,
+      sortSchema: true,
+      playground: true,
+    }),
+    PrismaModule,
+    SupabaseModule,
+    JobsModule,
+    AgentsModule,
+    MatchingModule,
+    BidsModule,
+    WalletModule,
+    BillsModule,
+    DaoModule,
+    DashboardModule,
+    KeeperModule,
+    ChainStatusModule,
+    AgentProxyModule,
+    EngagementsModule,
+  ],
 })
-export class AppModule {}
+export class AppModule { }

@@ -146,7 +146,7 @@ const CreateProposal = () => {
 				reason: reason.trim(),
 			})
 				.then(() => {
-					router.push(`/dao/${selectedEscrow.jobId}`);
+					router.push(`/dao/${selectedEscrow.id}`);
 				})
 				.catch((err) => {
 					setError(`链上交易成功，但后端记录失败: ${resolveSubmitError(err)}`);
@@ -181,8 +181,8 @@ const CreateProposal = () => {
 		setSubmitting(true);
 
 		try {
-			// Escrow 的 jobId 已经是 bytes32 格式，直接使用
-			await openDispute(selectedEscrow.jobId, reasonCode);
+			// 使用 escrowId (selectedEscrow.id) 而不是 jobId
+			await openDispute(selectedEscrow.id, reasonCode);
 
 			// 等待交易确认后，在 useEffect 中处理后端提交
 		} catch (submitError) {

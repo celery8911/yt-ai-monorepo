@@ -173,6 +173,7 @@ export const useDisputeDAO = () => {
 				abi: DisputeDAO_ABI.abi,
 				functionName: "openDispute",
 				args: [jobId as `0x${string}`, reason],
+				gas: 500000n,
 			});
 		},
 		[ensureCorrectNetwork, openDispute],
@@ -201,6 +202,7 @@ export const useDisputeDAO = () => {
 				abi: DisputeDAO_ABI.abi,
 				functionName: "vote",
 				args: [jobId as `0x${string}`, supportEmployer],
+				gas: 500000n, // 手动设置 gas limit，避免超过 Sepolia 上限
 			});
 		},
 		[ensureCorrectNetwork, vote],
@@ -215,6 +217,7 @@ export const useDisputeDAO = () => {
 				abi: DisputeDAO_ABI.abi,
 				functionName: "claimReward",
 				args: [jobId as `0x${string}`],
+				gas: 300000n,
 			});
 		},
 		[ensureCorrectNetwork, claimReward],
