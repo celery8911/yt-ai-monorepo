@@ -1,4 +1,11 @@
 "use client";
+import {
+	useChainId,
+	useWriteContract,
+	useReadContracts,
+	useWaitForTransactionReceipt,
+	useWallet,
+} from "@/hooks/web3";
 
 /**
  * useTokenAllowance Hook - Token 授权查询与撤销
@@ -11,13 +18,6 @@
  */
 
 import { useCallback } from "react";
-import {
-	useChainId,
-	useReadContracts,
-	useWriteContract,
-	useWaitForTransactionReceipt,
-	useWallet,
-} from "@yt/hooks";
 import { getContracts, CBT_ABI } from "@yt/libs";
 import type { Abi } from "viem";
 import { formatUnits } from "viem";

@@ -1,4 +1,12 @@
 "use client";
+import {
+	useChainId,
+	useSwitchChain,
+	useWriteContract,
+	useReadContract,
+	useWaitForTransactionReceipt,
+	useWallet,
+} from "@/hooks/web3";
 
 /**
  * useAgentHiring Hook - Agent雇佣合约交互
@@ -10,15 +18,7 @@
  * - 查询 Engagement 信息
  */
 
-import {
-	useChainId,
-	useReadContract,
-	useSwitchChain,
-	useWriteContract,
-	useWaitForTransactionReceipt,
-} from "@yt/hooks";
 import { getContracts, AgentHiring_ABI, CHAIN_IDS } from "@yt/libs";
-import { useWallet } from "@yt/hooks";
 
 export const useAgentHiring = () => {
 	const { address } = useWallet();

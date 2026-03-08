@@ -1,7 +1,7 @@
 "use client";
+import { useAccount } from "@/hooks/web3";
 
 import { useState } from "react";
-import { useWallet } from "@yt/hooks";
 import { Tabs } from "@yt/ui";
 import { DashboardStats } from "./components/DashboardStats";
 import { DisputesTab } from "./components/DisputesTab";
@@ -10,7 +10,7 @@ import { PublishedJobsTab } from "./components/PublishedJobsTab";
 import { SignedAgentsTab } from "./components/SignedAgentsTab";
 
 const Dashboard = () => {
-	const { address, isConnected } = useWallet();
+	const { address, isConnected } = useAccount();
 	const [activeTab, setActiveTab] = useState("published-jobs");
 
 	return (

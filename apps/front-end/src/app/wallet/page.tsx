@@ -1,8 +1,8 @@
 "use client";
+import { useChainId, useWallet } from "@/hooks/web3";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useWallet } from "@yt/hooks";
 import {
 	Badge,
 	Button,
@@ -22,7 +22,6 @@ import { formatUnits } from "viem";
 import { fetchCbtTransfersByAddress } from "@/apis/chain-status";
 import { addTokenToWallet } from "@/utils/addTokenToWallet";
 import { getContracts } from "@yt/libs";
-import { useChainId } from "@yt/hooks";
 
 const Wallet = () => {
 	const {

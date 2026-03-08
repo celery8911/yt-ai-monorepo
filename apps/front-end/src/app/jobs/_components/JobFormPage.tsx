@@ -1,4 +1,5 @@
 "use client";
+import { useAccount } from "@/hooks/web3";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -20,7 +21,6 @@ import {
 	type CreateJobPayload,
 	type Job,
 } from "@/apis/jobs";
-import { useWallet } from "@yt/hooks";
 import { createJobDraft } from "@/apis/drafts";
 
 type JobFormPageProps = {
@@ -70,7 +70,7 @@ const JobFormPage = ({ jobId }: JobFormPageProps) => {
 	const [draftNotes, setDraftNotes] = useState<string[]>([]);
 	const [draftLoading, setDraftLoading] = useState(false);
 	const [draftGenerated, setDraftGenerated] = useState(false);
-	const { address } = useWallet();
+	const { address } = useAccount();
 	const { toast } = useToast();
 
 	const withRequiredMark = (label: string) => (

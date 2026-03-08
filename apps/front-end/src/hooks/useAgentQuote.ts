@@ -1,4 +1,5 @@
 "use client";
+import { useChainId, useSignTypedData, useWallet } from "@/hooks/web3";
 
 /**
  * useAgentQuote Hook - 链下 Agent 报价签名
@@ -15,7 +16,6 @@
  */
 
 import { useState, useCallback } from "react";
-import { useSignTypedData, useChainId, useWallet } from "@yt/hooks";
 
 export type AgentQuote = {
 	agentId: string;

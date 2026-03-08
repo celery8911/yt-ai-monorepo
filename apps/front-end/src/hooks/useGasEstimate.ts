@@ -1,4 +1,5 @@
 "use client";
+import { usePublicClient } from "@/hooks/web3";
 
 /**
  * useGasEstimate Hook - 动态 Gas 估算
@@ -16,7 +17,6 @@
  */
 
 import { useState, useCallback } from "react";
-import { usePublicClient } from "@yt/hooks";
 import { formatEther, type Abi } from "viem";
 
 type GasEstimateResult = {

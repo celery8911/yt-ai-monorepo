@@ -1,4 +1,5 @@
 "use client";
+import { useChainId, usePublicClient } from "@/hooks/web3";
 
 /**
  * useTransactionRetry Hook - L2 交易重试与加速
@@ -14,8 +15,6 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { usePublicClient } from "@yt/hooks";
-import { useChainId } from "@yt/hooks";
 
 export type TransactionStatus =
 	| "idle"

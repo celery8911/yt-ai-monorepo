@@ -1,13 +1,19 @@
 "use client";
+import {
+	useAccount,
+	useDisconnect,
+	useChainId,
+	useSwitchChain,
+} from "@/hooks/web3";
 
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { formatAddress, getSupportedChains } from "@yt/libs";
-import { useChainId, useSwitchChain, useWallet } from "@yt/hooks";
 import { Button } from "@yt/ui";
 import { useEffect, useState } from "react";
 import { switchOrAddChain } from "@/utils/addChainToWallet";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const navItems = [
 	{ label: "智能体", path: "/market" },
@@ -27,8 +33,8 @@ function getChainLabel(chainId: number): string {
 
 const Header = () => {
 	const pathname = usePathname();
-	const { address, isConnected, connect, disconnect, isConnecting } =
-		useWallet();
+	const { address, isConnected } = useAccount();
+	const { disconnect } = useDisconnect();
 	const chainId = useChainId();
 	const { isPending: isSwitching } = useSwitchChain();
 	const [mounted, setMounted] = useState(false);
@@ -160,15 +166,7 @@ const Header = () => {
 							</Button>
 						</div>
 					) : (
-						<Button
-							className="bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20 px-6"
-							onClick={() => {
-								void connect().catch(() => {});
-							}}
-							disabled={!mounted || isConnecting}
-						>
-							{isConnecting && mounted ? "连接中..." : "连接钱包"}
-						</Button>
+						<ConnectButton />
 					)}
 				</div>
 			</div>

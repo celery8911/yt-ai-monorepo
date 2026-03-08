@@ -1,4 +1,12 @@
 "use client";
+import {
+	useChainId,
+	useSwitchChain,
+	useWriteContract,
+	useReadContract,
+	useWaitForTransactionReceipt,
+	useWallet,
+} from "@/hooks/web3";
 
 /**
  * useCBT Hook - CBT 代币交互
@@ -10,16 +18,8 @@
  * - 查询兑换汇率
  */
 
-import {
-	useChainId,
-	useReadContract,
-	useSwitchChain,
-	useWriteContract,
-	useWaitForTransactionReceipt,
-} from "@yt/hooks";
 import { parseEther, formatUnits } from "viem";
 import { getContracts, CBT_ABI, CHAIN_IDS } from "@yt/libs";
-import { useWallet } from "@yt/hooks";
 
 export const useCBT = () => {
 	const { address } = useWallet();

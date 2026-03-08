@@ -1,4 +1,12 @@
 "use client";
+import {
+	useChainId,
+	useSwitchChain,
+	useWriteContract,
+	useReadContract,
+	useWaitForTransactionReceipt,
+	useWallet,
+} from "@/hooks/web3";
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -15,7 +23,6 @@ import {
 	TooltipTrigger,
 	useToast,
 } from "@yt/ui";
-import { useWallet } from "@yt/hooks";
 import { CBT_ABI, CHAIN_IDS, getContracts, Escrow_ABI } from "@yt/libs";
 import {
 	fetchJobDetail,
@@ -28,13 +35,6 @@ import {
 } from "@/apis/jobs";
 import JobAgentOrbit from "@/app/jobs/_components/JobAgentOrbit";
 import JobMatchSection from "@/app/jobs/_components/JobMatchSection";
-import {
-	useChainId,
-	useReadContract,
-	useSwitchChain,
-	useWaitForTransactionReceipt,
-	useWriteContract,
-} from "@yt/hooks";
 import { keccak256, parseUnits, stringToHex } from "viem";
 
 const statusVariants: Record<JobStatus, "blue" | "purple" | "red" | "green"> = {

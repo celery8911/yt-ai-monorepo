@@ -1,4 +1,12 @@
 "use client";
+import {
+	useChainId,
+	useSwitchChain,
+	useWriteContract,
+	useReadContract,
+	useWaitForTransactionReceipt,
+	useWallet,
+} from "@/hooks/web3";
 
 /**
  * useDisputeDAO Hook - DisputeDAO 合约交互
@@ -10,15 +18,7 @@
  * - 领取奖励 (claimReward)
  */
 
-import {
-	useChainId,
-	useSwitchChain,
-	useWriteContract,
-	useWaitForTransactionReceipt,
-	useReadContract,
-} from "@yt/hooks";
 import { getContracts, DisputeDAO_ABI, CBT_ABI, CHAIN_IDS } from "@yt/libs";
-import { useWallet } from "@yt/hooks";
 import { useCallback } from "react";
 
 export const useDisputeDAO = () => {

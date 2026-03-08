@@ -1,10 +1,10 @@
 "use client";
+import { useWallet } from "@/hooks/web3";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge, Button, Card, CardContent, CardHeader } from "@yt/ui";
-import { useWallet } from "@yt/hooks";
 import { fetchDisputeList, type DisputeListItem } from "@/apis/dao";
 import { formatUnits } from "viem";
 

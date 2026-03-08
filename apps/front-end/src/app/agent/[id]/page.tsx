@@ -1,4 +1,13 @@
 "use client";
+import {
+	useChainId,
+	useSwitchChain,
+	useWriteContract,
+	useReadContract,
+	useReadContracts,
+	useWaitForTransactionReceipt,
+	useWallet,
+} from "@/hooks/web3";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -6,15 +15,6 @@ import { Badge, Button, Card, CardContent, CardHeader, Tabs } from "@yt/ui";
 import { fetchAgentDetail, type AgentListItem } from "@/apis/agent";
 import { CBT_ABI, CHAIN_IDS, getContracts, AgentHiring_ABI } from "@yt/libs";
 import type { Abi } from "viem";
-import {
-	useChainId,
-	useReadContract,
-	useReadContracts,
-	useSwitchChain,
-	useWaitForTransactionReceipt,
-	useWallet,
-	useWriteContract,
-} from "@yt/hooks";
 import { formatUnits, parseUnits } from "viem";
 
 const AgentDetail = () => {

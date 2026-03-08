@@ -1,4 +1,5 @@
 "use client";
+import { useChainId, useSignMessage, useWallet } from "@/hooks/web3";
 
 /**
  * useSIWE Hook - Sign-In with Ethereum (EIP-4361)
@@ -14,7 +15,6 @@
  */
 
 import { useState, useCallback } from "react";
-import { useSignMessage, useWallet, useChainId } from "@yt/hooks";
 
 type SIWEState = {
 	isSigningIn: boolean;

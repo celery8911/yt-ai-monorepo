@@ -1,15 +1,15 @@
 "use client";
+import {
+	useAccount,
+	useChainId,
+	useReadContract,
+	useWaitForTransactionReceipt,
+} from "@/hooks/web3";
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Badge, Button, Card, CardContent, CardHeader, useToast } from "@yt/ui";
-import {
-	useChainId,
-	useReadContract,
-	useWallet,
-	useWaitForTransactionReceipt,
-} from "@yt/hooks";
 import { fetchDisputeDetail } from "@/apis/dao";
 import { useDisputeDAO } from "@/hooks/contracts/useDisputeDAO";
 import { formatUnits } from "viem";
@@ -62,7 +62,7 @@ const formatCountdown = (ms: number) => {
 const DisputeDetail = () => {
 	const { id } = useParams<{ id: string }>();
 	const router = useRouter();
-	const { address, isConnected } = useWallet();
+	const { address, isConnected } = useAccount();
 	const chainId = useChainId();
 	const contracts = getContracts(chainId);
 	const { toast } = useToast();

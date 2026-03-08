@@ -1,14 +1,14 @@
 "use client";
+import { useAccount } from "@/hooks/web3";
 
 import { useState } from "react";
 import { Button, Card, CardContent, CardHeader } from "@yt/ui";
-import { useWallet } from "@yt/hooks";
 import { useSignTypedDemo } from "@/hooks/contracts/useSignTypedDemo";
 import { useSIWE } from "@/hooks/useSIWE";
 import { parseEther } from "viem";
 
 const SignatureDemoContent = () => {
-	const { address, isConnected } = useWallet();
+	const { address, isConnected } = useAccount();
 
 	// SIWE 登录签名
 	const siwe = useSIWE();

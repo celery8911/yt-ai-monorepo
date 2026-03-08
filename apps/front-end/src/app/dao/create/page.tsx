@@ -1,8 +1,8 @@
 "use client";
+import { useAccount } from "@/hooks/web3";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useWallet } from "@yt/hooks";
 import { Button, Card, CardContent, CardHeader, Textarea } from "@yt/ui";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -36,7 +36,7 @@ const resolveSubmitError = (submitError: unknown): string => {
 
 const CreateProposal = () => {
 	const router = useRouter();
-	const { address, isConnected } = useWallet();
+	const { address, isConnected } = useAccount();
 	const [selectedEscrow, setSelectedEscrow] = useState<EscrowRecord | null>(
 		null,
 	);

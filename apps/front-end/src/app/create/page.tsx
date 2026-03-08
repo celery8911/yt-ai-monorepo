@@ -1,4 +1,5 @@
 "use client";
+import { useAccount } from "@/hooks/web3";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -13,13 +14,12 @@ import {
 } from "@yt/ui";
 import { Suspense, useState } from "react";
 import { createAgent, type CreateAgentPayload } from "@/apis/agent";
-import { useWallet } from "@yt/hooks";
 
 const CreateAgentInner = () => {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const isEdit = searchParams.get("edit") === "true";
-	const { address } = useWallet();
+	const { address } = useAccount();
 	type FormValue = string | boolean | number | string[] | undefined;
 
 	// 表单状态

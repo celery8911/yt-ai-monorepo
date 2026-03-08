@@ -1,4 +1,5 @@
 "use client";
+import { usePublicClient, useWallet } from "@/hooks/web3";
 
 /**
  * useTransactionQueue Hook - 显式 Nonce 管理的交易队列
@@ -18,8 +19,6 @@
  */
 
 import { useState, useCallback, useRef } from "react";
-import { usePublicClient } from "@yt/hooks";
-import { useWallet } from "@yt/hooks";
 
 export type QueuedTransaction = {
 	id: string;

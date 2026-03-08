@@ -1,4 +1,10 @@
 "use client";
+import {
+	useChainId,
+	useSignTypedData,
+	usePublicClient,
+	useWallet,
+} from "@/hooks/web3";
 
 /**
  * useSignTypedDemo Hook - EIP-712 结构化签名演示
@@ -11,12 +17,6 @@
  */
 
 import { useState, useCallback } from "react";
-import {
-	useSignTypedData,
-	useChainId,
-	useWallet,
-	usePublicClient,
-} from "@yt/hooks";
 
 /** EIP-712 Domain 配置 */
 const DOMAIN_NAME = "YT Agent Market";

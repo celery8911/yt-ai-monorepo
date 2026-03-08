@@ -1,40 +1,46 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { createWalletConfig, WalletProvider } from "@yt/hooks";
-import {
-	sepolia,
-	arbitrumSepolia,
-	baseSepolia,
-	optimismSepolia,
-	zkSyncSepoliaTestnet,
-	polygonAmoy,
-	bscTestnet,
-} from "viem/chains";
+import { ReactNode, useState, useMemo } from "react";
+import { WagmiProvider, createConfig, http } from "wagmi";
+import { mainnet, sepolia } from "wagmi/chains";
+import { RainbowKitProvider, getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 type Web3ProviderProps = {
 	children: ReactNode;
 };
 
 const Web3Provider = ({ children }: Web3ProviderProps) => {
-	const walletConfig = createWalletConfig({
-		appName: "YT Agent Market",
-		projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "demo",
-		chains: [
-			sepolia,
-			arbitrumSepolia,
-			baseSepolia,
-			optimismSepolia,
-			zkSyncSepoliaTestnet,
-			polygonAmoy,
-			bscTestnet,
-		],
-	});
+	// Use state to create QueryClient only once per app life cycle
+	const [queryClient] = useState(
+		() =>
+			new QueryClient({
+				defaultOptions: {
+					queries: {
+						staleTime: 60 * 1000,
+						refetchOnWindowFocus: false,
+					},
+				},
+			}),
+	);
+
+	const config = useMemo(
+		() =>
+			getDefaultConfig({
+				appName: "YT Agent Market",
+				projectId: "demo",
+				chains: [mainnet, sepolia],
+				ssr: true,
+			}),
+		[],
+	);
 
 	return (
-		<WalletProvider config={walletConfig} enableRainbowKit={true}>
-			{children}
-		</WalletProvider>
+		<WagmiProvider config={config}>
+			<QueryClientProvider client={queryClient}>
+				<RainbowKitProvider>{children}</RainbowKitProvider>
+			</QueryClientProvider>
+		</WagmiProvider>
 	);
 };
 

@@ -1,4 +1,5 @@
 "use client";
+import { useWallet } from "@/hooks/web3";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -12,7 +13,6 @@ import {
 	Select,
 	useToast,
 } from "@yt/ui";
-import { useWallet } from "@yt/hooks";
 import {
 	fetchJobList,
 	formatRelativeTime,
