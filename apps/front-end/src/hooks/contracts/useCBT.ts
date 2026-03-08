@@ -18,13 +18,14 @@ import {
 	useWaitForTransactionReceipt,
 } from "@yt/hooks";
 import { parseEther, formatUnits } from "viem";
-import { CONTRACTS, CBT_ABI, CHAIN_IDS } from "@yt/libs";
+import { getContracts, CBT_ABI, CHAIN_IDS } from "@yt/libs";
 import { useWallet } from "@yt/hooks";
 
 export const useCBT = () => {
 	const { address } = useWallet();
 	const chainId = useChainId();
 	const { switchChainAsync } = useSwitchChain();
+	const contracts = getContracts(chainId);
 
 	// 读取 CBT 余额
 	const {
@@ -32,7 +33,7 @@ export const useCBT = () => {
 		refetch: refetchBalance,
 		isLoading: isLoadingBalance,
 	} = useReadContract({
-		address: CONTRACTS.sepolia.CBT,
+		address: contracts.CBT,
 		abi: CBT_ABI.abi,
 		functionName: "balanceOf",
 		args: address ? [address] : undefined,
@@ -43,7 +44,7 @@ export const useCBT = () => {
 
 	// 读取兑换汇率 (1 ETH = ? CBT)
 	const { data: rate, isLoading: isLoadingRate } = useReadContract({
-		address: CONTRACTS.sepolia.CBT,
+		address: contracts.CBT,
 		abi: CBT_ABI.abi,
 		functionName: "rate",
 	});
@@ -90,7 +91,7 @@ export const useCBT = () => {
 				await switchChainAsync({ chainId: CHAIN_IDS.sepolia });
 			}
 			buyCBT({
-				address: CONTRACTS.sepolia.CBT,
+				address: contracts.CBT,
 				abi: CBT_ABI.abi,
 				functionName: "buyCBT",
 				value: parseEther(ethAmount),
@@ -113,7 +114,7 @@ export const useCBT = () => {
 
 		try {
 			approve({
-				address: CONTRACTS.sepolia.CBT,
+				address: contracts.CBT,
 				abi: CBT_ABI.abi,
 				functionName: "approve",
 				args: [spender, amount],
@@ -133,7 +134,7 @@ export const useCBT = () => {
 		if (!rate || !ethAmount) return null;
 		try {
 			const ethWei = parseEther(ethAmount);
-			return ethWei * BigInt(rate);
+			return ethWei * BigInt(rate as bigint);
 		} catch {
 			return null;
 		}

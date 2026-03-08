@@ -3,11 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CHAIN_IDS, formatAddress } from "@yt/libs";
+import { formatAddress, getSupportedChains } from "@yt/libs";
 import { useChainId, useSwitchChain, useWallet } from "@yt/hooks";
 import { Button } from "@yt/ui";
 import { useEffect, useState } from "react";
-import { mainnet, sepolia } from "viem/chains";
+import { switchOrAddChain } from "@/utils/addChainToWallet";
 
 const navItems = [
 	{ label: "智能体", path: "/market" },
@@ -16,28 +16,37 @@ const navItems = [
 	{ label: "控制台", path: "/dashboard" },
 	{ label: "账单", path: "/billing" },
 	{ label: "DAO", path: "/dao" },
+	{ label: "签名演示", path: "/signature-demo" },
 ];
+
+/** 根据 chainId 获取链名称 */
+function getChainLabel(chainId: number): string {
+	const chain = getSupportedChains().find((c) => c.chainId === chainId);
+	return chain?.name ?? `Chain ${chainId}`;
+}
 
 const Header = () => {
 	const pathname = usePathname();
 	const { address, isConnected, connect, disconnect, isConnecting } =
 		useWallet();
 	const chainId = useChainId();
-	const { switchChainAsync, isPending: isSwitching } = useSwitchChain();
+	const { isPending: isSwitching } = useSwitchChain();
 	const [mounted, setMounted] = useState(false);
+	const [showChainMenu, setShowChainMenu] = useState(false);
 
 	useEffect(() => {
 		setMounted(true);
 	}, []);
 
 	const showWallet = mounted && isConnected && address;
-	const isSepolia = chainId === CHAIN_IDS.sepolia;
-	const chainLabel =
-		chainId === sepolia.id
-			? "Sepolia"
-			: chainId === mainnet.id
-				? "Ethereum"
-				: "Unknown";
+	const chainLabel = getChainLabel(chainId);
+	const supportedChains = getSupportedChains();
+
+	/** 切换链，4902 时自动添加 */
+	const handleSwitchChain = async (targetChainId: number) => {
+		setShowChainMenu(false);
+		await switchOrAddChain(targetChainId);
+	};
 
 	return (
 		<header className="sticky top-0 z-50 glass border-b border-white/5">
@@ -107,19 +116,37 @@ const Header = () => {
 					</Link>
 					{showWallet ? (
 						<div className="flex items-center gap-2">
-							<Button
-								variant="outline"
-								onClick={() => {
-									if (!isSepolia) {
-										void switchChainAsync({ chainId: CHAIN_IDS.sepolia });
-									}
-								}}
-								disabled={isSwitching || isSepolia}
-							>
-								{isSwitching
-									? "切换中..."
-									: `网络: ${chainLabel}${isSepolia ? "" : " (点此切换)"}`}
-							</Button>
+							{/* 链切换下拉菜单 */}
+							<div className="relative">
+								<Button
+									variant="outline"
+									onClick={() => setShowChainMenu(!showChainMenu)}
+									disabled={isSwitching}
+								>
+									{isSwitching ? "切换中..." : chainLabel}
+								</Button>
+								{showChainMenu && (
+									<div className="absolute right-0 top-full mt-2 w-48 rounded-lg border border-white/10 bg-slate-900 shadow-xl">
+										{supportedChains.map((chain) => (
+											<button
+												key={chain.chainId}
+												type="button"
+												className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-800 first:rounded-t-lg last:rounded-b-lg ${
+													chain.chainId === chainId
+														? "text-blue-400"
+														: "text-slate-300"
+												}`}
+												onClick={() => handleSwitchChain(chain.chainId)}
+											>
+												<span>{chain.name}</span>
+												<span className="ml-2 text-xs text-slate-500">
+													{chain.type}
+												</span>
+											</button>
+										))}
+									</div>
+								)}
+							</div>
 							<Button className="bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20 px-6">
 								{formatAddress(address)}
 							</Button>

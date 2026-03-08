@@ -20,6 +20,9 @@ import { useUserStore } from "@/store/useUserStore";
 import { useCBT } from "@/hooks/contracts/useCBT";
 import { formatUnits } from "viem";
 import { fetchCbtTransfersByAddress } from "@/apis/chain-status";
+import { addTokenToWallet } from "@/utils/addTokenToWallet";
+import { getContracts } from "@yt/libs";
+import { useChainId } from "@yt/hooks";
 
 const Wallet = () => {
 	const {
@@ -31,6 +34,8 @@ const Wallet = () => {
 		isConnecting,
 		error,
 	} = useWallet();
+	const chainId = useChainId();
+	const contracts = getContracts(chainId);
 	const { user, setUser, clearUser } = useUserStore();
 	const [showBuyCBT, setShowBuyCBT] = useState(false);
 	const [ethAmount, setEthAmount] = useState("");
@@ -351,7 +356,23 @@ const Wallet = () => {
 								? `${Number(formatUnits(balance.value, balance.decimals)).toFixed(4)} ${balance.symbol}`
 								: "0 ETH"}
 						</p>
-						<p className="text-2xl font-black">{formatBalance()} CBT</p>
+						<div className="flex items-center gap-2">
+							<p className="text-2xl font-black">{formatBalance()} CBT</p>
+							<Button
+								variant="outline"
+								size="sm"
+								className="text-xs"
+								onClick={() =>
+									addTokenToWallet({
+										address: contracts.CBT,
+										symbol: "CBT",
+										decimals: 18,
+									})
+								}
+							>
+								添加到钱包
+							</Button>
+						</div>
 						<Link href="/billing">
 							<Button
 								variant="ghost"

@@ -16,7 +16,7 @@ import {
 	useToast,
 } from "@yt/ui";
 import { useWallet } from "@yt/hooks";
-import { CBT_ABI, CHAIN_IDS, CONTRACTS, Escrow_ABI } from "@yt/libs";
+import { CBT_ABI, CHAIN_IDS, getContracts, Escrow_ABI } from "@yt/libs";
 import {
 	fetchJobDetail,
 	formatJobBudget,
@@ -81,6 +81,7 @@ const JobDetail = () => {
 	const { address, isConnected, connect } = useWallet();
 	const { toast } = useToast();
 	const chainId = useChainId();
+	const contracts = getContracts(chainId);
 	const { switchChainAsync, isPending: isSwitching } = useSwitchChain();
 	const {
 		writeContract: approve,
@@ -99,7 +100,7 @@ const JobDetail = () => {
 	const { isLoading: isEscrowConfirming, isSuccess: isEscrowSuccess } =
 		useWaitForTransactionReceipt({ hash: escrowHash });
 	const { data: serviceFeeBps } = useReadContract({
-		address: CONTRACTS.sepolia.Escrow,
+		address: contracts.Escrow,
 		abi: Escrow_ABI.abi,
 		functionName: "serviceFeeBps",
 	});
@@ -252,7 +253,7 @@ const JobDetail = () => {
 		if (!escrowRequest || !isApproveSuccess || !address) return;
 
 		createEscrow({
-			address: CONTRACTS.sepolia.Escrow,
+			address: contracts.Escrow,
 			abi: Escrow_ABI.abi,
 			functionName: "createEscrow",
 			args: [
@@ -262,7 +263,13 @@ const JobDetail = () => {
 				escrowRequest.amount,
 			],
 		});
-	}, [createEscrow, escrowRequest, isApproveSuccess, address]);
+	}, [
+		createEscrow,
+		escrowRequest,
+		isApproveSuccess,
+		address,
+		contracts.Escrow,
+	]);
 
 	useEffect(() => {
 		if (!job || !escrowRequest || !isEscrowSuccess) return;
@@ -365,10 +372,10 @@ const JobDetail = () => {
 			});
 
 			approve({
-				address: CONTRACTS.sepolia.CBT,
+				address: contracts.CBT,
 				abi: CBT_ABI.abi,
 				functionName: "approve",
-				args: [CONTRACTS.sepolia.Escrow, approveAmount],
+				args: [contracts.Escrow, approveAmount],
 			});
 		} catch (subscribeErr) {
 			const message = formatSubscribeError(

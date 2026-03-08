@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Badge, Button, Card, CardContent, CardHeader, Tabs } from "@yt/ui";
 import { fetchAgentDetail, type AgentListItem } from "@/apis/agent";
-import { CBT_ABI, CHAIN_IDS, CONTRACTS, AgentHiring_ABI } from "@yt/libs";
+import { CBT_ABI, CHAIN_IDS, getContracts, AgentHiring_ABI } from "@yt/libs";
+import type { Abi } from "viem";
 import {
 	useChainId,
 	useReadContract,
@@ -33,6 +34,7 @@ const AgentDetail = () => {
 
 	const { address, isConnected, connect } = useWallet();
 	const chainId = useChainId();
+	const contracts = getContracts(chainId);
 	const { switchChainAsync, isPending: isSwitching } = useSwitchChain();
 	const {
 		writeContract: approve,
@@ -57,12 +59,12 @@ const AgentDetail = () => {
 	const { isLoading: isHireConfirming, isSuccess: isHireSuccess } =
 		useWaitForTransactionReceipt({ hash: hireHash });
 	const { data: serviceFeeBps } = useReadContract({
-		address: CONTRACTS.sepolia.AgentHiring,
+		address: contracts.AgentHiring,
 		abi: AgentHiring_ABI.abi,
 		functionName: "serviceFeeBps",
 	});
 	const { data: cbtBalance } = useReadContract({
-		address: CONTRACTS.sepolia.CBT,
+		address: contracts.CBT,
 		abi: CBT_ABI.abi,
 		functionName: "balanceOf",
 		args: address ? [address] : undefined,
@@ -71,7 +73,7 @@ const AgentDetail = () => {
 		},
 	});
 	const { data: engagementIds } = useReadContract({
-		address: CONTRACTS.sepolia.AgentHiring,
+		address: contracts.AgentHiring,
 		abi: AgentHiring_ABI.abi,
 		functionName: "getEngagementsByAgentId",
 		args: agent?.id ? [agent.id] : undefined,
@@ -82,8 +84,8 @@ const AgentDetail = () => {
 	const engagementIdList = Array.isArray(engagementIds) ? engagementIds : [];
 	const { data: engagementResults } = useReadContracts({
 		contracts: engagementIdList.map((engagementId) => ({
-			address: CONTRACTS.sepolia.AgentHiring,
-			abi: AgentHiring_ABI.abi,
+			address: contracts.AgentHiring,
+			abi: AgentHiring_ABI.abi as Abi,
 			functionName: "engagements",
 			args: [engagementId],
 		})),
@@ -162,7 +164,7 @@ const AgentDetail = () => {
 		if (!hireRequest || !isApproveSuccess) return;
 
 		hire({
-			address: CONTRACTS.sepolia.AgentHiring,
+			address: contracts.AgentHiring,
 			abi: AgentHiring_ABI.abi,
 			functionName: "hire",
 			args: [
@@ -174,7 +176,7 @@ const AgentDetail = () => {
 			],
 		});
 		setHireRequest(null);
-	}, [hire, hireRequest, isApproveSuccess]);
+	}, [hire, hireRequest, isApproveSuccess, contracts.AgentHiring]);
 
 	const parsePriceToCbt = (price?: string) => {
 		if (!price) return null;
@@ -189,7 +191,7 @@ const AgentDetail = () => {
 	const getPriceBreakdown = (price?: string) => {
 		const amount = parsePriceToCbt(price);
 		if (!amount) return null;
-		const feeBps = BigInt(serviceFeeBps ?? 0);
+		const feeBps = BigInt((serviceFeeBps as bigint) ?? 0n);
 		const fee = (amount * feeBps) / 10_000n;
 		return { amount, fee, total: amount + fee };
 	};
@@ -228,7 +230,7 @@ const AgentDetail = () => {
 				await switchChainAsync({ chainId: CHAIN_IDS.sepolia });
 			}
 
-			const feeBps = BigInt(serviceFeeBps ?? 0);
+			const feeBps = BigInt((serviceFeeBps as bigint) ?? 0n);
 			const fee = (price * feeBps) / 10_000n;
 			const approveAmount = price + fee;
 			if (typeof cbtBalance === "bigint" && cbtBalance < approveAmount) {
@@ -247,10 +249,10 @@ const AgentDetail = () => {
 			});
 
 			approve({
-				address: CONTRACTS.sepolia.CBT,
+				address: contracts.CBT,
 				abi: CBT_ABI.abi,
 				functionName: "approve",
-				args: [CONTRACTS.sepolia.AgentHiring, approveAmount],
+				args: [contracts.AgentHiring, approveAmount],
 			});
 		} catch (err) {
 			setSubscribeError(

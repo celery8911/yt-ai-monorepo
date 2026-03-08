@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Badge, Button, Card, CardContent, CardHeader, useToast } from "@yt/ui";
 import {
+	useChainId,
 	useReadContract,
 	useWallet,
 	useWaitForTransactionReceipt,
@@ -13,7 +14,7 @@ import { fetchDisputeDetail } from "@/apis/dao";
 import { useDisputeDAO } from "@/hooks/contracts/useDisputeDAO";
 import { formatUnits } from "viem";
 import { ethers } from "ethers";
-import { CONTRACTS, DisputeDAO_ABI } from "@yt/libs";
+import { getContracts, DisputeDAO_ABI } from "@yt/libs";
 
 const resolveStatusVariant = (status?: string) => {
 	if (status === "OPEN" || status === "VOTING") return "yellow";
@@ -62,6 +63,8 @@ const DisputeDetail = () => {
 	const { id } = useParams<{ id: string }>();
 	const router = useRouter();
 	const { address, isConnected } = useWallet();
+	const chainId = useChainId();
+	const contracts = getContracts(chainId);
 	const { toast } = useToast();
 	const [voteError, setVoteError] = useState("");
 	const [voteValue, setVoteValue] = useState<"approve" | "reject" | null>(null);
@@ -115,7 +118,7 @@ const DisputeDetail = () => {
 	const normalizedAddress = (address ?? "").toLowerCase();
 
 	const { data: voterStatus } = useReadContract({
-		address: CONTRACTS.sepolia.DisputeDAO,
+		address: contracts.DisputeDAO,
 		abi: DisputeDAO_ABI.abi,
 		functionName: "voterStatus",
 		args: disputeId && address ? [disputeId, address] : undefined,
@@ -183,7 +186,7 @@ const DisputeDetail = () => {
 	const remainingLabel = votingDeadlineMs ? formatCountdown(remainingMs) : "--";
 
 	const { data: disputeInfo } = useReadContract({
-		address: CONTRACTS.sepolia.DisputeDAO,
+		address: contracts.DisputeDAO,
 		abi: DisputeDAO_ABI.abi,
 		functionName: "disputeInfo",
 		args: disputeId ? [disputeId] : undefined,
@@ -248,7 +251,7 @@ const DisputeDetail = () => {
 	// 检查是否需要 approve
 	useEffect(() => {
 		if (voteCost && allowance !== undefined) {
-			setNeedApprove(BigInt(allowance) < BigInt(voteCost));
+			setNeedApprove(BigInt(allowance as bigint) < BigInt(voteCost as bigint));
 		}
 	}, [voteCost, allowance]);
 
@@ -336,7 +339,7 @@ const DisputeDetail = () => {
 				const shortError = errorMessage.split("\n")[0];
 				userFriendlyMessage =
 					shortError.length > 80
-						? shortError.substring(0, 80) + "..."
+						? `${shortError.substring(0, 80)}...`
 						: shortError;
 			}
 
@@ -512,7 +515,7 @@ const DisputeDetail = () => {
 		// 检查是否需要 approve
 		if (needApprove && voteCost) {
 			try {
-				await approveCBT(BigInt(voteCost));
+				await approveCBT(BigInt(voteCost as bigint));
 				// approve 成功后会在 useEffect 中自动调用投票
 			} catch (err) {
 				const errorMsg = err instanceof Error ? err.message : "授权失败";
@@ -542,7 +545,9 @@ const DisputeDetail = () => {
 	const isClaimInProgress = isClaimPending || isClaimConfirming;
 	const isApproveInProgress = isApprovePending || isApproveConfirming;
 
-	const voteCostFormatted = voteCost ? formatUnits(BigInt(voteCost), 18) : "--";
+	const voteCostFormatted = voteCost
+		? formatUnits(BigInt(voteCost as bigint), 18)
+		: "--";
 
 	if (error) {
 		return (

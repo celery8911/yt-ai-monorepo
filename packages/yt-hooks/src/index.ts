@@ -16,4 +16,7 @@ export {
 	useSwitchChain,
 	useWriteContract,
 	useWaitForTransactionReceipt,
+	useSignMessage,
+	useSignTypedData,
+	usePublicClient,
 } from "wagmi";

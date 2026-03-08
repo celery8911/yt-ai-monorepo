@@ -3,8 +3,13 @@
  */
 
 // 地址配置
-export { CONTRACTS, CHAIN_IDS } from "./addresses";
-export type { ContractName, ChainName } from "./addresses";
+export {
+	CONTRACTS,
+	CHAIN_IDS,
+	getContracts,
+	getSupportedChains,
+} from "./addresses";
+export type { ContractName, ChainName, SupportedChainInfo } from "./addresses";
 
 // 类型定义
 export { EscrowStatus, DisputeReason } from "./types";

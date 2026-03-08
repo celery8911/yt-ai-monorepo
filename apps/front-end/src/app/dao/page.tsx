@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge, Button, Card, CardContent, CardHeader } from "@yt/ui";
 import { useWallet } from "@yt/hooks";
-import { fetchDisputeList } from "@/apis/dao";
+import { fetchDisputeList, type DisputeListItem } from "@/apis/dao";
 import { formatUnits } from "viem";
 
 const formatAmount = (amount?: string | number, currency?: string) => {
@@ -134,8 +134,8 @@ const DAO = () => {
 						</CardContent>
 					</Card>
 				) : null}
-				{(isLoading ? Array.from({ length: 3 }) : disputes).map(
-					(item, index) => {
+				{(isLoading ? Array.from({ length: 3 }, () => null) : disputes).map(
+					(item: DisputeListItem | null, index: number) => {
 						const title = isLoading
 							? "加载中..."
 							: item.agentName && item.jobTitle

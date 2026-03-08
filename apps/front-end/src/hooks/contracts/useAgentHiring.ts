@@ -17,13 +17,14 @@ import {
 	useWriteContract,
 	useWaitForTransactionReceipt,
 } from "@yt/hooks";
-import { CONTRACTS, AgentHiring_ABI, CHAIN_IDS } from "@yt/libs";
+import { getContracts, AgentHiring_ABI, CHAIN_IDS } from "@yt/libs";
 import { useWallet } from "@yt/hooks";
 
 export const useAgentHiring = () => {
 	const { address } = useWallet();
 	const chainId = useChainId();
 	const { switchChainAsync } = useSwitchChain();
+	const contracts = getContracts(chainId);
 
 	// 雇佣 Agent
 	const {
@@ -92,7 +93,7 @@ export const useAgentHiring = () => {
 			}
 
 			hire({
-				address: CONTRACTS.sepolia.AgentHiring,
+				address: contracts.AgentHiring,
 				abi: AgentHiring_ABI.abi,
 				functionName: "hire",
 				args: [
@@ -124,7 +125,7 @@ export const useAgentHiring = () => {
 			}
 
 			approveCompletion({
-				address: CONTRACTS.sepolia.AgentHiring,
+				address: contracts.AgentHiring,
 				abi: AgentHiring_ABI.abi,
 				functionName: "approveCompletion",
 				args: [engagementId],
@@ -150,7 +151,7 @@ export const useAgentHiring = () => {
 			}
 
 			refund({
-				address: CONTRACTS.sepolia.AgentHiring,
+				address: contracts.AgentHiring,
 				abi: AgentHiring_ABI.abi,
 				functionName: "refund",
 				args: [engagementId],
@@ -167,7 +168,7 @@ export const useAgentHiring = () => {
 	 */
 	const useEngagement = (engagementId: bigint | undefined) => {
 		return useReadContract({
-			address: CONTRACTS.sepolia.AgentHiring,
+			address: contracts.AgentHiring,
 			abi: AgentHiring_ABI.abi,
 			functionName: "engagements",
 			args: engagementId !== undefined ? [engagementId] : undefined,

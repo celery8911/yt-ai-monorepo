@@ -17,7 +17,7 @@ import {
 	useWaitForTransactionReceipt,
 	useReadContract,
 } from "@yt/hooks";
-import { CONTRACTS, DisputeDAO_ABI, CBT_ABI, CHAIN_IDS } from "@yt/libs";
+import { getContracts, DisputeDAO_ABI, CBT_ABI, CHAIN_IDS } from "@yt/libs";
 import { useWallet } from "@yt/hooks";
 import { useCallback } from "react";
 
@@ -25,6 +25,7 @@ export const useDisputeDAO = () => {
 	const { address } = useWallet();
 	const chainId = useChainId();
 	const { switchChainAsync } = useSwitchChain();
+	const contracts = getContracts(chainId);
 
 	// 发起争议
 	const {
@@ -116,45 +117,45 @@ export const useDisputeDAO = () => {
 
 	// 读取投票成本
 	const { data: voteCost } = useReadContract({
-		address: CONTRACTS.sepolia.DisputeDAO,
+		address: contracts.DisputeDAO,
 		abi: DisputeDAO_ABI.abi,
 		functionName: "voteCost",
 	});
 
 	// 读取投票周期
 	const { data: votingPeriod } = useReadContract({
-		address: CONTRACTS.sepolia.DisputeDAO,
+		address: contracts.DisputeDAO,
 		abi: DisputeDAO_ABI.abi,
 		functionName: "votingPeriod",
 	});
 
 	// 读取最小投票人数
 	const { data: minVoters } = useReadContract({
-		address: CONTRACTS.sepolia.DisputeDAO,
+		address: contracts.DisputeDAO,
 		abi: DisputeDAO_ABI.abi,
 		functionName: "minVoters",
 	});
 
 	// 读取 keeper
 	const { data: keeper } = useReadContract({
-		address: CONTRACTS.sepolia.DisputeDAO,
+		address: contracts.DisputeDAO,
 		abi: DisputeDAO_ABI.abi,
 		functionName: "keeper",
 	});
 
 	// 读取 owner
 	const { data: owner } = useReadContract({
-		address: CONTRACTS.sepolia.DisputeDAO,
+		address: contracts.DisputeDAO,
 		abi: DisputeDAO_ABI.abi,
 		functionName: "owner",
 	});
 
 	// 读取 CBT allowance
 	const { data: allowance, refetch: refetchAllowance } = useReadContract({
-		address: CONTRACTS.sepolia.CBT,
+		address: contracts.CBT,
 		abi: CBT_ABI.abi,
 		functionName: "allowance",
-		args: address && [address, CONTRACTS.sepolia.DisputeDAO],
+		args: address && [address, contracts.DisputeDAO],
 	});
 
 	// 切换到 Sepolia 网络
@@ -169,14 +170,14 @@ export const useDisputeDAO = () => {
 		async (jobId: string, reason: number) => {
 			await ensureCorrectNetwork();
 			return openDispute({
-				address: CONTRACTS.sepolia.DisputeDAO,
+				address: contracts.DisputeDAO,
 				abi: DisputeDAO_ABI.abi,
 				functionName: "openDispute",
 				args: [jobId as `0x${string}`, reason],
 				gas: 500000n,
 			});
 		},
-		[ensureCorrectNetwork, openDispute],
+		[ensureCorrectNetwork, openDispute, contracts.DisputeDAO],
 	);
 
 	// Approve CBT 操作
@@ -184,13 +185,13 @@ export const useDisputeDAO = () => {
 		async (amount: bigint) => {
 			await ensureCorrectNetwork();
 			return approveCBT({
-				address: CONTRACTS.sepolia.CBT,
+				address: contracts.CBT,
 				abi: CBT_ABI.abi,
 				functionName: "approve",
-				args: [CONTRACTS.sepolia.DisputeDAO, amount],
+				args: [contracts.DisputeDAO, amount],
 			});
 		},
-		[ensureCorrectNetwork, approveCBT],
+		[ensureCorrectNetwork, approveCBT, contracts.CBT, contracts.DisputeDAO],
 	);
 
 	// 投票操作
@@ -198,14 +199,14 @@ export const useDisputeDAO = () => {
 		async (jobId: string, supportEmployer: boolean) => {
 			await ensureCorrectNetwork();
 			return vote({
-				address: CONTRACTS.sepolia.DisputeDAO,
+				address: contracts.DisputeDAO,
 				abi: DisputeDAO_ABI.abi,
 				functionName: "vote",
 				args: [jobId as `0x${string}`, supportEmployer],
 				gas: 500000n, // 手动设置 gas limit，避免超过 Sepolia 上限
 			});
 		},
-		[ensureCorrectNetwork, vote],
+		[ensureCorrectNetwork, vote, contracts.DisputeDAO],
 	);
 
 	// 领取奖励操作
@@ -213,14 +214,14 @@ export const useDisputeDAO = () => {
 		async (jobId: string) => {
 			await ensureCorrectNetwork();
 			return claimReward({
-				address: CONTRACTS.sepolia.DisputeDAO,
+				address: contracts.DisputeDAO,
 				abi: DisputeDAO_ABI.abi,
 				functionName: "claimReward",
 				args: [jobId as `0x${string}`],
 				gas: 300000n,
 			});
 		},
-		[ensureCorrectNetwork, claimReward],
+		[ensureCorrectNetwork, claimReward, contracts.DisputeDAO],
 	);
 
 	// 结算争议操作
@@ -228,13 +229,13 @@ export const useDisputeDAO = () => {
 		async (jobId: string) => {
 			await ensureCorrectNetwork();
 			return resolveDispute({
-				address: CONTRACTS.sepolia.DisputeDAO,
+				address: contracts.DisputeDAO,
 				abi: DisputeDAO_ABI.abi,
 				functionName: "resolveDispute",
 				args: [jobId as `0x${string}`],
 			});
 		},
-		[ensureCorrectNetwork, resolveDispute],
+		[ensureCorrectNetwork, resolveDispute, contracts.DisputeDAO],
 	);
 
 	// 更新投票周期操作
@@ -245,13 +246,23 @@ export const useDisputeDAO = () => {
 			}
 			await ensureCorrectNetwork();
 			return setVotingConfig({
-				address: CONTRACTS.sepolia.DisputeDAO,
+				address: contracts.DisputeDAO,
 				abi: DisputeDAO_ABI.abi,
 				functionName: "setVotingConfig",
-				args: [BigInt(voteCost), periodSeconds, BigInt(minVoters)],
+				args: [
+					BigInt(voteCost as bigint),
+					periodSeconds,
+					BigInt(minVoters as bigint),
+				],
 			});
 		},
-		[ensureCorrectNetwork, minVoters, setVotingConfig, voteCost],
+		[
+			ensureCorrectNetwork,
+			minVoters,
+			setVotingConfig,
+			voteCost,
+			contracts.DisputeDAO,
+		],
 	);
 
 	return {

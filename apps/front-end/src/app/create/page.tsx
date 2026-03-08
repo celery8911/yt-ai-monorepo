@@ -11,15 +11,16 @@ import {
 	Select,
 	Textarea,
 } from "@yt/ui";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { createAgent, type CreateAgentPayload } from "@/apis/agent";
 import { useWallet } from "@yt/hooks";
 
-const CreateAgent = () => {
+const CreateAgentInner = () => {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const isEdit = searchParams.get("edit") === "true";
 	const { address } = useWallet();
+	type FormValue = string | boolean | number | string[] | undefined;
 
 	// 表单状态
 	const [formData, setFormData] = useState({
@@ -45,7 +46,7 @@ const CreateAgent = () => {
 	const [error, setError] = useState<string | null>(null);
 
 	// 处理输入变化
-	const handleInputChange = (field: string, value: any) => {
+	const handleInputChange = (field: string, value: FormValue) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 	};
 
@@ -99,8 +100,8 @@ const CreateAgent = () => {
 
 			// 创建成功后跳转到市场页面
 			router.push("/market");
-		} catch (err: any) {
-			setError(err?.message || "创建失败，请重试");
+		} catch (err) {
+			setError(err instanceof Error ? err.message : "创建失败，请重试");
 			console.error("创建 Agent 失败:", err);
 		} finally {
 			setIsSubmitting(false);
@@ -336,5 +337,13 @@ const CreateAgent = () => {
 		</div>
 	);
 };
+
+const CreateAgent = () => (
+	<Suspense
+		fallback={<div className="text-center py-20 text-slate-400">加载中...</div>}
+	>
+		<CreateAgentInner />
+	</Suspense>
+);
 
 export default CreateAgent;

@@ -5,6 +5,16 @@ import type { HardhatUserConfig } from "hardhat/config";
 dotenv.config();
 
 const sepoliaUrl = process.env.SEPOLIA_RPC_URL || "";
+const arbitrumSepoliaUrl = process.env.ARBITRUM_SEPOLIA_RPC_URL || "";
+const baseSepoliaUrl = process.env.BASE_SEPOLIA_RPC_URL || "";
+const opSepoliaUrl = process.env.OP_SEPOLIA_RPC_URL || "";
+const zkSyncSepoliaUrl =
+	process.env.ZKSYNC_SEPOLIA_RPC_URL || "https://sepolia.era.zksync.dev";
+const polygonAmoyUrl =
+	process.env.POLYGON_AMOY_RPC_URL || "https://rpc-amoy.polygon.technology";
+const bscTestnetUrl =
+	process.env.BSC_TESTNET_RPC_URL ||
+	"https://data-seed-prebsc-1-s1.binance.org:8545";
 const deployerKey = process.env.DEPLOYER_PRIVATE_KEY || "";
 const etherscanApiKey = process.env.ETHERSCAN_API_KEY || "";
 const hasValidKey =
@@ -26,6 +36,36 @@ const config: HardhatUserConfig = {
 		sepolia: {
 			url: sepoliaUrl,
 			accounts,
+		},
+		arbitrumSepolia: {
+			url: arbitrumSepoliaUrl,
+			accounts,
+			chainId: 421614,
+		},
+		baseSepolia: {
+			url: baseSepoliaUrl,
+			accounts,
+			chainId: 84532,
+		},
+		optimismSepolia: {
+			url: opSepoliaUrl,
+			accounts,
+			chainId: 11155420,
+		},
+		zkSyncSepolia: {
+			url: zkSyncSepoliaUrl,
+			accounts,
+			chainId: 300,
+		},
+		polygonAmoy: {
+			url: polygonAmoyUrl,
+			accounts,
+			chainId: 80002,
+		},
+		bscTestnet: {
+			url: bscTestnetUrl,
+			accounts,
+			chainId: 97,
 		},
 	},
 	etherscan: {
