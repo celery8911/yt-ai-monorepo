@@ -25,32 +25,32 @@
  * 格式化选项
  */
 export interface FormatAddressOptions {
-    /**
-     * 前缀保留字符数
-     * @default 6
-     *
-     * 📖 说明：
-     * - 以太坊地址: 0x1234... → 保留 6 位包含 0x
-     * - 建议 4-8 位，太少不易识别，太多失去格式化意义
-     */
-    prefixLength?: number;
-    /**
-     * 后缀保留字符数
-     * @default 4
-     *
-     * 📖 说明：
-     * - ...5678 → 保留 4 位
-     * - 通常比 prefix 少一些
-     */
-    suffixLength?: number;
-    /**
-     * 中间省略符号
-     * @default '...'
-     *
-     * 📖 说明：
-     * - 可以使用 '...'、'…'、'****' 等
-     */
-    ellipsis?: string;
+	/**
+	 * 前缀保留字符数
+	 * @default 6
+	 *
+	 * 📖 说明：
+	 * - 以太坊地址: 0x1234... → 保留 6 位包含 0x
+	 * - 建议 4-8 位，太少不易识别，太多失去格式化意义
+	 */
+	prefixLength?: number;
+	/**
+	 * 后缀保留字符数
+	 * @default 4
+	 *
+	 * 📖 说明：
+	 * - ...5678 → 保留 4 位
+	 * - 通常比 prefix 少一些
+	 */
+	suffixLength?: number;
+	/**
+	 * 中间省略符号
+	 * @default '...'
+	 *
+	 * 📖 说明：
+	 * - 可以使用 '...'、'…'、'****' 等
+	 */
+	ellipsis?: string;
 }
 /**
  * 格式化钱包地址
@@ -85,7 +85,10 @@ export interface FormatAddressOptions {
  * // → '0x1234****5678'
  * ```
  */
-export declare function formatAddress(address: string, options?: FormatAddressOptions): string;
+export declare function formatAddress(
+	address: string,
+	options?: FormatAddressOptions,
+): string;
 /**
  * 📚 常见使用场景
  *

@@ -148,7 +148,11 @@ export function useSignTypedDemo() {
 	 */
 	const verifyOnChain = useCallback(
 		async (signed: SignedQuote) => {
-			if (!publicClient || !verifierAddress || verifierAddress === "0x0000000000000000000000000000000000000000") {
+			if (
+				!publicClient ||
+				!verifierAddress ||
+				verifierAddress === "0x0000000000000000000000000000000000000000"
+			) {
 				setError("合约地址未配置或客户端不可用");
 				return false;
 			}
@@ -202,7 +206,11 @@ export function useSignTypedDemo() {
 	 */
 	const verifyBatchOnChain = useCallback(
 		async (quotes: SignedQuote[]) => {
-			if (!publicClient || !verifierAddress || verifierAddress === "0x0000000000000000000000000000000000000000") {
+			if (
+				!publicClient ||
+				!verifierAddress ||
+				verifierAddress === "0x0000000000000000000000000000000000000000"
+			) {
 				setError("验证合约未部署");
 				return null;
 			}

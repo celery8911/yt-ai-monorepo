@@ -31,7 +31,7 @@ const SignatureDemoContent = () => {
 			deadline,
 		});
 		if (signed) {
-			setQuotesList(prev => [...prev, signed]);
+			setQuotesList((prev) => [...prev, signed]);
 		}
 	};
 
@@ -47,10 +47,10 @@ const SignatureDemoContent = () => {
 		}
 	};
 
-    const handleReset = () => {
-        signTyped.reset();
-        setQuotesList([]);
-    };
+	const handleReset = () => {
+		signTyped.reset();
+		setQuotesList([]);
+	};
 
 	if (!isConnected) {
 		return (
@@ -176,15 +176,17 @@ const SignatureDemoContent = () => {
 								{signTyped.isVerifying ? "验证中..." : "链上验证"}
 							</Button>
 						)}
-                        {quotesList.length > 1 && (
-                            <Button
-                                variant="secondary"
-                                onClick={handleVerifyBatch}
-                                disabled={signTyped.isVerifying}
-                            >
-                                {signTyped.isVerifying ? "批量验证中..." : `批量验证 (${quotesList.length})`}
-                            </Button>
-                        )}
+						{quotesList.length > 1 && (
+							<Button
+								variant="secondary"
+								onClick={handleVerifyBatch}
+								disabled={signTyped.isVerifying}
+							>
+								{signTyped.isVerifying
+									? "批量验证中..."
+									: `批量验证 (${quotesList.length})`}
+							</Button>
+						)}
 						{quotesList.length > 0 && (
 							<Button variant="outline" onClick={handleReset}>
 								重置
@@ -196,24 +198,38 @@ const SignatureDemoContent = () => {
 						<p className="text-sm text-red-400">{signTyped.error}</p>
 					)}
 
-                    {/* 批量签名列表 */}
-                    {quotesList.length > 0 && (
-                        <div className="mt-4 space-y-2">
-                            <h3 className="text-sm font-medium">待验证签名列表 ({quotesList.length})</h3>
-                            <div className="max-h-40 overflow-y-auto space-y-2 rounded bg-gray-900 p-2">
-                                {quotesList.map((q, i) => (
-                                    <div key={i} className="flex items-center justify-between text-xs border-b border-gray-800 pb-1">
-                                        <span className="text-gray-400">#{i} {q.quote.agentId} - {q.quote.price.toString()} wei</span>
-                                        {signTyped.batchResults && signTyped.batchResults[i] !== undefined && (
-                                            <span className={signTyped.batchResults[i] ? "text-green-400" : "text-red-400"}>
-                                                {signTyped.batchResults[i] ? "有效" : "无效"}
-                                            </span>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+					{/* 批量签名列表 */}
+					{quotesList.length > 0 && (
+						<div className="mt-4 space-y-2">
+							<h3 className="text-sm font-medium">
+								待验证签名列表 ({quotesList.length})
+							</h3>
+							<div className="max-h-40 overflow-y-auto space-y-2 rounded bg-gray-900 p-2">
+								{quotesList.map((q, i) => (
+									<div
+										key={q.signature}
+										className="flex items-center justify-between text-xs border-b border-gray-800 pb-1"
+									>
+										<span className="text-gray-400">
+											#{i} {q.quote.agentId} - {q.quote.price.toString()} wei
+										</span>
+										{signTyped.batchResults &&
+											signTyped.batchResults[i] !== undefined && (
+												<span
+													className={
+														signTyped.batchResults[i]
+															? "text-green-400"
+															: "text-red-400"
+													}
+												>
+													{signTyped.batchResults[i] ? "有效" : "无效"}
+												</span>
+											)}
+									</div>
+								))}
+							</div>
+						</div>
+					)}
 
 					{/* 签名结果展示 */}
 					{signTyped.signedQuote && (

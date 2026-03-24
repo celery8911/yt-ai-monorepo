@@ -1,109 +1,127 @@
-"""Wallet balances derived from on-chain events."""
+"""
+Wallet balances derived from on-chain events.
+"""
 type Wallet @entity(immutable: false) {
-  id: ID!
-  balance: BigInt!
-  lockedAmount: BigInt!
-  totalEarnings: BigInt!
-  totalSpent: BigInt!
-  updatedAt: BigInt!
+	id: ID!
+	balance: BigInt!
+	lockedAmount: BigInt!
+	totalEarnings: BigInt!
+	totalSpent: BigInt!
+	updatedAt: BigInt!
 }
 
-"""CBT transfer events."""
+"""
+CBT transfer events.
+"""
 type TokenTransfer @entity(immutable: true) {
-  id: ID!
-  from: Bytes!
-  to: Bytes!
-  amount: BigInt!
-  timestamp: BigInt!
-  transactionHash: Bytes!
+	id: ID!
+	from: Bytes!
+	to: Bytes!
+	amount: BigInt!
+	timestamp: BigInt!
+	transactionHash: Bytes!
 }
 
-"""Escrow record for a job payment."""
+"""
+Escrow record for a job payment.
+"""
 type Escrow @entity(immutable: false) {
-  id: ID!
-  jobId: Bytes!
-  payer: Bytes!
-  agent: Bytes!
-  amount: BigInt!
-  serviceFee: BigInt!
-  currency: String!
-  status: String!
-  releaseAt: BigInt!
-  createdAt: BigInt!
-  releasedAt: BigInt
-  refundedAt: BigInt
-  frozen: Boolean!
+	id: ID!
+	jobId: Bytes!
+	payer: Bytes!
+	agent: Bytes!
+	amount: BigInt!
+	serviceFee: BigInt!
+	currency: String!
+	status: String!
+	releaseAt: BigInt!
+	createdAt: BigInt!
+	releasedAt: BigInt
+	refundedAt: BigInt
+	frozen: Boolean!
 }
 
-"""Dispute lifecycle for an escrow."""
+"""
+Dispute lifecycle for an escrow.
+"""
 type Dispute @entity(immutable: false) {
-  id: ID!
-  jobId: Bytes!
-  escrowId: ID!
-  initiator: Bytes!
-  status: String!
-  votesFor: Int!
-  votesAgainst: Int!
-  totalVoters: Int!
-  createdAt: BigInt!
-  resolvedAt: BigInt
-  resolvedOutcome: String
+	id: ID!
+	jobId: Bytes!
+	escrowId: ID!
+	initiator: Bytes!
+	status: String!
+	votesFor: Int!
+	votesAgainst: Int!
+	totalVoters: Int!
+	createdAt: BigInt!
+	resolvedAt: BigInt
+	resolvedOutcome: String
 }
 
-"""Vote entries for dispute participation."""
+"""
+Vote entries for dispute participation.
+"""
 type Vote @entity(immutable: false) {
-  id: ID!
-  disputeId: ID!
-  voter: Bytes!
-  support: Boolean!
-  cost: BigInt!
-  createdAt: BigInt!
+	id: ID!
+	disputeId: ID!
+	voter: Bytes!
+	support: Boolean!
+	cost: BigInt!
+	createdAt: BigInt!
 }
 
-"""Reward claim entries for dispute winners."""
+"""
+Reward claim entries for dispute winners.
+"""
 type RewardClaim @entity(immutable: true) {
-  id: ID!
-  disputeId: ID!
-  claimant: Bytes!
-  amount: BigInt!
-  timestamp: BigInt!
-  transactionHash: Bytes!
+	id: ID!
+	disputeId: ID!
+	claimant: Bytes!
+	amount: BigInt!
+	timestamp: BigInt!
+	transactionHash: Bytes!
 }
 
-"""Treasury accounting for fees and ETH in."""
+"""
+Treasury accounting for fees and ETH in.
+"""
 type Treasury @entity(immutable: false) {
-  id: ID!
-  ethCollected: BigInt!
-  cbtFeesCollected: BigInt!
-  updatedAt: BigInt!
+	id: ID!
+	ethCollected: BigInt!
+	cbtFeesCollected: BigInt!
+	updatedAt: BigInt!
 }
 
-"""Engagement (agent hiring record)"""
+"""
+Engagement (agent hiring record)
+"""
 type Engagement @entity(immutable: false) {
-  id: ID!
-  engagementId: BigInt!
-  user: Bytes!
-  agentId: String!
-  agentOwner: Bytes!
-  jobId: String
-  purchaseType: String!
-  totalPaid: BigInt!
-  startTime: BigInt!
-  endTime: BigInt
-  status: String!
-  escrowId: Bytes
-  transactions: [Transaction!]! @derivedFrom(field: "engagement")
+	id: ID!
+	engagementId: BigInt!
+	user: Bytes!
+	agentId: String!
+	agentOwner: Bytes!
+	jobId: String
+	purchaseType: String!
+	totalPaid: BigInt!
+	startTime: BigInt!
+	endTime: BigInt
+	status: String!
+	escrowId: Bytes
+	transactions: [Transaction!]! @derivedFrom(field: "engagement")
 }
 
-"""Transaction history"""
+"""
+Transaction history
+"""
 type Transaction @entity(immutable: true) {
-  id: ID!
-  type: String!
-  engagement: Engagement
-  from: Bytes!
-  to: Bytes
-  amount: BigInt!
-  timestamp: BigInt!
-  blockNumber: BigInt!
-  transactionHash: Bytes!
+	id: ID!
+	type: String!
+	engagement: Engagement
+	from: Bytes!
+	to: Bytes
+	amount: BigInt!
+	timestamp: BigInt!
+	blockNumber: BigInt!
+	transactionHash: Bytes!
 }

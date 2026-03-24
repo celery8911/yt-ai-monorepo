@@ -4,7 +4,7 @@ import { BidsResolver } from "./bids.resolver";
 import { BidsService } from "./bids.service";
 
 @Module({
-  controllers: [BidsController],
-  providers: [BidsService, BidsResolver]
+	controllers: [BidsController],
+	providers: [BidsService, BidsResolver],
 })
 export class BidsModule {}

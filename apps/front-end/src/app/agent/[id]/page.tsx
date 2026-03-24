@@ -31,8 +31,12 @@ const AgentDetail = () => {
 	const chainId = useChainId();
 	const contracts = getContracts(chainId);
 	const { switchChainAsync, isPending: isSwitching } = useSwitchChain();
-	
-	const { enqueue, queue, isProcessing: isQueueProcessing } = useTransactionQueue();
+
+	const {
+		enqueue,
+		queue,
+		isProcessing: isQueueProcessing,
+	} = useTransactionQueue();
 	const { writeContractAsync } = useWriteContract();
 
 	const { data: serviceFeeBps } = useReadContract({
@@ -107,13 +111,13 @@ const AgentDetail = () => {
 		const subscribed = engagementResults.some((engagement) => {
 			const result = engagement.result as any;
 			if (!result) return false;
-			
+
 			const user = result.user || result[1];
-			const status = result.status !== undefined ? Number(result.status) : Number(result[9]);
-			
+			const status =
+				result.status !== undefined ? Number(result.status) : Number(result[9]);
+
 			return (
-				user?.toLowerCase() === lowerAddress &&
-				(status === 1) // ACTIVE
+				user?.toLowerCase() === lowerAddress && status === 1 // ACTIVE
 			);
 		});
 		setHasSubscribed(subscribed);
@@ -158,7 +162,9 @@ const AgentDetail = () => {
 			}
 
 			if (typeof cbtBalance === "bigint" && cbtBalance < priceBreakdown.total) {
-				setSubscribeError(`CBT 余额不足，需要 ${formatUnits(priceBreakdown.total, 18)} CBT。`);
+				setSubscribeError(
+					`CBT 余额不足，需要 ${formatUnits(priceBreakdown.total, 18)} CBT。`,
+				);
 				return;
 			}
 
@@ -174,7 +180,7 @@ const AgentDetail = () => {
 						args: [contracts.AgentHiring, priceBreakdown.total],
 						nonce,
 					});
-				}
+				},
 			});
 
 			// Step 2: Enqueue Hire
@@ -194,9 +200,8 @@ const AgentDetail = () => {
 						],
 						nonce,
 					});
-				}
+				},
 			});
-
 		} catch (err) {
 			setSubscribeError(err instanceof Error ? err.message : "订阅失败");
 		}
@@ -213,9 +218,23 @@ const AgentDetail = () => {
 
 	return (
 		<div className="max-w-6xl mx-auto space-y-12 pb-20">
-			<Button variant="ghost" onClick={() => router.push("/market")} className="text-slate-400 hover:text-blue-400 group">
-				<svg className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+			<Button
+				variant="ghost"
+				onClick={() => router.push("/market")}
+				className="text-slate-400 hover:text-blue-400 group"
+			>
+				<svg
+					className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+				>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						strokeWidth={2}
+						d="M10 19l-7-7m0 0l7-7m-7 7h18"
+					/>
 				</svg>
 				返回市场
 			</Button>
@@ -223,51 +242,93 @@ const AgentDetail = () => {
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
 				<div className="lg:col-span-2 space-y-8">
 					<div className="aspect-video glass rounded-3xl overflow-hidden relative border border-white/10">
-						<img src={`https://picsum.photos/seed/${agent?.id}/1200/800`} className="w-full h-full object-cover opacity-30" alt={agent?.name} />
+						<img
+							src={`https://picsum.photos/seed/${agent?.id}/1200/800`}
+							className="w-full h-full object-cover opacity-30"
+							alt={agent?.name}
+						/>
 						<div className="absolute bottom-8 left-8 flex items-end gap-6">
 							<div className="size-20 bg-blue-600 rounded-2xl flex items-center justify-center">
-								<svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+								<svg
+									className="w-10 h-10 text-white"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+								>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M13 10V3L4 14h7v7l9-11h-7z"
+									/>
 								</svg>
 							</div>
 							<div>
-								<Badge variant="red" className="mb-2">{agent?.category}</Badge>
-								<h1 className="text-3xl font-black neon-text uppercase">{agent?.name}</h1>
+								<Badge variant="red" className="mb-2">
+									{agent?.category}
+								</Badge>
+								<h1 className="text-3xl font-black neon-text uppercase">
+									{agent?.name}
+								</h1>
 							</div>
 						</div>
 					</div>
 
 					<Tabs
-						tabs={[{ id: "overview", label: "详情概览" }, { id: "metrics", label: "性能指标" }]}
+						tabs={[
+							{ id: "overview", label: "详情概览" },
+							{ id: "metrics", label: "性能指标" },
+						]}
 						activeTab={activeTab}
 						onChange={setActiveTab}
 					/>
 
 					<div className="prose prose-invert max-w-none">
-						{activeTab === "overview" && <p className="text-slate-400 text-lg leading-relaxed">{agent?.desc}</p>}
+						{activeTab === "overview" && (
+							<p className="text-slate-400 text-lg leading-relaxed">
+								{agent?.desc}
+							</p>
+						)}
 					</div>
 				</div>
 
 				<div className="space-y-6">
 					<Card glow className="bg-slate-900/60 sticky top-24">
 						<CardHeader>
-							<h3 className="font-black text-sm uppercase tracking-widest text-slate-500">订阅协议</h3>
+							<h3 className="font-black text-sm uppercase tracking-widest text-slate-500">
+								订阅协议
+							</h3>
 						</CardHeader>
 						<CardContent className="space-y-6">
 							<div className="flex items-end justify-between">
 								<span className="text-sm text-slate-400">授权费用</span>
 								<span className="text-3xl font-black text-blue-400">
-									{priceBreakdown ? `${formatUnits(priceBreakdown.total, 18)} CBT` : "面议"}
+									{priceBreakdown
+										? `${formatUnits(priceBreakdown.total, 18)} CBT`
+										: "面议"}
 								</span>
 							</div>
 
 							{queue.length > 0 && (
 								<div className="space-y-2 rounded-lg bg-black/40 p-4 border border-white/5">
-									<p className="text-xs font-bold uppercase text-slate-500">交易状态队列</p>
-									{queue.map(tx => (
-										<div key={tx.id} className="flex items-center justify-between text-xs">
+									<p className="text-xs font-bold uppercase text-slate-500">
+										交易状态队列
+									</p>
+									{queue.map((tx) => (
+										<div
+											key={tx.id}
+											className="flex items-center justify-between text-xs"
+										>
 											<span className="text-slate-300">{tx.description}</span>
-											<Badge variant={tx.status === 'confirmed' ? 'green' : tx.status === 'failed' ? 'red' : 'blue'}>
+											<Badge
+												variant={
+													tx.status === "confirmed"
+														? "green"
+														: tx.status === "failed"
+															? "red"
+															: "blue"
+												}
+											>
 												{tx.status}
 											</Badge>
 										</div>
@@ -280,10 +341,16 @@ const AgentDetail = () => {
 								onClick={handleSubscribe}
 								disabled={hasSubscribed || isQueueProcessing || isSwitching}
 							>
-								{hasSubscribed ? "已订阅" : isQueueProcessing ? "处理中..." : "立即订阅"}
+								{hasSubscribed
+									? "已订阅"
+									: isQueueProcessing
+										? "处理中..."
+										: "立即订阅"}
 							</Button>
 
-							{(subscribeError) && <p className="text-xs text-rose-400">{subscribeError}</p>}
+							{subscribeError && (
+								<p className="text-xs text-rose-400">{subscribeError}</p>
+							)}
 						</CardContent>
 					</Card>
 				</div>

@@ -4,8 +4,8 @@ import { BillsResolver } from "./bills.resolver";
 import { BillsService } from "./bills.service";
 
 @Module({
-  controllers: [BillsController],
-  providers: [BillsService, BillsResolver],
-  exports: [BillsService]
+	controllers: [BillsController],
+	providers: [BillsService, BillsResolver],
+	exports: [BillsService],
 })
 export class BillsModule {}

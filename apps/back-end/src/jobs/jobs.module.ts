@@ -12,20 +12,20 @@ import { JobsResolver } from "./jobs.resolver";
 import { JobsService } from "./jobs.service";
 
 @Module({
-  imports: [
-    AgentsModule,
-    MatchingModule, forwardRef(() =>
-      DaoModule),
-    PrismaModule,
-    BullModule.registerQueue({ name: MATCHING_QUEUE_NAME }),
-  ],
-  controllers: [JobsController],
-  providers: [
-    JobsService,
-    JobsResolver,
-    JobsMatchingQueueService,
-    JobsMatchingProcessor,
-  ],
-  exports: [JobsService],
+	imports: [
+		AgentsModule,
+		MatchingModule,
+		forwardRef(() => DaoModule),
+		PrismaModule,
+		BullModule.registerQueue({ name: MATCHING_QUEUE_NAME }),
+	],
+	controllers: [JobsController],
+	providers: [
+		JobsService,
+		JobsResolver,
+		JobsMatchingQueueService,
+		JobsMatchingProcessor,
+	],
+	exports: [JobsService],
 })
-export class JobsModule { }
+export class JobsModule {}

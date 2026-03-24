@@ -2,36 +2,36 @@ import { Field, Float, ID, ObjectType } from "@nestjs/graphql";
 
 @ObjectType()
 export class BillType {
-  @Field(() => ID)
-  id!: string;
+	@Field(() => ID)
+	id!: string;
 
-  @Field()
-  jobId!: string;
+	@Field()
+	jobId!: string;
 
-  @Field()
-  agentId!: string;
+	@Field()
+	agentId!: string;
 
-  @Field(() => Float)
-  amount!: number;
+	@Field(() => Float)
+	amount!: number;
 
-  @Field()
-  currency!: string;
+	@Field()
+	currency!: string;
 
-  @Field()
-  status!: string;
+	@Field()
+	status!: string;
 
-  @Field({ nullable: true })
-  escrowId?: string;
+	@Field({ nullable: true })
+	escrowId?: string;
 
-  @Field()
-  payeeAddress!: string;
+	@Field()
+	payeeAddress!: string;
 
-  @Field()
-  payerAddress!: string;
+	@Field()
+	payerAddress!: string;
 
-  @Field()
-  createdAt!: string;
+	@Field()
+	createdAt!: string;
 
-  @Field({ nullable: true })
-  paidAt?: string;
+	@Field({ nullable: true })
+	paidAt?: string;
 }
