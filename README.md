@@ -1,83 +1,146 @@
-# yt-ai-monorepo
+# CyberAgent Monorepo
 
-AI-Native Monorepo 工程平台，基于 qc-monorepo 的架构搭建，提供统一的包管理、构建流水线与 AI 工作流基础设施。
+CyberAgent 是一个 Web3 AI Agent Marketplace Monorepo。它把前端市场、后端业务 API、链上合约、The Graph 子图和一个独立的 Mastra AI 服务放在同一个工作区里。
 
-## ✨ 特性
+当前最重要的产品闭环是：
 
-- **统一的 Monorepo 架构**：pnpm workspace + Turborepo
-- **可复用的包体系**：UI 组件库、Hooks 工具库、通用工具库
-- **AI 工作流内建**：提供分析命令与多角色 Subagents 规范
-- **一致的构建体验**：各包保留原有构建工具（Vite、Rollup、Microbundle）
+- 发布 Agent
+- 发布 Job
+- 用 AI 生成 Job 草稿
+- 自动匹配候选 Agent
+- 直接订阅 Agent 或围绕 Job 选择 Agent
+- 用 CBT 完成托管支付
+- 进入 DAO 争议与 keeper 自动结算
 
-## 🧱 项目结构
+## 项目结构
 
-```
+```text
 .
 ├── apps/
-│   ├── front-end/           # 前端应用（Frontend Agent）
-│   ├── back-end/            # 后端服务（Backend Agent）
-│   ├── contract/            # 智能合约和 Subgraph（Contract Agent）
-│   └── yt-ui-interface/     # Storybook 展示应用
+│   ├── front-end/        # Next.js 用户前台，端口 3005
+│   ├── back-end/         # NestJS API + keeper，端口 4000
+│   ├── contract/         # Hardhat 合约工程 + subgraph
+│   ├── ai-agent/         # Mastra AI 服务，端口 4111
+│   └── yt-ui-interface/  # Storybook
 ├── packages/
-│   ├── yt-ui/               # UI 组件库
-│   ├── yt-hooks/            # Hooks 工具库
-│   └── yt-libs/             # 通用工具库
-├── .ai/                     # AI 相关文档
-│   ├── docs/                # 核心文档
-│   ├── agents/              # Agent 定义
-│   ├── commands/            # 命令说明
-│   └── tasks/               # 任务清单
-├── task.md                  # 任务总览
-└── README.md
+│   ├── yt-ui/            # UI 组件库
+│   ├── yt-hooks/         # Hooks 工具库
+│   └── yt-libs/          # HTTP / 合约地址 / ABI / 工具函数
+└── .ai/docs/
+    ├── architecture.md   # 当前项目总览，建议先读
+    └── prd.md            # 当前产品定义
 ```
 
-## 🧰 技术栈
+## 运行面说明
 
-- **包管理**：pnpm workspace
-- **构建编排**：Turborepo
-- **UI**：Vite + Tailwind CSS
-- **Hooks 构建**：Rollup
-- **工具库构建**：Microbundle
-- **语言**：TypeScript
+- `apps/front-end`
+  - 用户界面
+  - 通过 `/api/*` rewrite 转发到后端
+  - 通过 wagmi 直接和 Sepolia 合约交互
 
-## 🚀 快速开始
+- `apps/back-end`
+  - Agent / Job / Dashboard / DAO / Wallet / Quote / Chain Status
+  - 可选 Redis 队列用于 Job 匹配
+  - 内置 keeper，用于自动执行 `releaseReady` 和 `resolveReady`
+
+- `apps/contract`
+  - 主要合约：`CBT`, `Escrow`, `DisputeDAO`, `Treasury`, `AgentHiring`, `SignatureVerifier`
+
+- `apps/contract/subgraph`
+  - 索引 Escrow、Dispute、CBT transfer、AgentHiring engagement 等链上事件
+
+- `apps/ai-agent`
+  - 当前主业务真正依赖的是 `draftWorkflow`
+  - `weather*` 和 `xhsAgents` 仍在仓库里，但属于 demo / 实验代码
+
+## 快速开始
+
+### 1. 准备 pnpm
+
+```bash
+corepack enable
+corepack prepare pnpm@10.28.0 --activate
+pnpm -v
+```
+
+`pnpm -v` 必须输出 `10.28.0`。
+
+### 2. 安装依赖
+
+必须在仓库根目录执行：
 
 ```bash
 pnpm install
-pnpm dev
 ```
 
-## 🤖 AI 工作流
+### 3. 配置环境变量
 
-- **需求分析命令**：[`commands/analyze.md`](./commands/analyze.md)
-- **任务状态机**：[`task.md`](./task.md)
-- **角色定义**：[`subagents/`](./subagents/)
+至少需要关注：
 
-## 📦 包说明
+- `apps/back-end/.env.example`
+- `apps/contract/.env.example`
+- `apps/ai-agent/.env.example`
+- `apps/front-end/.env.local`
 
-- **@yt/ui**：React UI 组件库（packages/yt-ui）
-- **@yt/hooks**：React Hooks 工具库（packages/yt-hooks）
-- **@yt/libs**：通用工具函数库（packages/yt-libs）
-- **@yt/ui-interface**：Storybook 展示应用（apps/yt-ui-interface）
+### 4. 启动主服务
 
-## 🧑‍💻 开发指南
+一条命令同时启动前端、后端、AI 服务：
 
-1. 启用 Corepack（如未启用过）：
-   - `corepack enable`
-2. 准备并激活指定 pnpm 版本：
-   - `corepack prepare pnpm@10.28.0 --activate`
-   - 验证：`pnpm -v`（必须输出 `10.28.0`）
-   - 若提示权限问题，可在上述命令前加 `sudo`
-3. 安装依赖（必须在仓库根目录执行）：`pnpm install`
-4. 添加依赖（必须在仓库根目录执行）：
-   - 给某个包添加依赖：`pnpm add <dep> -F <workspace-package>`  
-     示例：`pnpm add react -F @yt/ui`
-   - 给某个包添加开发依赖：`pnpm add <dep> -D -F <workspace-package>`  
-     示例：`pnpm add @types/react -D -F @yt/ui`
-   - 给根目录添加依赖：`pnpm add <dep> -w`  
-     示例：`pnpm add dotenv -w`
-5. 启动 Storybook：`pnpm --filter @yt/ui-interface dev`
-6. 构建所有包：`pnpm build`
-7. 查看任务清单：打开 `task.md`
+```bash
+pnpm dev-test
+```
 
-如需需求分析与任务拆解，请参考 `/analyze` 命令说明。
+也可以分开启动：
+
+```bash
+pnpm --filter @yt/front-end dev
+pnpm --filter yt-back-end dev
+pnpm --filter @yt-ai/ai-agent dev
+pnpm --filter @yt/ui-interface dev
+```
+
+## 常用命令
+
+```bash
+pnpm build
+pnpm format
+pnpm check
+pnpm --filter @yt/contracts test
+pnpm --filter @yt/contracts deploy:sepolia
+```
+
+## 关键文档
+
+- [`.ai/docs/architecture.md`](./.ai/docs/architecture.md)
+- [`.ai/docs/prd.md`](./.ai/docs/prd.md)
+
+如果你是新的 AI 会话，建议先读：
+
+1. `README.md`
+2. `.ai/docs/architecture.md`
+3. `apps/back-end/prisma/schema.prisma`
+4. `apps/front-end/src/app/jobs/[id]/page.tsx`
+5. `apps/contract/contracts/Escrow.sol`
+6. `apps/contract/contracts/DisputeDAO.sol`
+
+## 依赖操作红线
+
+- 只能在仓库根目录执行 `pnpm install/add/remove/update`
+- 给子包加依赖请用 `pnpm add <dep> -F <pkg>`
+- 不要在子包里用 `npm` 或 `yarn`
+- 不要手改 `node_modules`
+
+示例：
+
+```bash
+pnpm add axios -F @yt/libs
+pnpm add @types/node -D -F yt-back-end
+pnpm add dotenv -w
+```
+
+## 当前需要特别注意的事实
+
+- 直接订阅 Agent 走 `AgentHiring`
+- Job 详情页里的订阅/托管目前直接走 `Escrow`
+- 子图是 Dashboard、DAO、Wallet transfer 和 keeper 的关键依赖
+- 多链支持在 UI 上已预留，但真实有效地址目前主要只有 Sepolia
