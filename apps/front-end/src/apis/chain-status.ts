@@ -1,4 +1,4 @@
-import { request } from "@yt/libs/http";
+import { apiRequest } from "@/apis/client";
 
 export type EngagementRecord = {
 	id: string;
@@ -29,7 +29,7 @@ export const fetchEngagementsByUser = async (
 	user: string,
 	pagination: PaginationParams = {},
 ): Promise<EngagementsByUserResponse> => {
-	return request<EngagementsByUserResponse>({
+	return apiRequest<EngagementsByUserResponse>({
 		url: "/chain-status/engagement/by-user",
 		method: "GET",
 		params: { user, ...pagination },
@@ -62,7 +62,7 @@ export const fetchEscrowsByPayer = async (
 	payer: string,
 	activeOnly = true,
 ): Promise<EscrowsByPayerResponse> => {
-	return request<EscrowsByPayerResponse>({
+	return apiRequest<EscrowsByPayerResponse>({
 		url: "/chain-status/escrow/by-payer",
 		method: "GET",
 		params: { payer, activeOnly },
@@ -79,7 +79,7 @@ export type EscrowByJobResponse = {
 export const fetchEscrowByJob = async (
 	jobId: string,
 ): Promise<EscrowByJobResponse> => {
-	return request<EscrowByJobResponse>({
+	return apiRequest<EscrowByJobResponse>({
 		url: "/chain-status/escrow/by-job",
 		method: "GET",
 		params: { jobId },
@@ -104,7 +104,7 @@ export const fetchCbtTransfersByAddress = async (
 	address: string,
 	pagination: PaginationParams = {},
 ): Promise<CbtTransfersResponse> => {
-	return request<CbtTransfersResponse>({
+	return apiRequest<CbtTransfersResponse>({
 		url: "/chain-status/cbt/transfers",
 		method: "GET",
 		params: { address, ...pagination },

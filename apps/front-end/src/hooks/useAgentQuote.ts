@@ -1,5 +1,6 @@
 "use client";
 import { useChainId, useSignTypedData, useWallet } from "@/hooks/web3";
+import { API_BASE_PATH } from "@/apis/client";
 
 /**
  * useAgentQuote Hook - 链下 Agent 报价签名
@@ -112,28 +113,27 @@ export function useAgentQuote() {
 		setError(null);
 
 		try {
-			const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
-			const res = await fetch(`${apiBase}/quote`, {
+			const res = await fetch(`${API_BASE_PATH}/quote`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					...signedQuote,
-					quote: {
-						...signedQuote.quote,
-						price: signedQuote.quote.price.toString(),
-						validUntil: signedQuote.quote.validUntil.toString(),
-					},
+					agentId: signedQuote.quote.agentId,
+					owner: signedQuote.quote.owner,
+					price: signedQuote.quote.price.toString(),
+					nonce: Math.floor(Math.random() * 1000000), // In production, get from backend or contract
+					deadline: Math.floor(Number(signedQuote.quote.validUntil)),
+					signature: signedQuote.signature,
 				}),
 			});
 
 			if (!res.ok) {
-				throw new Error(`提交失败: ${res.status}`);
+				const data = await res.json();
+				throw new Error(data.message || `提交失败: ${res.status}`);
 			}
 
 			setIsSubmitting(false);
 			return true;
 		} catch (err) {
-			// 后端不可用时，仍然保留本地签名记录
 			setError(err instanceof Error ? err.message : "提交失败");
 			setIsSubmitting(false);
 			return false;

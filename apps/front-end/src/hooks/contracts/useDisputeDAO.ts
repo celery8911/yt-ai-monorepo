@@ -7,6 +7,7 @@ import {
 	useWaitForTransactionReceipt,
 	useWallet,
 } from "@/hooks/web3";
+import type { Abi } from "viem";
 
 /**
  * useDisputeDAO Hook - DisputeDAO 合约交互
@@ -20,12 +21,14 @@ import {
 
 import { getContracts, DisputeDAO_ABI, CBT_ABI, CHAIN_IDS } from "@yt/libs";
 import { useCallback } from "react";
+import { useGasEstimate } from "../useGasEstimate";
 
 export const useDisputeDAO = () => {
 	const { address } = useWallet();
 	const chainId = useChainId();
 	const { switchChainAsync } = useSwitchChain();
 	const contracts = getContracts(chainId);
+	const { estimateContractGas } = useGasEstimate();
 
 	// 发起争议
 	const {
@@ -118,42 +121,42 @@ export const useDisputeDAO = () => {
 	// 读取投票成本
 	const { data: voteCost } = useReadContract({
 		address: contracts.DisputeDAO,
-		abi: DisputeDAO_ABI.abi,
+		abi: DisputeDAO_ABI.abi as Abi,
 		functionName: "voteCost",
 	});
 
 	// 读取投票周期
 	const { data: votingPeriod } = useReadContract({
 		address: contracts.DisputeDAO,
-		abi: DisputeDAO_ABI.abi,
+		abi: DisputeDAO_ABI.abi as Abi,
 		functionName: "votingPeriod",
 	});
 
 	// 读取最小投票人数
 	const { data: minVoters } = useReadContract({
 		address: contracts.DisputeDAO,
-		abi: DisputeDAO_ABI.abi,
+		abi: DisputeDAO_ABI.abi as Abi,
 		functionName: "minVoters",
 	});
 
 	// 读取 keeper
 	const { data: keeper } = useReadContract({
 		address: contracts.DisputeDAO,
-		abi: DisputeDAO_ABI.abi,
+		abi: DisputeDAO_ABI.abi as Abi,
 		functionName: "keeper",
 	});
 
 	// 读取 owner
 	const { data: owner } = useReadContract({
 		address: contracts.DisputeDAO,
-		abi: DisputeDAO_ABI.abi,
+		abi: DisputeDAO_ABI.abi as Abi,
 		functionName: "owner",
 	});
 
 	// 读取 CBT allowance
 	const { data: allowance, refetch: refetchAllowance } = useReadContract({
 		address: contracts.CBT,
-		abi: CBT_ABI.abi,
+		abi: CBT_ABI.abi as Abi,
 		functionName: "allowance",
 		args: address && [address, contracts.DisputeDAO],
 	});
@@ -169,15 +172,29 @@ export const useDisputeDAO = () => {
 	const handleOpenDispute = useCallback(
 		async (jobId: string, reason: number) => {
 			await ensureCorrectNetwork();
-			return openDispute({
+			const est = await estimateContractGas({
 				address: contracts.DisputeDAO,
-				abi: DisputeDAO_ABI.abi,
+				abi: DisputeDAO_ABI.abi as Abi,
 				functionName: "openDispute",
 				args: [jobId as `0x${string}`, reason],
-				gas: 500000n,
+				account: address,
+			});
+
+			return openDispute({
+				address: contracts.DisputeDAO,
+				abi: DisputeDAO_ABI.abi as Abi,
+				functionName: "openDispute",
+				args: [jobId as `0x${string}`, reason],
+				gas: est?.gasLimit,
 			});
 		},
-		[ensureCorrectNetwork, openDispute, contracts.DisputeDAO],
+		[
+			ensureCorrectNetwork,
+			openDispute,
+			contracts.DisputeDAO,
+			estimateContractGas,
+			address,
+		],
 	);
 
 	// Approve CBT 操作
@@ -186,7 +203,7 @@ export const useDisputeDAO = () => {
 			await ensureCorrectNetwork();
 			return approveCBT({
 				address: contracts.CBT,
-				abi: CBT_ABI.abi,
+				abi: CBT_ABI.abi as Abi,
 				functionName: "approve",
 				args: [contracts.DisputeDAO, amount],
 			});
@@ -198,30 +215,58 @@ export const useDisputeDAO = () => {
 	const handleVote = useCallback(
 		async (jobId: string, supportEmployer: boolean) => {
 			await ensureCorrectNetwork();
-			return vote({
+			const est = await estimateContractGas({
 				address: contracts.DisputeDAO,
-				abi: DisputeDAO_ABI.abi,
+				abi: DisputeDAO_ABI.abi as Abi,
 				functionName: "vote",
 				args: [jobId as `0x${string}`, supportEmployer],
-				gas: 500000n, // 手动设置 gas limit，避免超过 Sepolia 上限
+				account: address,
+			});
+
+			return vote({
+				address: contracts.DisputeDAO,
+				abi: DisputeDAO_ABI.abi as Abi,
+				functionName: "vote",
+				args: [jobId as `0x${string}`, supportEmployer],
+				gas: est?.gasLimit,
 			});
 		},
-		[ensureCorrectNetwork, vote, contracts.DisputeDAO],
+		[
+			ensureCorrectNetwork,
+			vote,
+			contracts.DisputeDAO,
+			estimateContractGas,
+			address,
+		],
 	);
 
 	// 领取奖励操作
 	const handleClaimReward = useCallback(
 		async (jobId: string) => {
 			await ensureCorrectNetwork();
-			return claimReward({
+			const est = await estimateContractGas({
 				address: contracts.DisputeDAO,
-				abi: DisputeDAO_ABI.abi,
+				abi: DisputeDAO_ABI.abi as Abi,
 				functionName: "claimReward",
 				args: [jobId as `0x${string}`],
-				gas: 300000n,
+				account: address,
+			});
+
+			return claimReward({
+				address: contracts.DisputeDAO,
+				abi: DisputeDAO_ABI.abi as Abi,
+				functionName: "claimReward",
+				args: [jobId as `0x${string}`],
+				gas: est?.gasLimit,
 			});
 		},
-		[ensureCorrectNetwork, claimReward, contracts.DisputeDAO],
+		[
+			ensureCorrectNetwork,
+			claimReward,
+			contracts.DisputeDAO,
+			estimateContractGas,
+			address,
+		],
 	);
 
 	// 结算争议操作
@@ -230,7 +275,7 @@ export const useDisputeDAO = () => {
 			await ensureCorrectNetwork();
 			return resolveDispute({
 				address: contracts.DisputeDAO,
-				abi: DisputeDAO_ABI.abi,
+				abi: DisputeDAO_ABI.abi as Abi,
 				functionName: "resolveDispute",
 				args: [jobId as `0x${string}`],
 			});
@@ -247,7 +292,7 @@ export const useDisputeDAO = () => {
 			await ensureCorrectNetwork();
 			return setVotingConfig({
 				address: contracts.DisputeDAO,
-				abi: DisputeDAO_ABI.abi,
+				abi: DisputeDAO_ABI.abi as Abi,
 				functionName: "setVotingConfig",
 				args: [
 					BigInt(voteCost as bigint),

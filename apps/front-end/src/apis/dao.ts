@@ -1,4 +1,4 @@
-import { request } from "@yt/libs/http";
+import { apiRequest } from "@/apis/client";
 
 export type DisputeStatus = "OPEN" | "VOTING" | "RESOLVED";
 export type VoteValue = "approve" | "reject";
@@ -59,7 +59,7 @@ export type FetchDisputeListParams = {
 export const fetchDisputeList = async (
 	params: FetchDisputeListParams,
 ): Promise<DisputeListResponse> => {
-	return request<DisputeListResponse>({
+	return apiRequest<DisputeListResponse>({
 		url: "/dao/disputes",
 		method: "GET",
 		params,
@@ -74,7 +74,7 @@ export type DisputeDetailResponse = {
 export const fetchDisputeDetail = async (
 	id: string,
 ): Promise<DisputeDetailResponse> => {
-	return request<DisputeDetailResponse>({
+	return apiRequest<DisputeDetailResponse>({
 		url: `/dao/${id}`,
 		method: "GET",
 	});
@@ -90,7 +90,7 @@ export type InitiateDisputePayload = {
 export const initiateDispute = async (
 	payload: InitiateDisputePayload,
 ): Promise<Dispute> => {
-	return request<Dispute>({
+	return apiRequest<Dispute>({
 		url: "/dao/initiate",
 		method: "POST",
 		data: payload,
@@ -109,7 +109,7 @@ export type VoteDisputePayload = {
 export const voteDispute = async (
 	payload: VoteDisputePayload,
 ): Promise<Dispute> => {
-	return request<Dispute>({
+	return apiRequest<Dispute>({
 		url: "/dao/vote",
 		method: "POST",
 		data: payload,

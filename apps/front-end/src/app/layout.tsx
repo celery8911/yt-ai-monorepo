@@ -5,7 +5,6 @@ import "@rainbow-me/rainbowkit/styles.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Web3Provider from "@/components/Web3Provider";
-import ClientProviders from "./providers";
 
 const inter = Inter({
 	subsets: ["latin"],

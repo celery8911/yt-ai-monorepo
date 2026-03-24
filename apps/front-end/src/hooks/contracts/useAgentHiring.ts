@@ -7,6 +7,7 @@ import {
 	useWaitForTransactionReceipt,
 	useWallet,
 } from "@/hooks/web3";
+import type { Abi } from "viem";
 
 /**
  * useAgentHiring Hook - Agent雇佣合约交互
@@ -94,7 +95,7 @@ export const useAgentHiring = () => {
 
 			hire({
 				address: contracts.AgentHiring,
-				abi: AgentHiring_ABI.abi,
+				abi: AgentHiring_ABI.abi as Abi,
 				functionName: "hire",
 				args: [
 					params.agentId,
@@ -126,7 +127,7 @@ export const useAgentHiring = () => {
 
 			approveCompletion({
 				address: contracts.AgentHiring,
-				abi: AgentHiring_ABI.abi,
+				abi: AgentHiring_ABI.abi as Abi,
 				functionName: "approveCompletion",
 				args: [engagementId],
 			});
@@ -152,7 +153,7 @@ export const useAgentHiring = () => {
 
 			refund({
 				address: contracts.AgentHiring,
-				abi: AgentHiring_ABI.abi,
+				abi: AgentHiring_ABI.abi as Abi,
 				functionName: "refund",
 				args: [engagementId],
 			});
@@ -169,7 +170,7 @@ export const useAgentHiring = () => {
 	const useEngagement = (engagementId: bigint | undefined) => {
 		return useReadContract({
 			address: contracts.AgentHiring,
-			abi: AgentHiring_ABI.abi,
+			abi: AgentHiring_ABI.abi as Abi,
 			functionName: "engagements",
 			args: engagementId !== undefined ? [engagementId] : undefined,
 			query: {

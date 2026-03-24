@@ -7,6 +7,7 @@ import {
 	useWaitForTransactionReceipt,
 	useWallet,
 } from "@/hooks/web3";
+import type { Abi } from "viem";
 
 /**
  * useCBT Hook - CBT 代币交互
@@ -34,7 +35,7 @@ export const useCBT = () => {
 		isLoading: isLoadingBalance,
 	} = useReadContract({
 		address: contracts.CBT,
-		abi: CBT_ABI.abi,
+		abi: CBT_ABI.abi as Abi,
 		functionName: "balanceOf",
 		args: address ? [address] : undefined,
 		query: {
@@ -45,7 +46,7 @@ export const useCBT = () => {
 	// 读取兑换汇率 (1 ETH = ? CBT)
 	const { data: rate, isLoading: isLoadingRate } = useReadContract({
 		address: contracts.CBT,
-		abi: CBT_ABI.abi,
+		abi: CBT_ABI.abi as Abi,
 		functionName: "rate",
 	});
 
@@ -92,7 +93,7 @@ export const useCBT = () => {
 			}
 			buyCBT({
 				address: contracts.CBT,
-				abi: CBT_ABI.abi,
+				abi: CBT_ABI.abi as Abi,
 				functionName: "buyCBT",
 				value: parseEther(ethAmount),
 			});
@@ -115,7 +116,7 @@ export const useCBT = () => {
 		try {
 			approve({
 				address: contracts.CBT,
-				abi: CBT_ABI.abi,
+				abi: CBT_ABI.abi as Abi,
 				functionName: "approve",
 				args: [spender, amount],
 			});

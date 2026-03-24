@@ -1,4 +1,4 @@
-import { request } from "@yt/libs/http";
+import { apiRequest } from "@/apis/client";
 
 export type JobStatus =
 	| "DRAFT"
@@ -215,7 +215,7 @@ export const fetchJobList = async (
 	limit: number;
 	total: number;
 }> => {
-	const data = await request<JobListResponse>({
+	const data = await apiRequest<JobListResponse>({
 		url: "/jobs",
 		method: "GET",
 		params: filters,
@@ -232,7 +232,7 @@ export const fetchJobList = async (
 export const fetchJobDetail = async (
 	id: string,
 ): Promise<JobDetailResponse> => {
-	return request<JobDetailResponse>({
+	return apiRequest<JobDetailResponse>({
 		url: `/jobs/${id}`,
 		method: "GET",
 	});
@@ -241,7 +241,7 @@ export const fetchJobDetail = async (
 export const createJob = async (
 	payload: CreateJobPayload,
 ): Promise<CreateJobResponse> => {
-	return request<CreateJobResponse>({
+	return apiRequest<CreateJobResponse>({
 		url: "/jobs",
 		method: "POST",
 		data: payload,
@@ -252,7 +252,7 @@ export const updateJob = async (
 	id: string,
 	payload: UpdateJobPayload,
 ): Promise<Job> => {
-	return request<Job>({
+	return apiRequest<Job>({
 		url: `/jobs/${id}`,
 		method: "PUT",
 		data: payload,
@@ -267,7 +267,7 @@ export const selectJobAgent = async (
 	selectedAgentId?: string;
 	matches: Array<{ id: string }>;
 }> => {
-	return request({
+	return apiRequest({
 		url: `/jobs/${jobId}/select`,
 		method: "PUT",
 		data: { agentId },
@@ -278,7 +278,7 @@ export const createJobDispute = async (
 	jobId: string,
 	payload: { initiator: string; reason?: string },
 ): Promise<{ job: Job; dispute: { id: string } }> => {
-	return request({
+	return apiRequest({
 		url: `/jobs/${jobId}/dispute`,
 		method: "POST",
 		data: payload,
@@ -290,7 +290,7 @@ export const invokeJobAgent = async (
 	agentId: string,
 	payload?: { input?: string; context?: Record<string, unknown> },
 ): Promise<AgentInvokeResponse> => {
-	return request<AgentInvokeResponse>({
+	return apiRequest<AgentInvokeResponse>({
 		url: `/jobs/${jobId}/agents/${agentId}/invoke`,
 		method: "POST",
 		data: payload ?? {},
@@ -300,7 +300,7 @@ export const invokeJobAgent = async (
 export const runJobMatching = async (
 	jobId: string,
 ): Promise<RunMatchResponse> => {
-	return request<RunMatchResponse>({
+	return apiRequest<RunMatchResponse>({
 		url: `/jobs/${jobId}/match/run`,
 		method: "POST",
 	});

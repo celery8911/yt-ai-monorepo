@@ -7,6 +7,7 @@ import {
 	useWaitForTransactionReceipt,
 	useWallet,
 } from "@/hooks/web3";
+import type { Abi } from "viem";
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -101,7 +102,7 @@ const JobDetail = () => {
 		useWaitForTransactionReceipt({ hash: escrowHash });
 	const { data: serviceFeeBps } = useReadContract({
 		address: contracts.Escrow,
-		abi: Escrow_ABI.abi,
+		abi: Escrow_ABI.abi as Abi,
 		functionName: "serviceFeeBps",
 	});
 
@@ -254,7 +255,7 @@ const JobDetail = () => {
 
 		createEscrow({
 			address: contracts.Escrow,
-			abi: Escrow_ABI.abi,
+			abi: Escrow_ABI.abi as Abi,
 			functionName: "createEscrow",
 			args: [
 				escrowRequest.jobId,
@@ -373,7 +374,7 @@ const JobDetail = () => {
 
 			approve({
 				address: contracts.CBT,
-				abi: CBT_ABI.abi,
+				abi: CBT_ABI.abi as Abi,
 				functionName: "approve",
 				args: [contracts.Escrow, approveAmount],
 			});

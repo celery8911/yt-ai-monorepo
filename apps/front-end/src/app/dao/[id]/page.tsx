@@ -5,6 +5,7 @@ import {
 	useReadContract,
 	useWaitForTransactionReceipt,
 } from "@/hooks/web3";
+import type { Abi } from "viem";
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -119,7 +120,7 @@ const DisputeDetail = () => {
 
 	const { data: voterStatus } = useReadContract({
 		address: contracts.DisputeDAO,
-		abi: DisputeDAO_ABI.abi,
+		abi: DisputeDAO_ABI.abi as Abi,
 		functionName: "voterStatus",
 		args: disputeId && address ? [disputeId, address] : undefined,
 		query: {
@@ -187,7 +188,7 @@ const DisputeDetail = () => {
 
 	const { data: disputeInfo } = useReadContract({
 		address: contracts.DisputeDAO,
-		abi: DisputeDAO_ABI.abi,
+		abi: DisputeDAO_ABI.abi as Abi,
 		functionName: "disputeInfo",
 		args: disputeId ? [disputeId] : undefined,
 		query: {

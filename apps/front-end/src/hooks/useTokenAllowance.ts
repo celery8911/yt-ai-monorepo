@@ -32,7 +32,12 @@ type AllowanceInfo = {
 
 const UNLIMITED_THRESHOLD = 2n ** 128n; // 大于此值视为无限授权
 
-export function useTokenAllowance() {
+type SpenderInfo = {
+	name: string;
+	address: `0x${string}`;
+};
+
+export function useTokenAllowance(spenderList?: SpenderInfo[]) {
 	const { address } = useWallet();
 	const chainId = useChainId();
 	const contracts = getContracts(chainId);
@@ -46,14 +51,14 @@ export function useTokenAllowance() {
 	const { isLoading: isRevokeConfirming, isSuccess: isRevokeSuccess } =
 		useWaitForTransactionReceipt({ hash: revokeHash });
 
-	// 批量查询各合约的授权额度
-	const spenders = [
+	// 使用传入的 spenderList 或默认值
+	const spenders: SpenderInfo[] = spenderList ?? [
 		{ name: "AgentHiring", address: contracts.AgentHiring },
 		{ name: "Escrow", address: contracts.Escrow },
 		{ name: "DisputeDAO", address: contracts.DisputeDAO },
-	] as const;
+	];
 
-	const { data: allowances, refetch: refetchAllowances } = useReadContracts({
+	const { data: rawAllowances, refetch: refetchAllowances } = useReadContracts({
 		contracts: spenders.map((spender) => ({
 			address: contracts.CBT,
 			abi: CBT_ABI.abi as Abi,
@@ -66,8 +71,8 @@ export function useTokenAllowance() {
 	});
 
 	// 格式化授权数据
-	const allowanceList: AllowanceInfo[] = spenders.map((spender, i) => {
-		const raw = (allowances?.[i]?.result as bigint) ?? 0n;
+	const allowances: AllowanceInfo[] = spenders.map((spender, i) => {
+		const raw = (rawAllowances?.[i]?.result as bigint) ?? 0n;
 		const isUnlimited = raw >= UNLIMITED_THRESHOLD;
 
 		return {
@@ -84,7 +89,7 @@ export function useTokenAllowance() {
 	/**
 	 * 撤销授权 — approve(spender, 0)
 	 */
-	const revoke = useCallback(
+	const revokeAllowance = useCallback(
 		(spenderAddress: `0x${string}`) => {
 			revokeApproval({
 				address: contracts.CBT,
@@ -97,8 +102,10 @@ export function useTokenAllowance() {
 	);
 
 	return {
-		allowanceList,
-		revoke,
+		allowances,
+		allowanceList: allowances,
+		revokeAllowance,
+		revoke: revokeAllowance,
 		isRevoking,
 		isRevokeConfirming,
 		isRevokeSuccess,

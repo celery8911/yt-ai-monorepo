@@ -20,11 +20,22 @@ describe("AgentHiring", () => {
 		const treasury = await Treasury.deploy(await cbt.getAddress());
 		await cbt.connect(owner).setTreasury(await treasury.getAddress());
 
+		// Deploy Escrow
+		const Escrow = await ethers.getContractFactory("Escrow");
+		const escrow = await Escrow.deploy(
+			await cbt.getAddress(),
+			await treasury.getAddress(),
+			keeper.address,
+			RELEASE_DELAY,
+		);
+		await treasury.setAuthorizedCaller(await escrow.getAddress(), true);
+
 		// Deploy AgentHiring
 		const AgentHiring = await ethers.getContractFactory("AgentHiring");
 		const agentHiring = await AgentHiring.deploy(
 			await cbt.getAddress(),
 			await treasury.getAddress(),
+			await escrow.getAddress(),
 			keeper.address,
 			SERVICE_FEE_BPS,
 			RELEASE_DELAY,
@@ -40,6 +51,7 @@ describe("AgentHiring", () => {
 			user2,
 			cbt,
 			treasury,
+			escrow,
 			agentHiring,
 		};
 	}
@@ -60,7 +72,7 @@ describe("AgentHiring", () => {
 
 	describe("Direct Purchase", () => {
 		it("should create engagement for direct purchase", async () => {
-			const { employer, agentOwner, cbt, agentHiring, treasury } =
+			const { employer, agentOwner, cbt, agentHiring, escrow, treasury } =
 				await deployFixture();
 
 			// Buy CBT
@@ -97,9 +109,8 @@ describe("AgentHiring", () => {
 				);
 
 			// Check balances
-			expect(await cbt.balanceOf(await agentHiring.getAddress())).to.equal(
-				price,
-			);
+			expect(await cbt.balanceOf(await agentHiring.getAddress())).to.equal(0n);
+			expect(await cbt.balanceOf(await escrow.getAddress())).to.equal(price);
 			expect(await cbt.balanceOf(await treasury.getAddress())).to.equal(fee);
 
 			// Check engagement
@@ -111,7 +122,7 @@ describe("AgentHiring", () => {
 			expect(engagement.jobId).to.equal(jobId);
 			expect(engagement.purchaseType).to.equal(purchaseType);
 			expect(engagement.totalPaid).to.equal(price);
-			expect(engagement.status).to.equal(0); // ACTIVE
+			expect(engagement.status).to.equal(1); // ACTIVE
 		});
 
 		it("should track engagements by user", async () => {
@@ -236,155 +247,6 @@ describe("AgentHiring", () => {
 			const engagement = await agentHiring.engagements(1);
 			expect(engagement.jobId).to.equal(jobId);
 			expect(engagement.purchaseType).to.equal(purchaseType);
-		});
-	});
-
-	describe("Payment Release", () => {
-		it("should allow user to approve completion", async () => {
-			const { employer, agentOwner, cbt, agentHiring } = await deployFixture();
-
-			const ethIn = ethers.parseEther("1");
-			await cbt.connect(employer).buyCBT({ value: ethIn });
-
-			const price = 1000n * 10n ** 18n;
-			const fee = (price * SERVICE_FEE_BPS) / 10_000n;
-			await cbt
-				.connect(employer)
-				.approve(await agentHiring.getAddress(), price + fee);
-
-			await agentHiring
-				.connect(employer)
-				.hire("agent1", agentOwner.address, "", price, 0);
-
-			// User approves
-			const tx = await agentHiring.connect(employer).approveCompletion(1);
-
-			await expect(tx)
-				.to.emit(agentHiring, "PaymentReleased")
-				.withArgs(1, agentOwner.address, price);
-
-			// Check balances
-			expect(await cbt.balanceOf(agentOwner.address)).to.equal(price);
-			expect(await cbt.balanceOf(await agentHiring.getAddress())).to.equal(0);
-
-			// Check status
-			const engagement = await agentHiring.engagements(1);
-			expect(engagement.status).to.equal(1); // COMPLETED
-			expect(engagement.endTime).to.be.greaterThan(0);
-		});
-
-		it("should allow keeper to auto release after delay", async () => {
-			const { employer, agentOwner, keeper, cbt, agentHiring } =
-				await deployFixture();
-
-			const ethIn = ethers.parseEther("1");
-			await cbt.connect(employer).buyCBT({ value: ethIn });
-
-			const price = 1000n * 10n ** 18n;
-			const fee = (price * SERVICE_FEE_BPS) / 10_000n;
-			await cbt
-				.connect(employer)
-				.approve(await agentHiring.getAddress(), price + fee);
-
-			await agentHiring
-				.connect(employer)
-				.hire("agent1", agentOwner.address, "", price, 0);
-
-			// Try to release too early
-			await expect(
-				agentHiring.connect(keeper).autoRelease(1),
-			).to.be.revertedWithCustomError(agentHiring, "TooEarly");
-
-			// Fast forward
-			await time.increase(RELEASE_DELAY + 1);
-
-			// Now it should work
-			const tx = await agentHiring.connect(keeper).autoRelease(1);
-
-			await expect(tx)
-				.to.emit(agentHiring, "PaymentReleased")
-				.withArgs(1, agentOwner.address, price);
-
-			expect(await cbt.balanceOf(agentOwner.address)).to.equal(price);
-		});
-
-		it("should prevent non-keeper from auto releasing", async () => {
-			const { employer, agentOwner, cbt, agentHiring } = await deployFixture();
-
-			const ethIn = ethers.parseEther("1");
-			await cbt.connect(employer).buyCBT({ value: ethIn });
-
-			const price = 1000n * 10n ** 18n;
-			const fee = (price * SERVICE_FEE_BPS) / 10_000n;
-			await cbt
-				.connect(employer)
-				.approve(await agentHiring.getAddress(), price + fee);
-
-			await agentHiring
-				.connect(employer)
-				.hire("agent1", agentOwner.address, "", price, 0);
-
-			await time.increase(RELEASE_DELAY + 1);
-
-			await expect(
-				agentHiring.connect(employer).autoRelease(1),
-			).to.be.revertedWithCustomError(agentHiring, "Unauthorized");
-		});
-
-		it("should prevent non-user from approving completion", async () => {
-			const { employer, agentOwner, user2, cbt, agentHiring } =
-				await deployFixture();
-
-			const ethIn = ethers.parseEther("1");
-			await cbt.connect(employer).buyCBT({ value: ethIn });
-
-			const price = 1000n * 10n ** 18n;
-			const fee = (price * SERVICE_FEE_BPS) / 10_000n;
-			await cbt
-				.connect(employer)
-				.approve(await agentHiring.getAddress(), price + fee);
-
-			await agentHiring
-				.connect(employer)
-				.hire("agent1", agentOwner.address, "", price, 0);
-
-			await expect(
-				agentHiring.connect(user2).approveCompletion(1),
-			).to.be.revertedWithCustomError(agentHiring, "Unauthorized");
-		});
-	});
-
-	describe("Refund", () => {
-		it("should allow owner to refund", async () => {
-			const { owner, employer, agentOwner, cbt, agentHiring } =
-				await deployFixture();
-
-			const ethIn = ethers.parseEther("1");
-			await cbt.connect(employer).buyCBT({ value: ethIn });
-
-			const price = 1000n * 10n ** 18n;
-			const fee = (price * SERVICE_FEE_BPS) / 10_000n;
-			await cbt
-				.connect(employer)
-				.approve(await agentHiring.getAddress(), price + fee);
-
-			await agentHiring
-				.connect(employer)
-				.hire("agent1", agentOwner.address, "", price, 0);
-
-			const balanceBefore = await cbt.balanceOf(employer.address);
-
-			const tx = await agentHiring.connect(owner).refund(1);
-
-			await expect(tx)
-				.to.emit(agentHiring, "PaymentRefunded")
-				.withArgs(1, employer.address, price);
-
-			const balanceAfter = await cbt.balanceOf(employer.address);
-			expect(balanceAfter - balanceBefore).to.equal(price);
-
-			const engagement = await agentHiring.engagements(1);
-			expect(engagement.status).to.equal(3); // CANCELLED
 		});
 	});
 

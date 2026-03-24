@@ -76,15 +76,14 @@ describe("Dashboard contracts", () => {
 		await cbt.connect(employer).buyCBT({ value: ethIn });
 
 		const price = 1000n * 10n ** 18n;
-		const fee = (price * SERVICE_FEE_BPS) / 10_000n;
 
-		await cbt.connect(employer).approve(await escrow.getAddress(), price + fee);
+		await cbt.connect(employer).approve(await escrow.getAddress(), price);
 		await escrow
 			.connect(employer)
 			.createEscrow(ethers.id("job-1"), employer.address, agent.address, price);
 
 		expect(await cbt.balanceOf(await escrow.getAddress())).to.equal(price);
-		expect(await cbt.balanceOf(await treasury.getAddress())).to.equal(fee);
+		expect(await cbt.balanceOf(await treasury.getAddress())).to.equal(0n);
 
 		await time.increase(RELEASE_DELAY + 1);
 		await escrow.connect(keeper).autoRelease(ethers.id("job-1"));
@@ -241,7 +240,7 @@ describe("Dashboard contracts", () => {
 		await time.increase(VOTING_PERIOD + 1);
 		await dao.connect(keeper).resolveDispute(ethers.id("job-3"));
 
-		const rewardPerWinner = fee / 3n;
+		const rewardPerWinner = VOTE_COST; // All 3 voted the same way, they split the total pool (3 * VOTE_COST)
 
 		await dao.connect(voter1).claimReward(ethers.id("job-3"));
 		await dao.connect(voter2).claimReward(ethers.id("job-3"));

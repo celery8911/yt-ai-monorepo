@@ -1,5 +1,6 @@
 "use client";
 import { useChainId, useSignMessage, useWallet } from "@/hooks/web3";
+import { API_BASE_PATH } from "@/apis/client";
 
 /**
  * useSIWE Hook - Sign-In with Ethereum (EIP-4361)
@@ -47,11 +48,6 @@ function buildSIWEMessage(params: {
 	].join("\n");
 }
 
-/** 生成随机 nonce (前端 demo 版本，生产环境应从后端获取) */
-function generateNonce(): string {
-	return Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-}
-
 export function useSIWE() {
 	const { address } = useWallet();
 	const chainId = useChainId();
@@ -83,10 +79,14 @@ export function useSIWE() {
 		});
 
 		try {
-			// Step 1: 获取 nonce (生产环境应从后端 GET /auth/nonce 获取)
-			const nonce = generateNonce();
+			// Step 1: Get nonce from backend
+			const nonceRes = await fetch(
+				`${API_BASE_PATH}/auth/nonce?address=${address}`,
+			);
+			if (!nonceRes.ok) throw new Error("获取 nonce 失败");
+			const { nonce } = await nonceRes.json();
 
-			// Step 2: 构建 EIP-4361 SIWE 消息
+			// Step 2: Build EIP-4361 SIWE message
 			const domain =
 				typeof window !== "undefined" ? window.location.host : "localhost";
 			const uri =
@@ -106,45 +106,27 @@ export function useSIWE() {
 				issuedAt,
 			});
 
-			// Step 3: 调用 personal_sign (MetaMask 弹窗)
-			// 底层: keccak256("\x19Ethereum Signed Message:\n" + len(message) + message)
-			// 然后用私钥 ECDSA 签名，得到 signature (r + s + v = 65 bytes)
+			// Step 3: personal_sign (MetaMask)
 			const signature = await signMessageAsync({ message });
 
-			// Step 4: 发送到后端验证
-			// 生产环境: POST /auth/siwe { message, signature }
-			// 后端用 ethers.verifyMessage(message, signature) 恢复地址并比对
-			const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
-			try {
-				const res = await fetch(`${apiBase}/auth/siwe`, {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ message, signature }),
-				});
+			// Step 4: Verify on backend
+			const verifyRes = await fetch(`${API_BASE_PATH}/auth/siwe`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ message, signature, address }),
+			});
 
-				if (res.ok) {
-					const data = await res.json();
-					setState({
-						isSigningIn: false,
-						isVerified: true,
-						token: data.token || null,
-						error: null,
-					});
-					return;
-				}
-			} catch {
-				// 后端不可用时，前端演示模式：直接标记为已验证
-			}
+			if (!verifyRes.ok) throw new Error("签名验证失败");
 
-			// 演示模式：即使后端不可用，签名成功也标记已验证
+			const data = await verifyRes.json();
 			setState({
 				isSigningIn: false,
 				isVerified: true,
-				token: null,
+				token: data.token || null,
 				error: null,
 			});
 		} catch (err) {
-			const errorMessage = err instanceof Error ? err.message : "签名失败";
+			const errorMessage = err instanceof Error ? err.message : "登录失败";
 			setState({
 				isSigningIn: false,
 				isVerified: false,

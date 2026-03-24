@@ -1,4 +1,4 @@
-import { request } from "@yt/libs/http";
+import { apiRequest } from "@/apis/client";
 
 export type AgentListItem = {
 	id: string;
@@ -92,7 +92,7 @@ export const fetchAgentList = async (
 		? `/agents?${queryParams.toString()}`
 		: "/agents";
 
-	const data = await request<BackendAgent[]>({
+	const data = await apiRequest<BackendAgent[]>({
 		url,
 		method: "GET",
 	});
@@ -116,7 +116,7 @@ export const fetchAgentList = async (
 };
 
 export const fetchCategories = async (): Promise<CategoriesResponse> => {
-	const data = await request<Array<{ id: string; label: string }>>({
+	const data = await apiRequest<Array<{ id: string; label: string }>>({
 		url: "/agents/categories",
 		method: "GET",
 	});
@@ -148,7 +148,7 @@ export type CreateAgentPayload = {
 export const createAgent = async (
 	payload: CreateAgentPayload,
 ): Promise<AgentListItem> => {
-	const data = await request<BackendAgent>({
+	const data = await apiRequest<BackendAgent>({
 		url: "/agents",
 		method: "POST",
 		data: payload,
@@ -178,7 +178,7 @@ export const fetchAgentDetail = async (
 		if (agentDetailCache.has(id)) {
 			return agentDetailCache.get(id) ?? null;
 		}
-		const agent = await request<BackendAgent>({
+		const agent = await apiRequest<BackendAgent>({
 			url: `/agents/${id}`,
 			method: "GET",
 		});

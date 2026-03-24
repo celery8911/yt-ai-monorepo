@@ -1,4 +1,4 @@
-import { request } from "@yt/libs/http";
+import { apiRequest } from "@/apis/client";
 
 export type AgentProxyResponse = {
 	status?: string;
@@ -11,7 +11,7 @@ export const invokeAgentProxy = async (
 	agentId: string,
 	input: string,
 ): Promise<AgentProxyResponse> => {
-	return request<AgentProxyResponse>({
+	return apiRequest<AgentProxyResponse>({
 		url: `/agent-proxy/${agentId}/generate`,
 		method: "POST",
 		data: {

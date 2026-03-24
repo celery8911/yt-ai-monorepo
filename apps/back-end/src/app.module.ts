@@ -16,6 +16,8 @@ import { KeeperModule } from "./keeper/keeper.module";
 import { ChainStatusModule } from "./chain-status/chain-status.module";
 import { AgentProxyModule } from "./agent-proxy/agent-proxy.module";
 import { EngagementsModule } from "./engagements/engagements.module";
+import { AuthModule } from './auth/auth.module';
+import { QuoteModule } from './quote/quote.module';
 
 @Module({
   imports: [
@@ -47,6 +49,8 @@ import { EngagementsModule } from "./engagements/engagements.module";
     ChainStatusModule,
     AgentProxyModule,
     EngagementsModule,
+    AuthModule,
+    QuoteModule,
   ],
 })
 export class AppModule { }

@@ -17,6 +17,7 @@ import {
  */
 
 import { useState, useCallback } from "react";
+import { getContracts } from "@yt/libs";
 
 /** EIP-712 Domain 配置 */
 const DOMAIN_NAME = "YT Agent Market";
@@ -57,13 +58,16 @@ export type SignedQuote = {
 	};
 };
 
-export function useSignTypedDemo(verifierAddress?: `0x${string}`) {
+export function useSignTypedDemo() {
 	const { address } = useWallet();
 	const chainId = useChainId();
 	const { signTypedDataAsync } = useSignTypedData();
 	const publicClient = usePublicClient();
 
+	const verifierAddress = getContracts(chainId).SignatureVerifier;
+
 	const [signedQuote, setSignedQuote] = useState<SignedQuote | null>(null);
+	const [batchResults, setBatchResults] = useState<boolean[] | null>(null);
 	const [isSigning, setIsSigning] = useState(false);
 	const [isVerifying, setIsVerifying] = useState(false);
 	const [verifyResult, setVerifyResult] = useState<boolean | null>(null);
@@ -144,7 +148,7 @@ export function useSignTypedDemo(verifierAddress?: `0x${string}`) {
 	 */
 	const verifyOnChain = useCallback(
 		async (signed: SignedQuote) => {
-			if (!publicClient || !verifierAddress) {
+			if (!publicClient || !verifierAddress || verifierAddress === "0x0000000000000000000000000000000000000000") {
 				setError("合约地址未配置或客户端不可用");
 				return false;
 			}
@@ -193,18 +197,73 @@ export function useSignTypedDemo(verifierAddress?: `0x${string}`) {
 		[publicClient, verifierAddress],
 	);
 
+	/**
+	 * 链上批量验证签名
+	 */
+	const verifyBatchOnChain = useCallback(
+		async (quotes: SignedQuote[]) => {
+			if (!publicClient || !verifierAddress || verifierAddress === "0x0000000000000000000000000000000000000000") {
+				setError("验证合约未部署");
+				return null;
+			}
+
+			setIsVerifying(true);
+			try {
+				const results = await publicClient.readContract({
+					address: verifierAddress,
+					abi: [
+						{
+							type: "function",
+							name: "verifyBatchQuotes",
+							inputs: [
+								{
+									name: "quotes",
+									type: "tuple[]",
+									components: [
+										{ name: "agentId", type: "string" },
+										{ name: "owner", type: "address" },
+										{ name: "price", type: "uint256" },
+										{ name: "nonce", type: "uint256" },
+										{ name: "deadline", type: "uint256" },
+									],
+								},
+								{ name: "signatures", type: "bytes[]" },
+							],
+							outputs: [{ name: "results", type: "bool[]" }],
+							stateMutability: "view",
+						},
+					],
+					functionName: "verifyBatchQuotes",
+					args: [quotes.map((s) => s.quote), quotes.map((s) => s.signature)],
+				});
+
+				setBatchResults(results as boolean[]);
+				setIsVerifying(false);
+				return results as boolean[];
+			} catch (err) {
+				setError(err instanceof Error ? err.message : "批量验证失败");
+				setIsVerifying(false);
+				return null;
+			}
+		},
+		[publicClient, verifierAddress],
+	);
+
 	/** 重置状态 */
 	const reset = useCallback(() => {
 		setSignedQuote(null);
 		setVerifyResult(null);
+		setBatchResults(null);
 		setError(null);
 	}, []);
 
 	return {
 		signQuote,
 		verifyOnChain,
+		verifyBatchOnChain,
 		reset,
 		signedQuote,
+		batchResults,
 		isSigning,
 		isVerifying,
 		verifyResult,
